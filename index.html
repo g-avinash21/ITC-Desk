@@ -971,7 +971,7 @@ summary:hover { color: var(--acc); }
         </div>
       </div>
       <p class="hint" style="margin-bottom:10px">Built from the Single period figures, the capital goods register and the 180-day tracker below. In TallyPrime use <b>Vouchers &gt; F7 Journal &gt; Alt+J (Stat Adjustment)</b>, or import the XML through <b>Alt+O &gt; Import &gt; Transactions</b>.</p>
-      <div class="alert warn" style="margin:0 0 10px"><b>After importing the XML, add the Stat Adjustment in Tally.</b> The XML posts the accounting entry only. Until it carries the GST adjustment details, GSTR-3B in Tally puts it under <i>Not Relevant for This Return</i>, not 4(B)(1). Open the voucher (Day Book), press <b>Alt+J</b>, choose Type of duty/tax <b>GST</b>, Nature of adjustment <b>Reversal of Input Tax Credit</b>, and the Additional Details that fits (Rule 42/43, or section 17(5) for blocked credit), then save.</div>
+      <p class="hint" style="margin:0 0 10px">Check before importing: every ledger name and the GST registration must exist in Tally exactly as typed here. After importing, open GSTR-3B for the month: the amount should be in Table 4(B)(1), and nothing under Uncertain Transactions.</p>
       <div id="tallyVoucherText"></div>
     </div>
 
@@ -4206,7 +4206,7 @@ function calc1() {
     const teh = !headKnown ? 0 : HB && HB.TcTot > 0 ? Te * HB.Tc[h] / HB.TcTot : Te * (T > 0 ? th / T : 0);
     const rev4b1_h = (t1h + t2h + t3h) + d1h + d2h + teh;
     const net_h = th - rev4b1_h;
-    return { label, th, hard: t1h + t2h + t3h, c2h, d1h, d2h, teh, rev4b1_h, net_h };
+    return { label, th, t1h, t2h, t3h, hard: t1h + t2h + t3h, c2h, d1h, d2h, teh, rev4b1_h, net_h };
   });
 
   // Quick Annual True-Up Box (if YR is filled)
@@ -4612,6 +4612,58 @@ function mergedCredit(lines) {
 const escA = x => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const escX = x => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+
+// The reversal as Tally Stat Adjustment journals: one voucher for each "Additional Nature of Adjustment"
+const TV_NATURE = {
+  r42: { add: 'Exempt and Non-Business Supplies - Rule 42(1)(m)', dr: 'dr42', title: 'Rule 42: T1 + T2 + D1 + D2' },
+  r43: { add: 'Capital Credit Due to Exempted Supplies - Rule 43(1)(h)', dr: 'dr42', title: 'Rule 43: Te on common capital goods' },
+  blk: { add: 'Ineligible Credit', dr: 'drblk', title: 'Blocked credit, section 17(5): T3' }
+};
+const DR_DEF = { dr42: 'GST ITC Reversal Expense - Rule 42 & 43', drblk: 'Ineligible & Sec 17(5) Blocked ITC Expense' };
+// Rate of the tax ledger itself, as Tally stores it: CGST and SGST carry half the GST rate
+const ledRate = (h, r) => r === null || r === undefined || r === '' ? null : h === 'i' ? +r : h === 'z' ? null : +(r / 2).toFixed(3);
+function tallyVouchers(d) {
+  if (d.isBank) return null;
+  const mode = tlGet().mode || 'rate';
+  const comps = { r42: {}, r43: {}, blk: {} };
+  const add = (c, h, r, amt) => { if (!amt) return; const k = h + '|' + (r === null || r === undefined ? '' : r); (comps[c][k] = comps[c][k] || { head: h, rate: r, amt: 0 }).amt += amt; };
+  if (d.HB) {
+    const f = (d.ratio || 0) + (d.d2On ? 0.05 : 0), tcTot = d.HB.TcTot;
+    importedRows.filter(r => r.in2B !== false).forEach(r => {
+      const b = r.bucket;
+      const c = b === 'T1' || b === 'T2' ? 'r42' : b === 'C2' ? 'r42' : b === 'T3' ? 'blk' : b === 'Tc' && tcTot > 0 ? 'r43' : null;
+      if (!c) return;
+      const share = b === 'C2' ? f : b === 'Tc' ? d.Te / tcTot : 1;
+      if (!share) return;
+      const rate = billRate(r);
+      add(c, 'i', rate, (r.igst || 0) * share); add(c, 'c', rate, (r.cgst || 0) * share); add(c, 's', rate, (r.sgst || 0) * share); add(c, 'z', null, (r.cess || 0) * share);
+    });
+    if (d.Te && !(tcTot > 0)) d.headRows.forEach((hr, k) => add('r43', HEADS[k], null, hr.teh));
+  } else if (headSplitOk(d)) {
+    d.headRows.forEach((hr, k) => { const h = HEADS[k]; add('r42', h, null, hr.t1h + hr.t2h + hr.d1h + hr.d2h); add('blk', h, null, hr.t3h); add('r43', h, null, hr.teh); });
+  } else return null;
+  const order = { i: 0, c: 1, s: 2, z: 3 };
+  const V = Object.keys(comps).map(c => {
+    const lines = Object.values(comps[c]).map(l => {
+      const nameKey = mode === 'rate' && l.rate !== null && l.rate !== undefined ? l.head + '|' + l.rate : l.head + '|';
+      const def = mode === 'rate' && l.rate !== null && l.rate !== undefined ? (l.head === 'i' ? `IGST @ ${l.rate}%` : l.head === 'z' ? 'Input Cess' : `${HEAD_LAB[l.head]} @ ${+(l.rate / 2).toFixed(2)}%`) : `Input ${HEAD_LAB[l.head]}`;
+      const typedRate = tlName('rate:' + l.head, '');
+      const lr = ledRate(l.head, l.rate) ?? (typedRate !== '' && isFinite(+typedRate) ? +typedRate : null);
+      return { key: nameKey, head: l.head, rate: l.rate, ledRate: lr, rateTyped: l.rate === null || l.rate === undefined, name: tlName(nameKey, def), amt: Math.round(l.amt * 100) / 100 };
+    }).filter(l => Math.abs(l.amt) >= 0.005).sort((a, b) => order[a.head] - order[b.head] || (a.rate || 0) - (b.rate || 0));
+    return { comp: c, ...TV_NATURE[c], drName: tlName(TV_NATURE[c].dr, DR_DEF[TV_NATURE[c].dr]), drKey: TV_NATURE[c].dr, lines };
+  }).filter(v => v.lines.length);
+  // The vouchers must add up to the reversal to the paisa: the largest line takes any rounding
+  const all = V.flatMap(v => v.lines), diff = Math.round((d.rev4B1 - all.reduce((a, l) => a + l.amt, 0)) * 100) / 100;
+  if (all.length && Math.abs(diff) >= 0.01 && Math.abs(diff) < 1) { const big = all.reduce((a, b) => Math.abs(b.amt) > Math.abs(a.amt) ? b : a); big.amt = Math.round((big.amt + diff) * 100) / 100; }
+  V.forEach(v => { v.total = Math.round(v.lines.reduce((a, l) => a + l.amt, 0) * 100) / 100; v.lines.forEach(l => { l.taxable = l.ledRate ? Math.round(l.amt / (l.ledRate / 100) * 100) / 100 : null; }); });
+  return V;
+}
+function tlRegName() {
+  const g = ($('meta_gstin').value || '').trim().toUpperCase();
+  return tlName('reg', (GST_STATES[g.slice(0, 2)] || 'State') + ' Registration');
+}
+
 function headSplitOk(d) {
   return (d.headKnown || $('headMode').checked) && $('meta_cat').value !== 'bank' && Math.abs(d.headRows.reduce((a, h) => a + h.rev4b1_h, 0) - d.rev4B1) < 1;
 }
@@ -4633,79 +4685,45 @@ function renderTallyVoucher(d) {
   const rollover2B = importedRows.filter(r => r.in2B === false).reduce((s, r) => s + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
   const r37Totals = getR37Totals();
 
-  const cl = creditLines(d), tlMode = tlGet().mode || 'rate';
-  const drR = tlName('dr42', 'GST ITC Reversal Expense - Rule 42 & 43'), drB = tlName('drblk', 'Ineligible & Sec 17(5) Blocked ITC Expense');
-  window._tlLines = cl;
-  const creditRowsHtml = cl.map(l => `
-            <tr>
-              <td><span class="pill T4">Cr</span></td>
-              <td style="padding-left:28px">To <input class="ledname" value="${escA(l.name)}" size="${Math.max(14, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false">
-                <span class="hint">${l.single ? 'One line, because the tax-wise split is not known: import the bills or enter IGST, CGST and SGST under Single period.' : `(Duties &amp; Taxes: input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''})`}</span></td>
-              <td>—</td>
-              <td><b>${fmt(l.amt)}</b></td>
-            </tr>`).join('');
-  const tlBar = `<div class="row no-print" style="gap:8px;align-items:center;margin:0;padding:10px 14px;flex-wrap:wrap;border-bottom:1px solid var(--line)">
+  const tlMode = tlGet().mode || 'rate';
+  const V = tallyVouchers(d);
+  window._tlVouchers = V;
+  const gst = ($('meta_gstin').value || '').trim().toUpperCase();
+  const tlBar = `<div class="row no-print" style="gap:8px;align-items:center;margin:0 0 10px;flex-wrap:wrap">
       <span class="hint"><b>Credit ledgers</b></span>
       <select style="width:auto" onchange="tlSetMode(this.value)" ${d.HB && !d.isBank ? '' : 'disabled title="Needs the imported bills"'}>
         <option value="rate" ${tlMode === 'rate' ? 'selected' : ''}>One per tax and rate (CGST @ 2.5%, CGST @ 9%…)</option>
         <option value="head" ${tlMode === 'head' ? 'selected' : ''}>One per tax (Input CGST, Input SGST…)</option>
       </select>
-      <span class="hint">Type each ledger name as it is in Tally; ITC Desk remembers them for this client.</span>
+      <span class="hint"><b>GST registration in Tally</b></span>
+      <input class="ledname" value="${escA(tlRegName())}" size="${Math.max(14, tlRegName().length + 2)}" oninput="tlSetName('reg', this.value)" title="As Tally names it under F11 > GST registration; usually State Registration" spellcheck="false">
       <button class="sm" onclick="tlReset()">Reset names</button>
-    </div>`;
-  $('tallyVoucherText').innerHTML = `
-    <div class="tally-screen">
-      <div class="tally-hdr">
-        <span>Voucher 1: permanent reversal, Table 4(B)(1)</span>
-        <span>Journal (F7)</span>
-      </div>
-      <div class="tally-meta">
-        <div><b>Voucher Type &amp; Mode</b>Journal (F7) — Alt+J (Stat Adjustment)</div>
-        <div><b>Type of Duty / Tax</b>GST</div>
-        <div><b>Nature of Adjustment</b>Reversal of Input Tax Credit</div>
-        <div><b>Additional Details</b>Rule 42 &amp; 43 / Sec 17(5) Blocked</div>
-        <div><b>Return Period</b>${period}</div>
-      </div>
-      ${tlBar}
-      <div class="scroll">
-        <table class="tally-tbl">
-          <thead>
-            <tr>
-              <th style="width:70px">Dr / Cr</th>
-              <th>Particulars (Tally Ledger Name &amp; Group)</th>
-              <th style="width:170px">Debit (₹)</th>
-              <th style="width:170px">Credit (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="pill T1">Dr</span></td>
-              <td><input class="ledname" value="${escA(drR)}" size="${Math.max(14, drR.length + 2)}" oninput="tlSetName('dr42', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses. D1 ₹${fmt(d.D1)}, D2 ₹${fmt(d.D2)}, Te ₹${fmt(d.Te)})</span></td>
-              <td><b>${fmt(rule42_43_exp)}</b></td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td><span class="pill T1">Dr</span></td>
-              <td><input class="ledname" value="${escA(drB)}" size="${Math.max(14, drB.length + 2)}" oninput="tlSetName('drblk', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses, or the asset for capital goods. T1 ₹${fmt(d.T1)}, T2 ₹${fmt(d.T2)}, T3 ₹${fmt(d.T3)})</span></td>
-              <td><b>${fmt(blocked_exp)}</b></td>
-              <td>—</td>
-            </tr>
-            ${creditRowsHtml}
-          </tbody>
-          <tfoot>
-            <tr class="tot">
-              <td colspan="2">Voucher total (equals Table 4(B)(1))</td>
-              <td>₹ ${fmt(d.rev4B1)}</td>
-              <td>₹ ${fmt(d.rev4B1)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <div class="tally-narration">
-        <b>Narration:</b> Being permanent ITC reversal for ${period} under CGST Rule 42 (D1: ₹${fmt(d.D1)}, D2: ₹${fmt(d.D2)}), Rule 43 Capital Goods (Te: ₹${fmt(d.Te)}) and Section 17(1)/(2)/(5) (₹${fmt(blocked_exp)}) adjusted against Electronic Credit Ledger per GSTR-3B Table 4(B)(1).
-      </div>
     </div>
-
+    <p class="hint" style="margin:0 0 10px">Type each ledger and the registration exactly as in Tally; ITC Desk remembers them for this client. The XML carries the Stat Adjustment, rate and taxable value of every line, so it lands in GSTR-3B Table 4(B)(1) with nothing to fix in Tally.</p>`;
+  const vHtml = V ? V.map((v, n) => `
+    <div class="tally-screen" style="margin-top:${n ? 14 : 0}px">
+      <div class="tally-hdr"><span>Voucher ${n + 1}: ${v.title}</span><span>Journal (F7), Alt+J</span></div>
+      <div class="tally-meta">
+        <div><b>Type of duty/tax</b>GST</div>
+        <div><b>Nature of Adjustment</b>Reversal of Input Tax Credit</div>
+        <div><b>Additional Nature of Adjustment</b>${v.add}</div>
+        <div><b>Date</b>Last day of ${period}</div>
+      </div>
+      <div class="scroll"><table class="tally-tbl">
+        <thead><tr><th style="width:60px">Dr / Cr</th><th>Ledger</th><th style="width:110px">Rate</th><th style="width:150px">Taxable value</th><th style="width:140px">Debit (₹)</th><th style="width:140px">Credit (₹)</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill T1">Dr</span></td><td><input class="ledname" value="${escA(v.drName)}" size="${Math.max(14, v.drName.length + 2)}" oninput="tlSetName('${v.drKey}', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses)</span></td><td></td><td></td><td><b>${fmt(v.total)}</b></td><td>—</td></tr>
+          ${v.lines.map(l => `<tr><td><span class="pill T4">Cr</span></td>
+            <td style="padding-left:22px">To <input class="ledname" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false"> <span class="hint">input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''}</span></td>
+            <td>${l.rateTyped ? `<input class="ledname" style="width:70px" value="${l.ledRate ?? ''}" placeholder="rate %" onchange="tlSetName('rate:${l.head}', this.value); if (lastTallyData) renderTallyVoucher(lastTallyData)" title="The bills' rate is not known: type this ledger's rate (CGST 9 for 18% goods)">%` : `${l.ledRate}%`}</td>
+            <td>${l.taxable !== null ? fmt(l.taxable) : '<span style="color:var(--bad)">rate needed</span>'}</td>
+            <td>—</td><td><b>${fmt(l.amt)}</b></td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="tot"><td colspan="4">Voucher total</td><td>₹ ${fmt(v.total)}</td><td>₹ ${fmt(v.total)}</td></tr></tfoot>
+      </table></div>
+    </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}, equal to Table 4(B)(1).${V.some(v => v.lines.some(l => l.taxable === null)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
+    : `<div class="alert warn">${d.isBank ? 'Rule 38 (banks): pass the journal by hand with Alt+J and the nature your Tally lists for it; ITC Desk does not write this voucher.' : 'The tax-wise split is not known, so the Tally voucher cannot be written. Import the bills, or tick "Enter IGST, CGST and SGST separately" under Single period.'} Reversal for Table 4(B)(1): <b>₹ ${fmt(d.rev4B1)}</b>.</div>`;
+  $('tallyVoucherText').innerHTML = tlBar + vHtml + `
     <div class="tally-screen" style="margin-top:14px">
       <div class="tally-hdr">
         <span>Voucher 2: temporary reversal and re-claim, Tables 4(B)(2) and 4(D)(1)</span>
@@ -4758,76 +4776,84 @@ function renderTallyVoucher(d) {
 
 function copyTallyVoucherPlain() {
   if (!lastTallyData) return;
-  const d = lastTallyData;
-  const period = $('meta_period').value || 'September 2026';
-  const txt = [
-    `TALLYPRIME F7 JOURNAL VOUCHER (STAT ADJUSTMENT) — ${period}`,
-    `Nature of Adjustment: Reversal of Input Tax Credit | Rule 42 & 43 [GSTR-3B Table 4(B)(1)]`,
-    `--------------------------------------------------------------------------------`,
-    `Dr. ${tlName('dr42', 'GST ITC Reversal Expense - Rule 42 & 43')}`.padEnd(54) + `: ₹ ${fmt(d.D1 + d.D2 + d.Te)}`,
-    `Dr. ${tlName('drblk', 'Ineligible & Sec 17(5) Blocked ITC Expense')}`.padEnd(54) + `: ₹ ${fmt(d.T1 + d.T2 + d.T3)}`,
-    ...mergedCredit(creditLines(d)).map(l => `    Cr. To ${l.name}`.padEnd(54) + `: ₹ ${fmt(l.amt)}`),
-    `--------------------------------------------------------------------------------`,
-    `TOTAL REVERSAL (Table 4(B)(1))                       : ₹ ${fmt(d.rev4B1)}`,
-    `Narration: Being ITC reversal under Rule 42 (D1: ₹${fmt(d.D1)}, D2: ₹${fmt(d.D2)}), Rule 43 (Te: ₹${fmt(d.Te)}) & Sec 17(5) (₹${fmt(d.T1 + d.T2 + d.T3)}) for ${period}.`
-  ].join('\n');
-  try {
-    navigator.clipboard.writeText(txt);
-    notify('Clean TallyPrime Journal Voucher copied to clipboard.');
-  } catch (e) {}
+  const d = lastTallyData, V = tallyVouchers(d), period = $('meta_period').value || '';
+  if (!V) { notify('No voucher to copy: the tax-wise split is not known.'); return; }
+  const out = [];
+  V.forEach((v, n) => {
+    out.push(`JOURNAL ${n + 1} (F7, Alt+J) - ${period}`, `Type of duty/tax: GST | Nature: Reversal of Input Tax Credit | Additional: ${v.add}`, '-'.repeat(78));
+    out.push(`Dr. ${v.drName}`.padEnd(58) + `₹ ${fmt(v.total)}`);
+    v.lines.forEach(l => out.push(`    Cr. To ${l.name} (rate ${l.ledRate ?? '?'}%, taxable ₹ ${l.taxable !== null ? fmt(l.taxable) : '?'})`.padEnd(58) + `₹ ${fmt(l.amt)}`));
+    out.push('');
+  });
+  out.push(`Total, GSTR-3B Table 4(B)(1): ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}`);
+  try { navigator.clipboard.writeText(out.join('\n')); notify('Vouchers copied.'); } catch (e) {}
 }
 
 function exportTallyXMLVoucher() {
   if (!lastTallyData) return;
-  const d = lastTallyData;
-  const isHeadSplit = headSplitOk(d);
-  const rule42_43 = (d.D1 + d.D2 + d.Te).toFixed(2);
-  const blocked = (d.T1 + d.T2 + d.T3).toFixed(2);
-  const igst = d.headRows[0].rev4b1_h.toFixed(2);
-  const cgst = d.headRows[1].rev4b1_h.toFixed(2);
-  const sgst = d.headRows[2].rev4b1_h.toFixed(2);
-
-  // Compute last day of the selected return period dynamically (YYYYMMDD)
-  const pDate = parsePeriodDate();
-  const lastDay = new Date(pDate.getFullYear(), pDate.getMonth() + 1, 0);
-  const vchDateStr = `${lastDay.getFullYear()}${String(lastDay.getMonth() + 1).padStart(2, '0')}${String(lastDay.getDate()).padStart(2, '0')}`;
-
-  const creditXmlEntries = mergedCredit(creditLines(d)).filter(l => l.amt).map(l => `
-            <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>${escX(l.name)}</LEDGERNAME>
-              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-              <AMOUNT>${l.amt.toFixed(2)}</AMOUNT>
-            </ALLLEDGERENTRIES.LIST>`).join('');
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<ENVELOPE>
-  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>
-  <BODY>
-    <IMPORTDATA>
-      <REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME></REQUESTDESC>
-      <REQUESTDATA>
-        <TALLYMESSAGE xmlns:UDF="TallyUDF">
-          <VOUCHER VCHTYPE="Journal" ACTION="Create" OBJVIEW="Accounting Voucher View">
-            <DATE>${vchDateStr}</DATE>
-            <VOUCHERTYPENAME>Journal</VOUCHERTYPENAME>
-            <NARRATION>Being GST ITC Reversal under Rule 42 (D1+D2), Rule 43 (Te) and Sec 17(5) for ${$('meta_period').value || 'September 2026'} as per GSTR-3B Table 4(B)(1).</NARRATION>
-${[[tlName('dr42', 'GST ITC Reversal Expense - Rule 42 & 43'), rule42_43], [tlName('drblk', 'Ineligible & Sec 17(5) Blocked ITC Expense'), blocked]].filter(x => +x[1] > 0).map(x => `
-            <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>${escX(x[0])}</LEDGERNAME>
-              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-              <AMOUNT>-${x[1]}</AMOUNT>
-            </ALLLEDGERENTRIES.LIST>`).join('')}${creditXmlEntries}
-          </VOUCHER>
-        </TALLYMESSAGE>
-      </REQUESTDATA>
-    </IMPORTDATA>
-  </BODY>
+  const d = lastTallyData, V = tallyVouchers(d);
+  if (!V) { notify('No Tally XML: the tax-wise split is not known, or this is a bank (Rule 38). Pass the journal by hand.'); return; }
+  const gstin = ($('meta_gstin').value || '').trim().toUpperCase();
+  if (!/^\d{2}[0-9A-Z]{13}$/.test(gstin)) { notify('Type the client\'s GSTIN first: the voucher needs the GST registration.'); return; }
+  if (V.some(v => v.lines.some(l => l.taxable === null))) { notify('Type the missing ledger rates on the voucher first.'); return; }
+  const pDate = parsePeriodDate(), last = new Date(pDate.getFullYear(), pDate.getMonth() + 1, 0);
+  const ymd = `${last.getFullYear()}${String(last.getMonth() + 1).padStart(2, '0')}${String(last.getDate()).padStart(2, '0')}`;
+  const state = GST_STATES[gstin.slice(0, 2)] || '';
+  const reg = tlRegName(), period = $('meta_period').value || '';
+  const narr = { r42: `Being ITC reversal for ${period} under Rule 42 of the CGST Rules: T1 + T2 + D1 + D2 (common credit attributable to exempt and non-business use), GSTR-3B Table 4(B)(1).`,
+    r43: `Being ITC reversal for ${period} under Rule 43 of the CGST Rules on common capital goods (Te), GSTR-3B Table 4(B)(1).`,
+    blk: `Being reversal for ${period} of credit blocked under section 17(5) of the CGST Act (T3), GSTR-3B Table 4(B)(1).` };
+  const vch = v => `
+    <TALLYMESSAGE xmlns:UDF="TallyUDF">
+     <VOUCHER VCHTYPE="Journal" ACTION="Create" OBJVIEW="Accounting Voucher View">
+      <DATE>${ymd}</DATE>
+      <EFFECTIVEDATE>${ymd}</EFFECTIVEDATE>
+      <VOUCHERTYPENAME>Journal</VOUCHERTYPENAME>
+      <NARRATION>${escX(narr[v.comp])}</NARRATION>
+      <GSTREGISTRATION TAXTYPE="GST" TAXREGISTRATION="${gstin}">${escX(reg)}</GSTREGISTRATION>
+      <CMPGSTIN>${gstin}</CMPGSTIN>
+      <CMPGSTREGISTRATIONTYPE>Regular</CMPGSTREGISTRATIONTYPE>
+      <CMPGSTSTATE>${escX(state)}</CMPGSTSTATE>
+      <TAXADJUSTMENT>Reversal of Input Tax Credit</TAXADJUSTMENT>
+      <STATPAYMENTTYPE>GST</STATPAYMENTTYPE>
+      <GSTADDITIONALDETAILS>${escX(v.add)}</GSTADDITIONALDETAILS>
+      <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
+      <ALLLEDGERENTRIES.LIST>
+       <LEDGERNAME>${escX(v.drName)}</LEDGERNAME>
+       <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+       <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
+       <AMOUNT>-${v.total.toFixed(2)}</AMOUNT>
+      </ALLLEDGERENTRIES.LIST>${v.lines.map(l => `
+      <ALLLEDGERENTRIES.LIST>
+       <LEDGERNAME>${escX(l.name)}</LEDGERNAME>
+       <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+       <ISLASTDEEMEDPOSITIVE>No</ISLASTDEEMEDPOSITIVE>
+       <GSTTAXRATE>${(+l.ledRate).toFixed(2)}</GSTTAXRATE>
+       <AMOUNT>${l.amt.toFixed(2)}</AMOUNT>
+       <GSTASSESSABLEVALUE>${l.taxable.toFixed(2)}</GSTASSESSABLEVALUE>
+      </ALLLEDGERENTRIES.LIST>`).join('')}
+     </VOUCHER>
+    </TALLYMESSAGE>`;
+  const xml = `<ENVELOPE>
+ <HEADER>
+  <TALLYREQUEST>Import Data</TALLYREQUEST>
+ </HEADER>
+ <BODY>
+  <IMPORTDATA>
+   <REQUESTDESC>
+    <REPORTNAME>Vouchers</REPORTNAME>
+   </REQUESTDESC>
+   <REQUESTDATA>${V.map(vch).join('')}
+   </REQUESTDATA>
+  </IMPORTDATA>
+ </BODY>
 </ENVELOPE>`;
   const blob = new Blob([xml], { type: 'application/xml' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `TallyPrime_Rule42_43_Journal_${($('meta_period').value || 'Sep2026').replace(/\s+/g, '_')}.xml`;
+  a.download = `Tally_ITC_Reversal_${(($('meta_name').value || 'Client').replace(/[^\w]+/g, '_'))}_${period.replace(/\s+/g, '_')}.xml`;
   a.click();
-  notify('Tally XML downloaded. After importing (Alt+O > Transactions), open the voucher, press Alt+J and set GST, Reversal of Input Tax Credit: until then GSTR-3B lists it under Not Relevant for This Return.');
+  notify(`Tally XML downloaded: ${V.length} journal${V.length > 1 ? 's' : ''} with the Stat Adjustment. Import through Alt+O > Import > Transactions, then check GSTR-3B Table 4(B)(1).`);
 }
 
 /* ---------- BULK RULE 37 (180-DAY NON-PAYMENT TRACKER) ---------- */
