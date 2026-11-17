@@ -971,6 +971,7 @@ summary:hover { color: var(--acc); }
         </div>
       </div>
       <p class="hint" style="margin-bottom:10px">Built from the Single period figures, the capital goods register and the 180-day tracker below. In TallyPrime use <b>Vouchers &gt; F7 Journal &gt; Alt+J (Stat Adjustment)</b>, or import the XML through <b>Alt+O &gt; Import &gt; Transactions</b>.</p>
+      <div class="alert warn" style="margin:0 0 10px"><b>After importing the XML, add the Stat Adjustment in Tally.</b> The XML posts the accounting entry only. Until it carries the GST adjustment details, GSTR-3B in Tally puts it under <i>Not Relevant for This Return</i>, not 4(B)(1). Open the voucher (Day Book), press <b>Alt+J</b>, choose Type of duty/tax <b>GST</b>, Nature of adjustment <b>Reversal of Input Tax Credit</b>, and the Additional Details that fits (Rule 42/43, or section 17(5) for blocked credit), then save.</div>
       <div id="tallyVoucherText"></div>
     </div>
 
@@ -4826,7 +4827,7 @@ ${[[tlName('dr42', 'GST ITC Reversal Expense - Rule 42 & 43'), rule42_43], [tlNa
   a.href = URL.createObjectURL(blob);
   a.download = `TallyPrime_Rule42_43_Journal_${($('meta_period').value || 'Sep2026').replace(/\s+/g, '_')}.xml`;
   a.click();
-  notify('Downloaded TallyPrime XML Voucher! Import via Alt+O > Transactions.');
+  notify('Tally XML downloaded. After importing (Alt+O > Transactions), open the voucher, press Alt+J and set GST, Reversal of Input Tax Credit: until then GSTR-3B lists it under Not Relevant for This Return.');
 }
 
 /* ---------- BULK RULE 37 (180-DAY NON-PAYMENT TRACKER) ---------- */
