@@ -13,7 +13,9 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
 - **Rule 37**: bills unpaid after 180 days.
 - **Interest and penalty** estimates (sections 50, 73, 74 and 74A by financial year).
 - **Checks**: GSTIN check digit, ITC against GSTR-3B Table 4(A), Nature View against Return View, sales that may be untaxed in 3.1(a).
-- **Output**: Excel working with live formulas (bills, ledgers, working, month-wise and true-up), a printable A4 working paper, the journal entry and Tally XML.
+- **GSTR-3B Table 4 as on the portal**: 4(A)(1) to (5), 4(B)(1) and (2), 4(C) and 4(D), by IGST, CGST, SGST and Cess, filled from the bills (reverse charge in 4(A)(3), imports in 4(A)(1), ISD in 4(A)(4)), with the GSTR-9 Table 7 split of the reversal.
+- **Tally journals that land in 4(B)(1)**: the XML carries the Stat Adjustment (GST, Reversal of Input Tax Credit, with Rule 42(1)(m), Rule 43(1)(h) or Ineligible Credit), and the rate and taxable value of every tax line. Ledger names and the GST registration are editable to match your Tally, rate-wise or one per tax, and remembered for each client.
+- **Output**: Excel working with live formulas (bills, ledgers, working, month-wise and true-up), a printable A4 working paper, the journal entries and Tally XML.
 - **ICAI references**: beside each bucket's reason, the ICAI study material page or GST handbook page that supports it (for example *ICAI Blocked credit handbook p. 71* for cab hire). The link opens ICAI's website, where the publications are free to download.
 - **Optional assistant**: a small AI model running on your own computer (llama.cpp with a Hugging Face model) can suggest buckets for ledgers marked Check. It only suggests; nothing changes until you accept. See `ITC assistant.bat`.
 
@@ -26,7 +28,8 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
    - **Purchase register, columnar**: Display More Reports > Account Books > Purchase Register, columnar view, export.
 3. Drop the three files on the Import tab. Read the notes, settle every ledger marked **Check**, and open **Single period** for the reversal.
    Not on Tally: drop GSTR-2B instead (gst.gov.in > Returns Dashboard > month > GSTR-2B > View > Download Excel) and type Table 3.1 of GSTR-3B in the turnover boxes, or use **Download template**.
-4. **Save backup** keeps a client's work as a file; the page itself starts empty every time it is opened.
+4. On the **Vouchers** tab, type the ledger names and GST registration as in Tally, click **Download Tally XML**, and import it in Tally (Alt+O > Import > Transactions). Check GSTR-3B Table 4(B)(1) afterwards.
+5. **Save backup** keeps a client's work as a file; the page itself starts empty every time it is opened.
 
 ## Optional assistant (offline AI)
 
@@ -53,8 +56,7 @@ ITC Desk is a computation and working-paper aid, not a legal opinion or a statut
 
 ## Credits
 
-Concept, GST judgement and testing: Avinash G. Built with the help of Claude (Anthropic). Excel reading by SheetJS Community Edition (Apache License 2.0); see `THIRD_PARTY_NOTICES.md`.
-“Credits”, change “Built with the help of Claude (Anthropic)” to “Code written with Claude (Anthropic); concept, GST logic and testing by Avinash G.”
+Concept, GST logic and testing by Avinash G. Code written with Claude (Anthropic). Excel reading by SheetJS Community Edition and the styled Excel export by xlsx-js-style (both Apache License 2.0); see `THIRD_PARTY_NOTICES.md`.
 
 ## Manual
 
