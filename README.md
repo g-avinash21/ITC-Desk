@@ -54,6 +54,7 @@ ITC Desk is a computation and working-paper aid, not a legal opinion or a statut
 ## Credits
 
 Concept, GST judgement and testing: Avinash G. Built with the help of Claude (Anthropic). Excel reading by SheetJS Community Edition (Apache License 2.0); see `THIRD_PARTY_NOTICES.md`.
+“Credits”, change “Built with the help of Claude (Anthropic)” to “Code written with Claude (Anthropic); concept, GST logic and testing by Avinash G.”
 
 ## Manual
 
