@@ -55,7 +55,7 @@ What Auto does for each company, and how it checks itself:
 - **Second opinion**: Tally's own ledger totals for the month (GST, sales, purchase and expense ledgers) must equal the vouchers read, to the paisa. Any difference is listed by ledger.
 - **Purchase ledgers verified from stock items**: when every item bought with GST was sold only with GST that month, the T4 bucket is confirmed without asking.
 - **Check with Tally's GSTR-3B**: choose one or many GSTR-3B Excel exports (detailed view, Alt+F5); each file finds its company by GSTIN. A file for another GSTIN, another Tally company or year, another month or part of a month, or any report other than GSTR-3B itself is refused with the reason, and nothing changes. Differences are shown and explained.
-- The month is checked against the company's financial year, Stop works at once, and vouchers are read a few days at a time so Tally stays responsive.
+- The month is checked against the dates Tally holds for each company (books from, last entry), not its name, so a company named "2025-2026" that carries on into 2026-27 is read for the month you chose; Stop works at once, and vouchers are read a few days at a time so Tally stays responsive.
 
 **Download diagnostic** saves every request made to Tally with its timing, to help fix a company that fails.
 

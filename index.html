@@ -5871,7 +5871,7 @@ function autoSec17(V, L, base) {
 }
 async function autoCapitalGoods(c, M, L) {
   const monthStart = new Date(M.y, M.m, 1), winStart = new Date(M.y, M.m - 60, 1);
-  const out = { assets: [], notes: [], checked: [] };
+  const out = { assets: [], notes: [], checked: [], seen: new Set() };
   for (const cc of [c].concat(autoSameReg(c))) {
     const LL = cc === c ? L : await autoLedgers(cc);
     const fa = Object.values(LL).filter(x => x.asset).map(x => x.name);
@@ -5890,6 +5890,9 @@ async function autoCapitalGoods(c, M, L) {
       const tot = debits.reduce((a, l) => a - l.amt, 0);
       debits.filter(l => faSet.has(l.led.toLowerCase())).forEach(l => {
         const gst = Math.round(tax * (-l.amt) / (tot || -l.amt) * 100) / 100;
+        const key = [l.led, v.party, v.no, v.date, gst].join('|').toLowerCase();
+        if (out.seen.has(key)) return; // the same purchase kept in two Tally companies of the same registration
+        out.seen.add(key);
         if (gst >= 0.01) out.assets.push({ fromAuto: true, name: `${l.led} (${v.party || 'voucher ' + (v.no || '')})`, invDate: v.date, mode: 'common', switchDate: v.date, gst });
       });
     });
@@ -5897,11 +5900,12 @@ async function autoCapitalGoods(c, M, L) {
     await pause(200);
   }
   // Years in the 60-month window whose company is not loaded cannot be checked
-  const fys = new Set([c].concat(autoSameReg(c)).map(x => autoCompanyFY(x)).filter(x => x != null));
+  const fys = new Set([c].concat(autoSameReg(c)).flatMap(x => autoCompanyFYs(x)));
   const missing = [];
   for (let y = (winStart.getMonth() >= 3 ? winStart.getFullYear() : winStart.getFullYear() - 1); y < (M.m >= 3 ? M.y : M.y - 1); y++) if (!fys.has(y)) missing.push(`${y}-${String(y + 1).slice(2)}`);
   if (fys.size && missing.length) out.notes.push(`Capital goods bought in FY ${missing.join(', ')} were not checked, as those years' companies are not loaded in Tally. Load them (F3) and run again, or add such assets in the Capital goods tab.`);
   autoLog('capital-goods', { checked: out.checked, assets: out.assets.length, missing });
+  delete out.seen;
   return out;
 }
 // Supplier bills older than 180 days and not fully paid: Rule 37 reverses their credit in Table 4(B)(2)
@@ -6039,10 +6043,10 @@ async function autoConnect() {
   AUTO.ports = ports.map(p => p.port); AUTO.companies = [];
   for (const port of AUTO.ports) {
     try {
-      const doc = await tallyAsk(port, tReqCollection('ITCDeskCompanies', '', '<COLLECTION NAME="ITCDeskCompanies" ISMODIFY="No"><TYPE>Company</TYPE><FETCH>Name, StartingFrom, BooksFrom, GSTRegistrationNumber, StateName</FETCH></COLLECTION>'), 'companies');
+      const doc = await tallyAsk(port, tReqCollection('ITCDeskCompanies', '', '<COLLECTION NAME="ITCDeskCompanies" ISMODIFY="No"><TYPE>Company</TYPE><FETCH>Name, StartingFrom, BooksFrom, EndingAt, LastVoucherDate, GSTRegistrationNumber, StateName</FETCH></COLLECTION>'), 'companies');
       for (const c of Array.from(doc.getElementsByTagName('COMPANY'))) {
         const name = c.getAttribute('NAME') || kid(c, 'NAME'); if (!name) continue;
-        AUTO.companies.push({ port, name, from: kid(c, 'STARTINGFROM') || kid(c, 'BOOKSFROM'), gstin: (kid(c, 'GSTREGISTRATIONNUMBER') || '').toUpperCase(), sel: true });
+        AUTO.companies.push({ port, name, from: kid(c, 'BOOKSFROM') || kid(c, 'STARTINGFROM'), start: kid(c, 'STARTINGFROM'), to: kid(c, 'ENDINGAT'), last: kid(c, 'LASTVOUCHERDATE'), gstin: (kid(c, 'GSTREGISTRATIONNUMBER') || '').toUpperCase(), sel: true });
       }
     } catch (e) { autoLog('companies-error', { port, error: e.message }); }
   }
@@ -6537,17 +6541,42 @@ async function autoRunOne(c) {
   return { name: c.name, gstin: $('meta_gstin').value, port: c.port, vch: V.length, rcmPending: rcmV && !rcmRows ? rcmV : 0, missLed: (window._autoMissLed || []).slice(), turnDiff, checkNames, books, maths, cg: cgInfo ? cgInfo.assets.length : null, r37: r37Info ? r37Info.bills.length : null, month: M.label, a31: +$('imp_31a').value || 0, c31: +$('imp_31c').value || 0, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: st0, autoState: st0, notes: impNotes.slice(), banner: $('importStatusBanner') ? [$('importStatusBanner').className, $('importStatusBanner').innerHTML] : null, sales: { a: SS.a, c: SS.c, e: SS.e, exGst: SS.exGst }, at: fmtStamp(new Date()) };
 }
 /* Which financial year a loaded company holds: from its name ("…, 2025-2026") or its books-from date */
-function autoCompanyFY(c) {
-  const m = /(20\d\d)\s*[-–]\s*(?:20)?(\d\d)\b/.exec(c.name || '');
-  if (m && (+m[2] === (+m[1] + 1) % 100)) return +m[1];
-  return null;
+// The months a Tally company actually holds, from Tally's own dates (books from, ending at, last entry).
+// A company's name ("Sri Lakshmi Traders 2025-2026") is only a label: one company often carries on into later years.
+function autoCompanyRange(c) {
+  const d8 = v => /^\d{8}$/.test(v || '') ? +v.slice(0, 4) * 12 + (+v.slice(4, 6) - 1) : null;
+  const fyEnd = ym => { const y = Math.floor(ym / 12), m = ym % 12; return (m >= 3 ? y + 1 : y) * 12 + 2; };
+  const from = d8(c.from);
+  let to = d8(c.to), how = 'Tally';
+  const last = d8(c.last);
+  if (last != null) to = Math.max(to != null ? to : last, fyEnd(last));
+  if (to == null) {
+    // No end date from Tally: the year in the name, else the books' first year, gives a lower bound only
+    const fy = autoNameFY(c);
+    if (fy != null) { to = (fy + 1) * 12 + 2; how = 'name'; }
+    else if (from != null) { to = fyEnd(from); how = 'name'; }
+  }
+  return { from, to, how };
 }
+function autoNameFY(c) {
+  const m = /(20\d\d)\s*[-–]\s*(?:20)?(\d\d)\b/.exec(c.name || '');
+  return m && (+m[2] === (+m[1] + 1) % 100) ? +m[1] : null;
+}
+// Financial years a company holds (for the capital goods window)
+function autoCompanyFYs(c) {
+  const r = autoCompanyRange(c), out = [];
+  if (r.from == null || r.to == null) { const fy = autoNameFY(c); return fy != null ? [fy] : []; }
+  for (let ym = r.from; ym <= r.to; ym++) { const y = Math.floor(ym / 12), m = ym % 12, fy = m >= 3 ? y : y - 1; if (!out.includes(fy)) out.push(fy); }
+  return out;
+}
+function autoCompanyFY(c) { const f = autoCompanyFYs(c); return f.length === 1 ? f[0] : null; }
 function autoMonthCheck(sel) {
   const M = autoMonth(), ym = M.y * 12 + M.m, bad = [];
+  const lbl = ym => new Date(Math.floor(ym / 12), ym % 12, 1).toLocaleString('en-GB', { month: 'short', year: 'numeric' });
   sel.forEach(c => {
-    const fy = autoCompanyFY(c);
-    if (fy != null && (ym < fy * 12 + 3 || ym > (fy + 1) * 12 + 2)) bad.push({ c, fy, why: `its name says FY ${fy}-${String(fy + 1).slice(2)}` });
-    else if (c.from && /^\d{8}$/.test(c.from) && ym < (+c.from.slice(0, 4)) * 12 + (+c.from.slice(4, 6) - 1)) bad.push({ c, fy: null, why: `its books begin on ${fmtDate(c.from.slice(0, 4) + '-' + c.from.slice(4, 6) + '-' + c.from.slice(6))}` });
+    const r = autoCompanyRange(c);
+    if (r.from != null && ym < r.from) bad.push({ c, fys: autoCompanyFYs(c), sure: r.how === 'Tally', why: `its books begin in ${lbl(r.from)}` });
+    else if (r.to != null && ym > r.to && r.how === 'Tally') bad.push({ c, fys: autoCompanyFYs(c), sure: true, why: `its entries end in ${lbl(r.to)}` });
   });
   return { M, bad };
 }
@@ -6556,9 +6585,10 @@ async function autoRunSelected() {
   if (!sel.length) return;
   const { M, bad } = autoMonthCheck(sel);
   if (bad.length) {
-    const fys = [...new Set(bad.map(b => b.fy).filter(x => x != null))];
+    // Switch by itself only when Tally's own dates put every selected company in one and the same year
+    const fys = [...new Set(bad.map(b => b.fys.length === 1 && b.sure ? b.fys[0] : 'x'))];
     const names = bad.slice(0, 4).map(b => `• ${b.c.name}: ${b.why}`).join('\n') + (bad.length > 4 ? `\n• and ${bad.length - 4} more` : '');
-    if (fys.length === 1 && bad.length === sel.length) {
+    if (fys.length === 1 && fys[0] !== 'x' && bad.length === sel.length) {
       const fy = fys[0], y = M.m >= 3 ? fy : fy + 1, lbl = new Date(y, M.m, 1).toLocaleString('en-GB', { month: 'long' }) + ' ' + y;
       // One year for every company: switch the month by itself and say so
       $('FY').value = String(fy);
