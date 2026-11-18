@@ -40,10 +40,20 @@ The **Auto** tab reads straight from TallyPrime and works out every loaded compa
 
 1. In each TallyPrime window: F1 > Settings > Connectivity > Client/Server configuration: TallyPrime is acting as **Both**, Port **9000** (a second window 9001, and so on).
 2. Load the companies (F3, Spacebar to select several). Only loaded companies can be read.
-3. Double-click `ITC Tally link.bat` and keep its window open. It uses Windows PowerShell, installs nothing, listens only on this computer, and refuses any request that would change Tally.
-4. In ITC Desk: Auto > Find Tally > tick the companies > Work out selected. Open each result to review it like a normal import.
+3. Open ITC Desk by double-clicking `ITC Desk.bat` (keep it in the same folder as the HTML file). It opens the page and starts the Tally link in the background, with no extra window. It uses Windows PowerShell, installs nothing, listens only on this computer, and refuses any request that would change Tally. The Auto tab shows which Tally windows and companies are connected, and a "Stop link" button switches the link off.
+   The first time, it offers to start the link whenever Windows starts, so Auto mode always finds it.
+4. In ITC Desk: Auto > Find Tally > tick the companies > Work out selected. A progress bar shows each company and each step. Open each result to review it like a normal import.
 
-If Tally's GSTR-3B report cannot be read, the turnover is worked out from sales vouchers and marked for checking. **Download diagnostic** saves what Tally answered, to help fix a company that fails.
+What Auto does for each company, and how it checks itself:
+
+- **Purchases and credit** from the vouchers; reverse charge credit worked out from each reverse-charge line at the rate Tally stores on it; round-off lines get no tax.
+- **Turnover item by item**, from the taxability Tally stores on each stock item. Exempt items sold on invoices that also charge GST are counted as exempt, as Rule 42 requires; Tally's own GSTR-3B counts them in 3.1(a).
+- **Second opinion**: Tally's own ledger totals for the month (GST, sales, purchase and expense ledgers) must equal the vouchers read, to the paisa. Any difference is listed by ledger.
+- **Purchase ledgers verified from stock items**: when every item bought with GST was sold only with GST that month, the T4 bucket is confirmed without asking.
+- **Check with Tally's GSTR-3B**: choose one or many GSTR-3B Excel exports (detailed view, Alt+F5); each file finds its company by GSTIN, a wrong company or month is refused, and the differences are shown and explained.
+- The month is checked against the company's financial year, Stop works at once, and vouchers are read a few days at a time so Tally stays responsive.
+
+**Download diagnostic** saves every request made to Tally with its timing, to help fix a company that fails.
 
 ## Optional assistant (offline AI)
 
