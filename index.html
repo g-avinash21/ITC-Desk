@@ -114,7 +114,10 @@ code { font-family: inherit; font-size: 12.5px; background: var(--bg); border: 1
 .brand-mark { display: flex; flex-direction: column; justify-content: center; padding: 10px 0; flex: none; }
 .brand-mark .name { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
 .brand-mark .ref { font-size: 11.5px; color: var(--mut); }
-.tabs { display: flex; align-items: flex-end; gap: 4px; padding-top: 10px; overflow-x: auto; scrollbar-width: none; }
+.tabs { display: flex; align-items: flex-end; gap: 4px; padding-top: 10px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
+/* Seven tabs: on narrower screens the side notes and the small labels give way, so every tab stays visible */
+@media (max-width: 1640px) { .side-foot { display: none; } }
+@media (max-width: 1460px) { .tab small { display: none; } .tab { padding: 10px 11px 9px; } }
 .tabs::-webkit-scrollbar { display: none; }
 /* Tabs sit on the bar's rule; the open one is a crimson block on its plinth edge, like the main buttons */
 .tab {
@@ -411,7 +414,8 @@ summary:hover { color: var(--acc); }
       <button class="tab" id="t2" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
       <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
       <button class="tab" id="t4" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
-      <button class="tab" id="t5" onclick="showTab(5)"><span>Notes and checklist</span></button>
+      <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
+      <button class="tab" id="t6" onclick="showTab(6)"><span>Auto</span><small>from Tally</small></button>
     </nav>
     <div class="side-foot">
       <span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span>
@@ -813,6 +817,16 @@ summary:hover { color: var(--acc); }
         </div>
       </details>
 
+      <details id="annBox">
+        <summary>Whole year: for a notice or the annual true-up (Return period: Full Year)</summary>
+        <p class="hint" style="margin:8px 0">Import the year's files (GSTR-3B Nature View, purchase register and reverse-charge register for 1 April to 31 March) and choose <b>Full Year</b> as the return period. Single period then works out the year as one period under Rule 42(2): the reversal the whole year needed, set against what the GSTR-3B returns actually reversed.</p>
+        <div class="grid" style="margin-top:6px">
+          <div><label>Reversed in GSTR-3B 4(B)(1) during the year (₹)</label><input type="number" id="ann_filed" oninput="calc1();saveState()"><div class="hint">Filled from an annual GSTR-3B import</div></div>
+          <div><label>Amount demanded in the notice (₹, optional)</label><input type="number" id="ann_demand" oninput="calc1();saveState()"></div>
+          <div><label>Interest up to</label><input type="date" id="ann_upto" oninput="calc1();saveState()"></div>
+        </div>
+      </details>
+
       <details>
         <summary>Capital goods total, annual true-up and penalty</summary>
         <div class="grid" style="margin-top:10px">
@@ -903,6 +917,7 @@ summary:hover { color: var(--acc); }
     </div>
 
     <div class="card" id="resCG"></div>
+    <div class="card" id="cgCatch"></div>
   </div>
 
   <!-- ==================== TAB 3: MONTH-WISE APR-MAR & TRUE-UP ==================== -->
@@ -1057,6 +1072,45 @@ summary:hover { color: var(--acc); }
           <tfoot id="r37Foot"></tfoot>
         </table>
       </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== TAB 6: AUTO MODE, STRAIGHT FROM TALLYPRIME ==================== -->
+  <div id="p6" class="hide">
+    <div class="card">
+      <div class="card-title">
+        <span>Auto: extract from TallyPrime and work out every loaded company</span>
+        <div class="row no-print">
+          <button class="sm" onclick="autoDownloadLink()">Download ITC Tally link</button>
+          <button class="sm p" onclick="autoConnect()">Find Tally</button>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:12px">
+        <ol class="hint" style="font-size:13px;line-height:1.65;margin:0;padding-left:20px">
+          <li><b>Tally:</b> F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>. A second Tally window on this PC needs its own port (9001, 9002…).</li>
+          <li><b>Load the companies</b>: F3 (Select Company), mark several with Spacebar. Only loaded companies can be read; with many clients, work in batches of 20 to 30.</li>
+          <li><b>Start the link</b>: double-click <code>ITC Tally link.bat</code> (first time: Download ITC Tally link). Keep its window open. It only reads: it refuses anything that would change Tally.</li>
+          <li>Click <b>Find Tally</b>, tick the companies, check the month, and click <b>Work out selected</b>.</li>
+        </ol>
+        <div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+            <div><label>Tally ports to look at</label><input type="text" id="auto_ports" value="9000-9005"></div>
+            <div><label>Month</label><input type="text" id="auto_month_lbl" readonly title="Change it with Return period at the top"></div>
+          </div>
+          <div class="hint" id="auto_status" style="margin-top:8px">Not connected yet.</div>
+        </div>
+      </div>
+      <div id="auto_companies"></div>
+      <div class="row no-print" style="gap:8px;margin:10px 0;flex-wrap:wrap">
+        <button class="sm p" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button>
+        <button class="sm hide" id="auto_stop" onclick="autoStop()">Stop</button>
+        <button class="sm" onclick="autoDiagnostic()" title="For setting up: what Tally answered to each request">Download diagnostic</button>
+        <button class="sm" onclick="autoSaveBatch()">Save batch</button>
+        <span class="hint" id="auto_prog"></span>
+      </div>
+      <div id="auto_results"></div>
+      <p class="hint" style="margin-top:10px">Auto mode stops after the working: nothing is posted to Tally. Open each client, settle the ledgers marked Check, and only then export, print or import the journal. Remembered buckets are used, as in manual mode.</p>
     </div>
   </div>
 
@@ -1318,7 +1372,7 @@ function printManual() {
   window.print();
 }
 function showTab(k) {
-  [0, 1, 2, 3, 4, 5].forEach(i => {
+  [0, 1, 2, 3, 4, 5, 6].forEach(i => {
     if ($('p' + i)) $('p' + i).classList.toggle('hide', i !== k);
     if ($('t' + i)) $('t' + i).classList.toggle('on', i === k);
   });
@@ -1422,9 +1476,9 @@ function renderImporterTable() {
         <td><input type="number" value="${r.sgst || 0}" style="min-width:82px" oninput="importedRows[${i}].sgst=parseFloat(this.value)||0;renderImporterTable();pushImportToCalculator(false)"></td>
         <td><b>${fmt(tot)}</b></td>
         <td>
-          <select onchange="importedRows[${i}].in2B=(this.value==='yes');renderImporterTable();pushImportToCalculator(false)" style="min-width:136px">
+          <select onchange="importedRows[${i}].in2B=(this.value==='yes');if(this.value==='yes')importedRows[${i}].barred=false;renderImporterTable();pushImportToCalculator(false)" style="min-width:136px">
             <option value="yes" ${r.in2B !== false ? 'selected' : ''}>In GSTR-2B</option>
-            <option value="no" ${r.in2B === false ? 'selected' : ''}>Not in GSTR-2B yet</option>
+            <option value="no" ${r.in2B === false ? 'selected' : ''}>${r.barred ? 'Time-barred, 16(4)' : 'Not in GSTR-2B yet'}</option>
           </select>
         </td>
         <td>
@@ -1809,6 +1863,14 @@ function pushImportToCalculator(switchTab) {
   cgAssets = [...manualCgAssets, ...newCgAssets];
   renderCG();
 
+  // Tab 3: the months this import covers are replaced, not merged with what was there
+  if (hasRows || hasTurnover) {
+    const wipe = /^Full Year/.test(selPeriod) || multiMonth ? [...Array(12).keys()] : [targetIdx];
+    wipe.forEach(idx => ['a', 'b', 'c', 'e', 'T', 'T1', 'T2', 'T3', 'T4', 'Tc', 'fl'].forEach(k => {
+      if (k === 'fl' && !(/^Full Year/.test(selPeriod) || multiMonth)) return;
+      if ($('m' + idx + '_' + k)) $('m' + idx + '_' + k).value = '';
+    }));
+  }
   // Tab 3: month-wise ITC from the row dates
   const monthBuckets = {};
   importedRows.forEach(r => {
@@ -1930,7 +1992,10 @@ function processUploadedFiles(fileList) {
     vals: ['imp_31a', 'imp_31b', 'imp_31c', 'imp_31e'].map(id => $(id) ? $(id).value : ''),
     banner: $('importStatusBanner') ? [$('importStatusBanner').className, $('importStatusBanner').innerHTML] : null
   };
-  // Every drop is a fresh import: old rows (and any demo data) never mix with the new files
+  // Every drop is a fresh import: old rows (and any demo data) never mix with the new files,
+  // and the figures typed or imported before are replaced (kept aside in case nothing in the drop is usable)
+  window._preDrop.fields = SP_FIELDS.map(id => [id, $(id) ? ($(id).type === 'checkbox' ? $(id).checked : $(id).value) : null]);
+  SP_FIELDS.forEach(id => { const e = $(id); if (!e) return; if (e.type === 'checkbox') e.checked = false; else e.value = ''; });
   importedRows = [];
   impNotes = [];
   imp3B = null;
@@ -1950,6 +2015,7 @@ function processUploadedFiles(fileList) {
     cgAssets = cgAssets.filter(a => !a.fromImport);
     demoActive = false;
   }
+  if (window._autoInject) { importedRows.push(...window._autoInject.rows); impNotes.push(...window._autoInject.notes); window._autoInject = null; }
   const done = () => { processed++; if (processed === files.length) finalizeUpload(files.length); };
 
   files.forEach(file => {
@@ -2976,6 +3042,17 @@ function applyProviso(found) {
 // Sets the financial year and return month from a file's period, once per drop
 function setDropPeriod(d1, d2) {
   if (window._periodSetThisDrop) return;
+  // A whole financial year (1 April to 31 March): work out the year as one period
+  if (!isNaN(d1) && !isNaN(d2) && d1.getMonth() === 3 && d1.getDate() === 1 && d2.getMonth() === 2 && d2.getDate() === 31 && d2.getFullYear() === d1.getFullYear() + 1) {
+    const fy = d1.getFullYear();
+    if (!$('FY').querySelector(`option[value="${fy}"]`)) { const o = document.createElement('option'); o.value = fy; o.textContent = `FY ${fy}-${String(fy + 1).slice(2)}`; $('FY').prepend(o); }
+    if (String(fy) !== $('FY').value) { $('FY').value = String(fy); buildMonths(); }
+    const want = `Full Year FY ${fy}-${String(fy + 1).slice(2)}`;
+    buildPeriodDropdown(want);
+    window._periodSetThisDrop = true;
+    impNotes.push(`The files cover the whole of FY ${fy}-${String(fy + 1).slice(2)}: Single period works out the year as one period (Rule 42(2)), and Full year is filled month by month from the bill dates.`);
+    return;
+  }
   {
     if (!isNaN(d1) && !isNaN(d2) && d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear()) {
       const fy = d1.getMonth() >= 3 ? d1.getFullYear() : d1.getFullYear() - 1;
@@ -3578,6 +3655,40 @@ function clearClientWork() {
   if (!window._r37BatchReset) r37Bills = [];
 }
 
+
+// Section 16(4): credit on an invoice or debit note must be taken by 30 November after the end of its
+// financial year (or the GSTR-9 filing date, if earlier). Checked against the due date of the return being prepared.
+function returnDueDate() {
+  const p = $('meta_period').value || '';
+  const mIdx = FULL_MONTHS.findIndex(m => p.startsWith(m));
+  if (mIdx === -1) return null; // quarters and full years are reviews of returns already filed
+  const d = parsePeriodDate();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 20);
+}
+function sec164Deadline(iso) {
+  const d = new Date(iso); if (isNaN(d)) return null;
+  const fyEnd = d.getMonth() >= 3 ? d.getFullYear() + 1 : d.getFullYear();
+  return new Date(fyEnd, 10, 30);
+}
+function applySec164() {
+  const due = returnDueDate(); if (!due) return;
+  const fmtD = x => x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  let barred = 0, barredAmt = 0, last = 0, lastAmt = 0, lastDl = null;
+  const next = new Date(due.getFullYear(), due.getMonth() + 1, 20);
+  importedRows.forEach(r => {
+    if (!r.date || r.src === '2B' && r.in2B === false) return;
+    const dl = sec164Deadline(r.date); if (!dl) return;
+    const itc = Math.abs((r.igst || 0) + (r.cgst || 0) + (r.sgst || 0));
+    if (due > dl) {
+      if (!r.barred) { r.barred = true; r.in2B = false; }
+      r.why = `Time-barred under section 16(4): credit on a bill dated ${fmtD(new Date(r.date))} had to be taken by ${fmtD(dl)} (or by the GSTR-9 filing date for that year, if earlier). This return is due on ${fmtD(due)}, so it is kept out of T. If it is credit reversed for non-payment and now re-taken under Rule 37(4), the time limit does not apply: set it back to "In GSTR-2B".`;
+      r.check = true; barred++; barredAmt += itc;
+    } else if (next > dl && r.in2B !== false) { last++; lastAmt += itc; lastDl = dl; }
+  });
+  if (barred) impNotes.push(`<b>${barred} bill(s) with ITC of ₹ ${fmt(barredAmt)} are past the section 16(4) time limit</b> and are kept out of T (shown in Table 4(D)(2)). Check each one: credit re-taken under Rule 37(4) after paying the supplier is not time-barred.`);
+  if (last) impNotes.push(`<b>Last chance:</b> ${last} bill(s) with ITC of ₹ ${fmt(lastAmt)} must be claimed in this return; the section 16(4) limit for them is ${fmtD(lastDl)} (earlier if GSTR-9 for that year is filed first).`);
+}
+
 function finalizeUpload(count) {
   const banner = $('importStatusBanner');
   // Nothing usable in the drop: put the earlier import back and say so
@@ -3587,6 +3698,7 @@ function finalizeUpload(count) {
     importedRows = pd.rows || []; imp3B = pd.b || null; impTurnoverAnnual = !!pd.ann; impTurnoverMissing = !!pd.miss;
     window._t31Return = pd.tr || null; window._t31Nature = pd.tn || null; window._proviso = pd.pv || null; window._provisoErr = pd.pe || null; window._aiSug = pd.ai || {};
     ['imp_31a', 'imp_31b', 'imp_31c', 'imp_31e'].forEach((id, k) => { if ($(id)) $(id).value = (pd.vals || [])[k] || ''; });
+    (pd.fields || []).forEach(([id, v]) => { const e = $(id); if (!e || v === null) return; if (e.type === 'checkbox') e.checked = v; else e.value = v; });
     const had = importedRows.length || (pd.vals || []).some(v => v !== '');
     const names = impNotes.map(n => String(n).split(':')[0]).filter(Boolean).map(n => n.replace(/</g, '&lt;'));
     banner.className = 'alert bad';
@@ -3652,16 +3764,19 @@ function finalizeUpload(count) {
       impNotes.push('Only the GSTR-3B report gave ITC, so the whole of Table 4(A) is treated as common credit (the ceiling). Drop the purchase register too, to split it by ledger.');
     } else {
       const got = { i: 0, c: 0, s: 0 };
-      importedRows.forEach(r => { if (r.in2B !== false && r.bucket !== 'Tc') { got.i += r.igst || 0; got.c += r.cgst || 0; got.s += r.sgst || 0; } });
+      // Table 4(A) includes the capital goods credit of the month, so Tc bills count here too
+      importedRows.forEach(r => { if (r.in2B !== false) { got.i += r.igst || 0; got.c += r.cgst || 0; got.s += r.sgst || 0; } });
       const want = imp3B.a, dI = got.i - want.i, dC = got.c - want.c, dS = got.s - want.s;
       if (Math.abs(dI) + Math.abs(dC) + Math.abs(dS) > 1) {
-        impNotes.push(`ITC in the files you dropped (IGST ₹ ${fmt(got.i)}, CGST ₹ ${fmt(got.c)}, SGST ₹ ${fmt(got.s)}) differs from GSTR-3B Table 4(A) (IGST ₹ ${fmt(want.i)}, CGST ₹ ${fmt(want.c)}, SGST ₹ ${fmt(want.s)}) by ₹ ${fmt(dI + dC + dS)}. Usually some purchase vouchers are kept out of the return in Tally, or a bill is not in GSTR-2B. Find the difference before you rely on T.`);
+        impNotes.push(`ITC in the purchase data (IGST ₹ ${fmt(got.i)}, CGST ₹ ${fmt(got.c)}, SGST ₹ ${fmt(got.s)}) differs from GSTR-3B Table 4(A) (IGST ₹ ${fmt(want.i)}, CGST ₹ ${fmt(want.c)}, SGST ₹ ${fmt(want.s)}) by ₹ ${fmt(dI + dC + dS)}. Usually some purchase vouchers are kept out of the return in Tally, or a bill is not in GSTR-2B. Find the difference before you rely on T.`);
       } else impNotes.push('ITC in the files you dropped agrees with GSTR-3B Table 4(A).');
     }
     // What Tally will report as reversed in 4(B)(1) for this month
     const per = $('meta_period').value, mIdx = FULL_MONTHS.findIndex(m => per.startsWith(m));
     if (mIdx !== -1 && !impTurnoverAnnual && $('m' + mIdx + '_fl')) { const b1 = tot(imp3B.b1); $('m' + mIdx + '_fl').value = b1 ? b1.toFixed(2) : '0'; }
+    if (/^Full Year/.test(per) && $('ann_filed')) $('ann_filed').value = tot(imp3B.b1).toFixed(2);
   }
+  applySec164();
   const months = new Set();
   importedRows.forEach(r => { const i = rowMonthIdx(r); if (i !== null) months.add(i); });
   const undated = importedRows.filter(r => rowMonthIdx(r) === null).length;
@@ -3683,6 +3798,7 @@ function finalizeUpload(count) {
   renderImporterTable();
   pushImportToCalculator(false);
   renderTurnHelp();
+  if (window._afterUpload) { const f = window._afterUpload; window._afterUpload = null; setTimeout(f, 0); return; }
   notify('Import finished. Check the notes above the table.');
 }
 
@@ -3795,6 +3911,9 @@ function toggleTheme() {
 /* ---------- HEAD-WISE SYNC (TAB 1) ---------- */
 const HEADS = ['i', 'c', 's', 'z'];
 const PARAMS = ['T', 'T1', 'T2', 'T3', 'T4'];
+// Single period figures that an import replaces
+const SP_FIELDS = ['T', 'T1', 'T2', 'T3', 'T4', 'E', 'F', 'X', 'FD', 'Tc', 'YR', 'AR', 'DAYS', 'PD', 'AP', 'adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'adj_scrip', 'imp_fd', 'ann_filed', 'ann_demand',
+  'ann_upto', ...['T', 'T1', 'T2', 'T3', 'T4'].flatMap(p => ['i', 'c', 's', 'z'].map(h => p + '_' + h))];
 
 function toggleHeadMode() {
   const on = $('headMode').checked;
@@ -3953,6 +4072,71 @@ function computeSingleCG(a, refDate) {
   return { elapsedNote, remLife, tcAdded, upfrontRev, tm, active: true };
 }
 
+
+// Rule 43 catch-up: Te that should have been reversed in earlier months of each asset's 60 months, with interest
+function cgCatchupData() {
+  const cur = parsePeriodDate();
+  const months = []; // every earlier month in which some asset was in its common-use life
+  const fyOf = d => d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  cgAssets.forEach((a, ai) => {
+    const gst = parseFloat(a.gst) || 0; if (gst <= 0) return;
+    const inv = new Date(a.invDate || cur), start = a.mode === 'common' ? inv : new Date(a.switchDate || a.invDate || cur);
+    for (let k = 0; k < 60; k++) {
+      const m = new Date(inv.getFullYear(), inv.getMonth() + k, 1);
+      if (m >= new Date(cur.getFullYear(), cur.getMonth(), 1)) break;
+      if (m < new Date(start.getFullYear(), start.getMonth(), 1)) continue;
+      const r = computeSingleCG(a, m);
+      if (r.tm > 0) months.push({ ai, m, fy: fyOf(m), tm: r.tm });
+    }
+  });
+  return { months, fys: [...new Set(months.map(x => x.fy))].sort() };
+}
+function renderCGCatchup() {
+  const box = $('cgCatch'); if (!box) return;
+  const { months, fys } = cgCatchupData();
+  if (!months.length) { box.innerHTML = `<div class="card-title"><span>Earlier months not reversed (Rule 43 catch-up)</span></div><p class="hint">No asset in the register was in its 60 months before ${$('meta_period').value}. Add older capital goods with their invoice date to check whether Te was missed in earlier returns.</p>`; return; }
+  const keep = id => $(id) ? $(id).value : (window._cgKeep || {})[id];
+  const curFy = fyOf2(parsePeriodDate());
+  const defR = fy => fy === curFy && window._calc1 && window._calc1.F ? (window._calc1.ratio * 100).toFixed(2) : '';
+  const vals = {}; fys.forEach(fy => { const v = keep('cgfy_' + fy); vals[fy] = v === undefined || v === null ? defR(fy) : v; });
+  const done = keep('cg_done') || '', upto = keep('cg_upto') || new Date().toISOString().slice(0, 10), rate = parseFloat(keep('cg_rate') || '18') || 18;
+  window._cgKeep = Object.assign({}, window._cgKeep || {}, ...fys.map(fy => ({ ['cgfy_' + fy]: vals[fy] })), { cg_done: done, cg_upto: upto, cg_rate: String(rate) });
+  // Te month by month, oldest first; amounts already reversed are set against the oldest months
+  let left = parseFloat(done) || 0;
+  const payDay = new Date(upto);
+  const per = {}; let missingRatio = false;
+  months.sort((x, y) => x.m - y.m).forEach(x => {
+    const rv = vals[x.fy];
+    if (rv === '' || !isFinite(+rv)) { missingRatio = true; return; }
+    const te = x.tm * (+rv / 100);
+    const cover = Math.min(left, te); left -= cover;
+    const short = te - cover;
+    const due = new Date(x.m.getFullYear(), x.m.getMonth() + 1, 20);
+    const days = Math.max(0, Math.round((payDay - due) / 864e5));
+    const int = short * rate / 100 * days / 365;
+    const p = per[x.fy] || (per[x.fy] = { n: 0, te: 0, short: 0, int: 0, first: x.m, last: x.m });
+    p.n++; p.te += te; p.short += short; p.int += int; p.last = x.m;
+  });
+  const tot = Object.values(per).reduce((a, p) => ({ te: a.te + p.te, short: a.short + p.short, int: a.int + p.int }), { te: 0, short: 0, int: 0 });
+  const mon = d => d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  box.innerHTML = `<div class="card-title"><span>Earlier months not reversed (Rule 43 catch-up)</span></div>
+    <p class="hint" style="margin-bottom:10px">For every asset in the register, Te should have been reversed in each month of its 60 months: Tm (Tc ÷ 60) × E ÷ F of that month. If the full credit was taken and Te was not reversed, each missed month is a short reversal, with interest from that month's GSTR-3B due date. Type E ÷ F for each financial year (from that year's returns), and the total Te already reversed in earlier returns, if any.</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:10px">
+      ${fys.map(fy => `<div><label>E ÷ F, FY ${fy}-${String(fy + 1).slice(2)} (%)</label><input type="number" step="0.01" id="cgfy_${fy}" value="${vals[fy]}" placeholder="type %" oninput="window._cgKeep['cgfy_${fy}']=this.value;renderCGCatchupSoon()"></div>`).join('')}
+      <div><label>Te already reversed earlier (₹)</label><input type="number" id="cg_done" value="${done}" oninput="window._cgKeep.cg_done=this.value;renderCGCatchupSoon()"></div>
+      <div><label>Interest up to</label><input type="date" id="cg_upto" value="${upto}" onchange="window._cgKeep.cg_upto=this.value;renderCGCatchup()"></div>
+      <div><label>Interest rate (% a year)</label><input type="number" id="cg_rate" value="${rate}" oninput="window._cgKeep.cg_rate=this.value;renderCGCatchupSoon()"></div>
+    </div>
+    ${missingRatio ? '<div class="alert warn" style="margin-bottom:10px">Type E ÷ F for every financial year above: months of a year without it are not counted yet.</div>' : ''}
+    <div class="scroll"><table><thead><tr><th>Financial year</th><th>Months</th><th style="text-align:right">Te due</th><th style="text-align:right">Not reversed</th><th style="text-align:right">Interest</th></tr></thead><tbody>
+      ${Object.keys(per).sort().map(fy => { const p = per[fy]; return `<tr><td>FY ${fy}-${String(+fy + 1).slice(2)}</td><td>${p.n} (${mon(p.first)} to ${mon(p.last)})</td><td style="text-align:right">${fmt(p.te)}</td><td style="text-align:right"><b>${fmt(p.short)}</b></td><td style="text-align:right">${fmt(p.int)}</td></tr>`; }).join('')}
+      <tr class="tot"><td colspan="2">Total</td><td style="text-align:right">${fmt(tot.te)}</td><td style="text-align:right;color:var(--bad)">₹ ${fmt(tot.short)}</td><td style="text-align:right;color:var(--bad)">₹ ${fmt(tot.int)}</td></tr>
+    </tbody></table></div>
+    <p class="hint" style="margin-top:10px">${tot.short > 0.5 ? `<b>To set right:</b> reverse ₹ ${fmt(tot.short)} with interest of about ₹ ${fmt(tot.int)} (section 50, at ${rate}% from each month's due date to ${new Date(upto).toLocaleDateString('en-GB')}), either in the current GSTR-3B (Table 4(B)(1), interest in Table 5.1) or through DRC-03, and show it in GSTR-9 Table 7D for the years concerned where those returns are still open. Months beyond the time limit for a notice (sections 73, 74 and 74A) still carry the reversal in law; whether and how to pay them is a professional judgement for each client.` : 'Nothing is short: the Te already reversed covers the months above.'} Assets past their 60 months need no reversal from then on.</p>`;
+}
+let _cgT = null; function renderCGCatchupSoon() { clearTimeout(_cgT); _cgT = setTimeout(() => { const a = document.activeElement && document.activeElement.id; renderCGCatchup(); if (a && $(a)) { $(a).focus(); const v = $(a).value; if ($(a).setSelectionRange && $(a).type !== 'number') $(a).setSelectionRange(v.length, v.length); } }, 500); }
+const fyOf2 = d => d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+
 function renderCG() {
   const tbody = $('cgBody');
   if (!cgAssets.length) {
@@ -4015,6 +4199,7 @@ function calcCGMetrics() {
       <div class="tile"><div class="l">One-time reversal on change of use (Tie)</div><div class="v">₹ ${fmt(sumUp)}</div><div class="s">5% per quarter (if transitioned this month)</div></div>
     </div>
   `;
+  renderCGCatchup();
   return { sumTc, sumUp, sumTm, Te_reg };
 }
 
@@ -4094,7 +4279,7 @@ function table4Html(x) {
   const Cn = { known: AT.known && B1.known && !B2.tot, tot: AT.tot - B1.tot - B2.tot };
   ['i', 'c', 's', 'z'].forEach(k => Cn[k] = (AT[k] || 0) - (B1[k] || 0));
   const D2 = z();
-  importedRows.filter(r => r.in2B === false && r.src === '2B' && /16\(4\)|place of supply|\bpos\b/i.test(r.why || '')).forEach(r => { D2.i += Math.abs(r.igst || 0); D2.c += Math.abs(r.cgst || 0); D2.s += Math.abs(r.sgst || 0); });
+  importedRows.filter(r => r.in2B === false && (r.barred || r.src === '2B' && /16\(4\)|place of supply|\bpos\b/i.test(r.why || ''))).forEach(r => { D2.i += Math.abs(r.igst || 0); D2.c += Math.abs(r.cgst || 0); D2.s += Math.abs(r.sgst || 0); });
   const D1 = { known: false, tot: r37.reclaimTotal || 0 };
   const cell = (o, k) => o.known ? fmt(o[k] || 0) : '<span style="color:var(--mut)">—</span>';
   const row = (label, o, cls, ind) => `<tr${cls ? ` class="${cls}"` : ''}><td${ind ? ' style="padding-left:22px"' : ''}>${label}</td><td>${cell(o, 'i')}</td><td>${cell(o, 'c')}</td><td>${cell(o, 's')}</td><td>${cell(o, 'z')}</td><td><b>${fmt(tot(o))}</b></td></tr>`;
@@ -4233,6 +4418,35 @@ function calc1() {
     `;
   }
 
+  // Whole year (Rule 42(2)): the year's reversal against what the returns reversed, and the reverse-charge part
+  let annHtml = '';
+  if (/^Full Year/.test($('meta_period').value || '') && !isBank && T > 0) {
+    if ($('annBox')) $('annBox').open = true;
+    const filed = num('ann_filed'), demand = num('ann_demand');
+    const fyS = parseInt($('FY').value) || 2026;
+    const from = new Date(fyS + 1, 3, 1), upto = hasVal('ann_upto') ? new Date($('ann_upto').value) : new Date();
+    const short = rev4B1 - filed, days = Math.max(0, Math.round((upto - from) / 864e5) + 1);
+    const intr = short > 0 ? short * (num('RATE') || 18) / 100 * days / 365 : 0;
+    const fShare = ratio + (d2On ? 0.05 : 0);
+    let rcmAll = 0, rcmRev = 0;
+    importedRows.filter(r => r.rcm && r.in2B !== false && r.bucket !== 'Tc').forEach(r => {
+      const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0); rcmAll += t;
+      rcmRev += ['T1', 'T2', 'T3'].includes(r.bucket) ? t : r.bucket === 'C2' ? t * fShare : 0;
+    });
+    annHtml = `
+      <div class="card-title" style="margin-top:18px"><span>Whole year, FY ${fyS}-${String(fyS + 1).slice(2)}: Rule 42(2)</span></div>
+      <table>
+        <tr><td>Reversal the year needed, 4(B)(1): T1 + T2 + T3 + D1 + D2 + Te on the year's totals</td><td>₹ ${fmt(rev4B1)}</td></tr>
+        <tr><td>Reversed in GSTR-3B 4(B)(1) during the year</td><td>₹ ${fmt(filed)}${filed ? '' : ' <span class="hint">(type it under "Whole year", or import the annual GSTR-3B)</span>'}</td></tr>
+        <tr class="tot"><td>${short >= 0 ? 'Short reversed' : 'Reversed in excess (can be re-claimed under Rule 42(2)(b))'}</td><td style="color:${short > 0 ? 'var(--bad)' : 'var(--ok)'}">₹ ${fmt(Math.abs(short))}</td></tr>
+        ${short > 0 ? `<tr><td>Interest under section 50 from ${from.toLocaleDateString('en-GB')} (1 April after the year, Rule 42(2)(a)) to ${upto.toLocaleDateString('en-GB')}: ${days} days at ${num('RATE') || 18}%</td><td>₹ ${fmt(intr)}</td></tr>` : ''}
+        ${rcmAll ? `<tr><td>Reverse-charge credit in the year (Table 4(A)(3))</td><td>₹ ${fmt(rcmAll)}</td></tr>
+        <tr><td>Of it, reversible under Rule 42: in full only where blocked, non-business or used only for exempt supplies; common credit in the ratio E ÷ F (${pct(ratio)})</td><td>₹ ${fmt(rcmRev)}</td></tr>` : ''}
+        ${demand ? `<tr class="tot"><td>Demanded in the notice</td><td>₹ ${fmt(demand)}</td></tr><tr><td>${demand > Math.max(0, short) ? 'Excess of the demand over this working' : 'Demand below this working'}</td><td>₹ ${fmt(Math.abs(demand - Math.max(0, short)))}</td></tr>` : ''}
+      </table>
+      <p class="hint" style="margin-top:6px">Reverse-charge credit is credit like any other: Rule 42 reverses only the part attributable to exempt supplies, and in full only what is blocked, non-business or used only for exempt supplies. The tax payable under reverse charge itself is not reduced.${rcmAll && demand && Math.abs(demand - rcmAll) < 1 ? ' <b>The demand equals the whole reverse-charge credit of the year</b>: the working above shows the part Rule 42 actually reverses.' : ''}</p>`;
+  }
+
   // Visual Proportions Bar
   const pElig = T > 0 ? Math.max(0, Math.min(100, (eligInputs / T) * 100)) : 0;
   const pR42 = T > 0 ? Math.max(0, Math.min(100, ((D1 + D2) / T) * 100)) : 0;
@@ -4308,6 +4522,7 @@ function calc1() {
       </div>
     </div>
     ${tuHtml}
+    ${annHtml}
   `;
 
   last1Summary = `GST Rule 42 & 43 Working (${$('meta_name').value || 'Taxpayer'} - ${$('meta_period').value})\n` +
@@ -4329,35 +4544,72 @@ function calc1() {
 // A fresh, consistent set of made-up figures each time: T1 + T2 + T3 + T4 stays within T, E within F
 const rnd = (a, b) => a + Math.random() * (b - a);
 const round100 = v => Math.round(v / 100) * 100;
+// Example on Single period: made-up purchases and sales put through the same path as an import,
+// so the Import tab and Single period always show the same client
 function loadEx1() {
   const T = round100(rnd(5e5, 1.2e7));
   const T1 = Math.random() < 0.4 ? round100(T * rnd(0.005, 0.03)) : 0;
   const T2 = round100(T * rnd(0, 0.1)), T3 = round100(T * rnd(0.01, 0.06));
   const T4 = round100(T * rnd(0.35, 0.7));
+  const C2 = Math.max(0, T - T1 - T2 - T3 - T4);
   const F = round100(rnd(1e7, 6e7)), E = round100(F * rnd(0.05, 0.45));
   const X = Math.random() < 0.5 ? round100((F - E) * rnd(0.05, 0.3)) : 0;
-  const v = { T, T1, T2, T3, T4, E, F, X, FD: Math.random() < 0.5 ? round100(rnd(5e4, 1.5e6)) : '', Tc: Math.random() < 0.6 ? round100(rnd(1e5, 1.2e6)) : '', YR: '', AR: '', DAYS: '' };
-  for (const k in v) if ($(k)) $(k).value = v[k];
-  // A tax-wise split for each line: some IGST (purchases from other States), the rest CGST and SGST equally
+  const Tc = Math.random() < 0.6 ? round100(rnd(1e5, 1.2e6)) : 0;
+  const FD = Math.random() < 0.5 ? round100(rnd(5e4, 1.5e6)) : 0;
   const igstShare = Math.random() < 0.3 ? 0 : rnd(0.05, 0.4);
-  PARAMS.forEach(p => {
-    const t = v[p] || 0, i = Math.round(t * igstShare * 100) / 100, cs = Math.round((t - i) * 50) / 100;
-    $(p + '_i').value = i.toFixed(2); $(p + '_c').value = cs.toFixed(2); $(p + '_s').value = (t - i - cs).toFixed(2); $(p + '_z').value = '0.00';
-  });
+  const NAMES = {
+    T1: [['Director Guest House Consumables', 'Comfort Living Interiors']],
+    T2: [['Packing Material for Exempt Products', 'GreenAgro Packaging Co']],
+    T3: [['Staff Group Health Insurance', 'Star Care Health Insurers'], ['Motor Car Repair & Maintenance', 'Royal Motors Service Center']],
+    T4: [['Raw Material - Taxable Mfg Inputs', 'Bharat Steel Alloys Ltd'], ['Export Container Freight & Documentation', 'Global Logistics & Port Services']],
+    C2: [['Head Office Rent & Maintenance (Common)', 'Prestige Corporate Towers LLP'], ['Statutory Audit & GST Consultancy Fees', 'Mehta & Associates'], ['ERP Software Subscription & IT Support', 'CloudNet Enterprise Solutions']],
+    Tc: [['Common CNC Machinery (Capital Good)', 'Siemens Industrial Automation']]
+  };
+  const pd = parsePeriodDate(), iso = n => `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}-${String(n).padStart(2, '0')}`;
+  const rows = []; let day = 3;
+  const add = (bucket, total) => {
+    if (!total) return;
+    const list = NAMES[bucket], w = list.map(() => rnd(0.5, 1.5)), ws = w.reduce((x, y) => x + y, 0);
+    let left = total;
+    list.forEach(([ledger, party], k) => {
+      const amt = k === list.length - 1 ? left : round100(total * w[k] / ws); left -= amt;
+      const i = Math.round(amt * igstShare * 100) / 100, c = Math.round((amt - i) * 50) / 100, s2 = Math.round((amt - i - c) * 100) / 100;
+      rows.push({ date: iso(Math.min(28, day += 2)), party, ledger, taxable: Math.round(amt / 0.18), igst: i, cgst: c, sgst: s2, in2B: true, bucket, how: 'file', rcm: false });
+    });
+  };
+  [['T1', T1], ['T2', T2], ['T3', T3], ['T4', T4], ['C2', C2], ['Tc', Tc]].forEach(([b2, v]) => add(b2, v));
+  // Same reset as a fresh import, then the made-up figures
+  importedRows = rows; impNotes = []; imp3B = null; impTurnoverAnnual = false; impTurnoverMissing = false;
+  window._proviso = null; window._provisoErr = null; window._t31Return = null; window._t31Nature = null;
+  cgAssets = cgAssets.filter(x => !x.fromImport);
+  demoActive = true;
+  $('imp_31a').value = F - E - X; $('imp_31b').value = X || ''; $('imp_31c').value = E; $('imp_31e').value = '';
+  $('imp_fd').value = FD || '';
+  ['Tc', 'YR', 'AR', 'DAYS', 'adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'adj_scrip'].forEach(k => { if ($(k)) $(k).value = ''; });
   window._headAssumed = false;
   $('D2on').checked = false;
-  ['adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'adj_scrip'].forEach(k => $(k).value = '');
-  if ($('headMode').checked) syncFromHeads(); else syncFromCons();
-  calc1();
+  const banner = $('importStatusBanner');
+  if (banner) { banner.className = 'alert ok'; banner.innerHTML = '<b>Example loaded from Single period.</b> Made-up purchases and sales; the buckets are set by the example. Click Example again for another set, or drop real files to replace it.'; }
+  judgeBuckets();
+  renderImporterTable();
+  pushImportToCalculator(false);
+  calcAll();
   saveState();
-  notify('Example figures filled in. They are made up; click Example again for another set.');
+  notify('Example figures filled in on both tabs. They are made up; click Example again for another set.');
 }
 
+// Clear on Single period empties the Import tab too, so the two never disagree
 function clr1() {
-  ['T', 'T1', 'T2', 'T3', 'T4', 'E', 'F', 'X', 'FD', 'Tc', 'YR', 'AR', 'DAYS', 'PD', 'AP', 'adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'adj_scrip'].forEach(k => { if ($(k)) $(k).value = ''; });
+  ['T', 'T1', 'T2', 'T3', 'T4', 'E', 'F', 'X', 'FD', 'Tc', 'YR', 'AR', 'DAYS', 'PD', 'AP', 'adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'adj_scrip', 'imp_31a', 'imp_31b', 'imp_31c', 'imp_31e', 'imp_fd'].forEach(k => { if ($(k)) $(k).value = ''; });
   PARAMS.forEach(p => HEADS.forEach(h => { if ($(p + '_' + h)) $(p + '_' + h).value = ''; }));
   $('D2on').checked = false;
-  calc1();
+  importedRows = []; impNotes = []; imp3B = null; impTurnoverMissing = false; window._proviso = null; window._provisoErr = null;
+  cgAssets = cgAssets.filter(x => !x.fromImport);
+  demoActive = false;
+  if ($('importStatusBanner')) $('importStatusBanner').className = 'alert ok hide';
+  renderImporterTable();
+  if (typeof renderCG === 'function') renderCG();
+  calcAll();
   saveState();
 }
 
@@ -4682,7 +4934,7 @@ function renderTallyVoucher(d) {
   const blocked_exp = d.T1 + d.T2 + d.T3;
 
   // Calculate temporary reversals (2B Rollover from Tab 0 + Rule 37 >180 days from Tab 4B)
-  const rollover2B = importedRows.filter(r => r.in2B === false).reduce((s, r) => s + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
+  const rollover2B = importedRows.filter(r => r.in2B === false && !r.barred).reduce((s, r) => s + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
   const r37Totals = getR37Totals();
 
   const tlMode = tlGet().mode || 'rate';
@@ -5327,6 +5579,296 @@ function calcAll() {
   calcRule37();
 }
 
+
+/* ---------- AUTO MODE: read TallyPrime through ITC Tally link (read-only) ---------- */
+const LINK = 'http://127.0.0.1:9800';
+const AUTO = { ports: [], companies: [], results: [], log: [], stop: false };
+function autoLog(step, info) { AUTO.log.push({ t: new Date().toISOString(), step, ...info }); if (AUTO.log.length > 400) AUTO.log.shift(); }
+function autoStatus(t, cls) { const e = $('auto_status'); if (e) { e.innerHTML = t; e.style.color = cls === 'bad' ? 'var(--bad)' : cls === 'ok' ? 'var(--ok)' : 'var(--mut)'; } }
+async function linkFetch(path, body, ms) {
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), ms || 120000);
+  try {
+    const r = await fetch(LINK + path, body ? { method: 'POST', body, signal: ctl.signal } : { signal: ctl.signal });
+    const buf = new Uint8Array(await r.arrayBuffer());
+    return { ok: r.ok, status: r.status, buf };
+  } finally { clearTimeout(tm); }
+}
+// Tally answers in UTF-8 or UTF-16 and may include control characters that XML does not allow
+function tallyText(buf) {
+  let t;
+  if (buf[0] === 0xFF && buf[1] === 0xFE) t = new TextDecoder('utf-16le').decode(buf.subarray(2));
+  else if (buf[0] === 0xFE && buf[1] === 0xFF) t = new TextDecoder('utf-16be').decode(buf.subarray(2));
+  else if (buf.length > 3 && buf[1] === 0 && buf[3] === 0) t = new TextDecoder('utf-16le').decode(buf);
+  else t = new TextDecoder('utf-8').decode(buf);
+  return t.replace(/&#(x0*[0-8bcef]|x0*1[0-9a-f]|0*[0-8]|0*1[1-2]|0*1[4-9]|0*2[0-9]|0*3[01]);/gi, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+}
+async function tallyAsk(port, xml, label) {
+  const t0 = Date.now();
+  const r = await linkFetch('/tally?port=' + port, xml, 300000);
+  const text = r.buf.length ? (r.ok ? tallyText(r.buf) : new TextDecoder().decode(r.buf)) : '';
+  autoLog(label, { port, ok: r.ok, status: r.status, ms: Date.now() - t0, bytes: r.buf.length, request: xml.slice(0, 1500), reply: text.slice(0, 20000) });
+  if (!r.ok) throw new Error((() => { try { return JSON.parse(text).error; } catch (e) { return 'HTTP ' + r.status; } })());
+  const doc = new DOMParser().parseFromString(text, 'text/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('Tally replied with something that is not XML.');
+  const err = doc.getElementsByTagName('LINEERROR')[0];
+  if (err) throw new Error('Tally: ' + err.textContent.trim());
+  return doc;
+}
+const xmlEsc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function tReqCollection(id, company, tdl, sv) {
+  return `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>${id}</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>${company ? `<SVCURRENTCOMPANY>${xmlEsc(company)}</SVCURRENTCOMPANY>` : ''}${sv || ''}</STATICVARIABLES><TDL><TDLMESSAGE>${tdl}</TDLMESSAGE></TDL></DESC></BODY></ENVELOPE>`;
+}
+function tReqReport(id, company, from, to) {
+  return `<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Data</TYPE><ID>${xmlEsc(id)}</ID></HEADER><BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT><SVCURRENTCOMPANY>${xmlEsc(company)}</SVCURRENTCOMPANY><SVFROMDATE>${from}</SVFROMDATE><SVTODATE>${to}</SVTODATE></STATICVARIABLES></DESC></BODY></ENVELOPE>`;
+}
+const kid = (el, tag) => { if (!el) return ''; for (const c of el.children) if (c.tagName.toUpperCase() === tag) return c.textContent.trim(); return ''; };
+const kids = (el, tag) => Array.from(el ? el.children : []).filter(c => c.tagName.toUpperCase() === tag);
+function autoMonth() {
+  const d = parsePeriodDate(), y = d.getFullYear(), m = d.getMonth(), last = new Date(y, m + 1, 0).getDate();
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return { from: `${y}${String(m + 1).padStart(2, '0')}01`, to: `${y}${String(m + 1).padStart(2, '0')}${last}`, tdlFrom: `1-${MON[m]}-${y}`, tdlTo: `${last}-${MON[m]}-${y}`, label: $('meta_period').value, y, m, last };
+}
+
+async function autoConnect() {
+  $('auto_month_lbl').value = $('meta_period').value;
+  autoStatus('Looking for ITC Tally link…');
+  try {
+    const r = await linkFetch('/ping', null, 4000);
+    if (!r.ok) throw new Error();
+  } catch (e) {
+    autoStatus('<b>ITC Tally link is not running.</b> Double-click <code>ITC Tally link.bat</code> (Download ITC Tally link, first time) and keep its window open, then click Find Tally again.', 'bad');
+    return;
+  }
+  const pr = String($('auto_ports').value || '9000-9005').match(/(\d+)\s*-\s*(\d+)/) || [0, '9000', '9005'];
+  autoStatus('Link running. Looking for Tally on ports ' + pr[1] + ' to ' + pr[2] + '…');
+  const sc = await linkFetch(`/scan?from=${pr[1]}&to=${pr[2]}`, null, 60000);
+  let ports = [];
+  try { const j = JSON.parse(new TextDecoder().decode(sc.buf)); ports = [].concat(j.ports || []); } catch (e) {}
+  autoLog('scan', { ports });
+  ports = ports.filter(p => /tally/i.test(p.reply || '') || !p.reply);
+  if (!ports.length) { autoStatus('<b>No Tally found.</b> In each Tally: F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration, set "TallyPrime is acting as" to Both and note the port. Then check the ports box above.', 'bad'); return; }
+  AUTO.ports = ports.map(p => p.port); AUTO.companies = [];
+  for (const port of AUTO.ports) {
+    try {
+      const doc = await tallyAsk(port, tReqCollection('ITCDeskCompanies', '', '<COLLECTION NAME="ITCDeskCompanies" ISMODIFY="No"><TYPE>Company</TYPE><FETCH>Name, StartingFrom, BooksFrom, GSTRegistrationNumber, StateName</FETCH></COLLECTION>'), 'companies');
+      for (const c of Array.from(doc.getElementsByTagName('COMPANY'))) {
+        const name = c.getAttribute('NAME') || kid(c, 'NAME'); if (!name) continue;
+        AUTO.companies.push({ port, name, from: kid(c, 'STARTINGFROM') || kid(c, 'BOOKSFROM'), gstin: (kid(c, 'GSTREGISTRATIONNUMBER') || '').toUpperCase(), sel: true });
+      }
+    } catch (e) { autoLog('companies-error', { port, error: e.message }); }
+  }
+  // GST registrations (TallyPrime 3.0 and later keep them apart from the company)
+  for (const c of AUTO.companies) {
+    if (c.gstin) continue;
+    try {
+      const doc = await tallyAsk(c.port, tReqCollection('ITCDeskRegs', c.name, '<COLLECTION NAME="ITCDeskRegs" ISMODIFY="No"><TYPE>TaxUnit</TYPE><FETCH>Name, GSTRegNumber, GSTRegistrationNumber, StateName</FETCH></COLLECTION>'), 'registrations');
+      const regs = Array.from(doc.getElementsByTagName('TAXUNIT')).map(u => ({ name: u.getAttribute('NAME') || kid(u, 'NAME'), gstin: (kid(u, 'GSTREGNUMBER') || kid(u, 'GSTREGISTRATIONNUMBER')).toUpperCase() })).filter(x => /^\d{2}[0-9A-Z]{13}$/.test(x.gstin));
+      if (regs.length) { c.gstin = regs[0].gstin; c.reg = regs[0].name; if (regs.length > 1) c.multi = regs.length; }
+    } catch (e) { autoLog('registrations-error', { company: c.name, error: e.message }); }
+  }
+  autoStatus(`Connected. ${AUTO.ports.length} Tally window${AUTO.ports.length > 1 ? 's' : ''} (port ${AUTO.ports.join(', ')}), ${AUTO.companies.length} loaded compan${AUTO.companies.length === 1 ? 'y' : 'ies'}.`, 'ok');
+  autoRenderCompanies();
+}
+function autoRenderCompanies() {
+  const box = $('auto_companies');
+  if (!AUTO.companies.length) { box.innerHTML = '<div class="alert warn">Tally answered, but no company is loaded. Load companies with F3 and click Find Tally again.</div>'; $('auto_go').disabled = true; return; }
+  box.innerHTML = `<div class="scroll"><table><thead><tr><th style="width:36px"><input type="checkbox" ${AUTO.companies.every(c => c.sel) ? 'checked' : ''} onchange="AUTO.companies.forEach(c=>c.sel=this.checked);autoRenderCompanies()"></th><th>Company</th><th>GSTIN</th><th>Port</th><th>Note</th></tr></thead><tbody>
+    ${AUTO.companies.map((c, i) => `<tr><td><input type="checkbox" ${c.sel ? 'checked' : ''} onchange="AUTO.companies[${i}].sel=this.checked;$('auto_go').disabled=!AUTO.companies.some(x=>x.sel)"></td><td><b>${escA(c.name)}</b></td><td>${c.gstin || '<span style="color:var(--mut)">not read</span>'}</td><td>${c.port}</td><td class="hint">${c.multi ? `${c.multi} GST registrations: only the first is worked out` : ''}</td></tr>`).join('')}
+  </tbody></table></div>`;
+  $('auto_go').disabled = !AUTO.companies.some(c => c.sel);
+}
+
+// Ledger masters: which ledgers are GST, which are parties, purchases or expenses
+async function autoLedgers(c) {
+  const doc = await tallyAsk(c.port, tReqCollection('ITCDeskLedgers', c.name, '<COLLECTION NAME="ITCDeskLedgers" ISMODIFY="No"><TYPE>Ledger</TYPE><FETCH>Name, Parent, TaxType, GSTDutyHead</FETCH><COMPUTE>PrimaryGroup:$_PrimaryGroup</COMPUTE></COLLECTION>'), 'ledgers');
+  const L = {};
+  for (const l of Array.from(doc.getElementsByTagName('LEDGER'))) {
+    const name = l.getAttribute('NAME') || kid(l, 'NAME'); if (!name) continue;
+    const prim = (kid(l, 'PRIMARYGROUP') || kid(l, 'PARENT')).toLowerCase(), duty = kid(l, 'GSTDUTYHEAD').toLowerCase(), tt = kid(l, 'TAXTYPE').toLowerCase();
+    let head = null;
+    if (/duties/.test(prim) || tt === 'gst' || duty) {
+      if (/integrated|igst/.test(duty) || (!duty && /\bigst\b|integrated/i.test(name))) head = 'i';
+      else if (/central|cgst/.test(duty) || (!duty && /\bcgst\b|central tax/i.test(name))) head = 'c';
+      else if (/state|ut tax|sgst|utgst/.test(duty) || (!duty && /\b(sgst|utgst)\b|state tax/i.test(name))) head = 's';
+      else if (/cess/.test(duty) || (!duty && /\bcess\b/i.test(name))) head = 'z';
+      if (head && tt && tt !== 'gst' && !duty) head = null;
+    }
+    L[name.toLowerCase()] = { name, prim, head, party: /sundry|bank|cash|loans|branch/.test(prim), asset: /fixed assets/.test(prim) };
+  }
+  return L;
+}
+async function autoVoucherTypes(c) {
+  const doc = await tallyAsk(c.port, tReqCollection('ITCDeskVchTypes', c.name, '<COLLECTION NAME="ITCDeskVchTypes" ISMODIFY="No"><TYPE>VoucherType</TYPE><FETCH>Name, Parent</FETCH></COLLECTION>'), 'voucher types');
+  const base = {};
+  const all = Array.from(doc.getElementsByTagName('VOUCHERTYPE')).map(v => ({ n: v.getAttribute('NAME') || kid(v, 'NAME'), p: kid(v, 'PARENT') }));
+  const by = {}; all.forEach(v => by[v.n] = v.p);
+  all.forEach(v => { let n = v.n, k = 0; while (by[n] && by[n] !== n && k++ < 10) n = by[n]; base[v.n.toLowerCase()] = n; });
+  return base;
+}
+const VCH_FETCH = 'Date, VoucherTypeName, VoucherNumber, PartyLedgerName, IsReverseChargeApplicable, TaxAdjustment, IsCancelled, IsOptional, AllLedgerEntries.LedgerName, AllLedgerEntries.Amount, LedgerEntries.LedgerName, LedgerEntries.Amount, AllInventoryEntries.AccountingAllocations.LedgerName, AllInventoryEntries.AccountingAllocations.Amount';
+async function autoVouchers(c, M) {
+  const tdl = `<COLLECTION NAME="ITCDeskVch" ISMODIFY="No"><TYPE>Voucher</TYPE><FETCH>${VCH_FETCH}</FETCH><FILTER>ITCDeskInMonth</FILTER></COLLECTION><SYSTEM TYPE="Formulae" NAME="ITCDeskInMonth">$Date &gt;= $$Date:"${M.tdlFrom}" AND $Date &lt;= $$Date:"${M.tdlTo}"</SYSTEM>`;
+  let doc;
+  try { doc = await tallyAsk(c.port, tReqCollection('ITCDeskVch', c.name, tdl), 'vouchers'); }
+  catch (e) { doc = null; autoLog('vouchers-collection-failed', { error: e.message }); }
+  let V = doc ? Array.from(doc.getElementsByTagName('VOUCHER')) : [];
+  if (!V.length) { // fall back on the Day Book report
+    const d2 = await tallyAsk(c.port, tReqReport('Day Book', c.name, M.from, M.to), 'day book');
+    V = Array.from(d2.getElementsByTagName('VOUCHER'));
+  }
+  return V.map(v => {
+    const ent = tag => Array.from(v.getElementsByTagName(tag)).map(e => ({ led: kid(e, 'LEDGERNAME'), amt: parseFloat(kid(e, 'AMOUNT')) || 0 })).filter(x => x.led);
+    let lines = ent('ALLLEDGERENTRIES.LIST'); if (!lines.length) lines = ent('LEDGERENTRIES.LIST');
+    const have = new Set(lines.map(l => l.led.toLowerCase()));
+    ent('ACCOUNTINGALLOCATIONS.LIST').forEach(l => { if (!have.has(l.led.toLowerCase())) lines.push(l); });
+    const d = kid(v, 'DATE');
+    return { date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), party: kid(v, 'PARTYLEDGERNAME'),
+      rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines };
+  }).filter(v => v.date >= `${M.from.slice(0, 4)}-${M.from.slice(4, 6)}-01` && v.date <= `${M.to.slice(0, 4)}-${M.to.slice(4, 6)}-${M.to.slice(6)}`);
+}
+// GSTR-3B as Tally computes it: tried under the names TallyPrime uses for the report
+async function autoGstr3b(c, M) {
+  for (const id of ['GSTR-3B', 'GSTR3B', 'GSTR 3B']) {
+    try {
+      const doc = await tallyAsk(c.port, tReqReport(id, c.name, M.from, M.to), 'gstr-3b ' + id);
+      const parts = Array.from(doc.getElementsByTagName('GSTRRETVIEWPARTICULARS'));
+      if (!parts.length) continue;
+      return parts.map(p => {
+        const row = [p.textContent.trim()]; let n = p.nextElementSibling;
+        while (n && n.tagName.toUpperCase() !== 'GSTRRETVIEWPARTICULARS') { row.push(n.textContent.trim()); n = n.nextElementSibling; }
+        return row;
+      });
+    } catch (e) { autoLog('gstr-3b-failed', { id, error: e.message }); }
+  }
+  return null;
+}
+// Purchase lines from the vouchers, as the purchase register would show them
+function autoPurchaseRows(V, L, base) {
+  const rows = [], notes = [], info = n => L[String(n).toLowerCase()] || { name: n, prim: '', head: null, party: false };
+  let skippedJ = 0, ourRev = 0;
+  V.forEach(v => {
+    if (v.cancelled) return;
+    const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
+    const isPur = /purchase/.test(b), isDN = /debit note/.test(b), isJ = /journal/.test(b), isPay = /payment/.test(b);
+    if (!(isPur || isDN || isJ || isPay)) return;
+    if (/reversal of input tax/i.test(v.adj)) { ourRev++; return; }
+    const sign = isDN ? -1 : 1;
+    // Input tax: debits to GST ledgers (credits on a debit note)
+    const tax = v.lines.filter(l => info(l.led).head && (isDN ? l.amt > 0 : l.amt < 0));
+    if (!tax.length) return;
+    if (isJ && !/input tax credit/i.test(v.adj)) { skippedJ++; return; }
+    const heads = { i: 0, c: 0, s: 0, z: 0 }; tax.forEach(l => heads[info(l.led).head] += Math.abs(l.amt));
+    let exp = v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && (isDN ? l.amt > 0 : l.amt < 0); });
+    if (!exp.length) exp = [{ led: v.rcm || isJ ? 'Reverse charge: ITC claimed by journal' : 'Purchase (ledger not read)', amt: 0 }];
+    const tot = exp.reduce((a, l) => a + Math.abs(l.amt), 0);
+    exp.forEach(l => {
+      const w = tot ? Math.abs(l.amt) / tot : 1 / exp.length;
+      const f = info(l.led);
+      rows.push({ date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * +(heads.i * w).toFixed(2), cgst: sign * +(heads.c * w).toFixed(2), sgst: sign * +(heads.s * w).toFixed(2), in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+    });
+  });
+  rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
+  if (skippedJ) notes.push(`${skippedJ} journal(s) touching input tax ledgers were left out because they carry no GST Stat Adjustment for input tax credit. Check them in Tally.`);
+  if (ourRev) notes.push(`${ourRev} journal(s) already reversing input tax credit this month were left out of T (they are the reversal itself).`);
+  return { rows, notes };
+}
+// Turnover from the sales vouchers, used only when Tally's GSTR-3B report cannot be read
+function autoSalesSummary(V, L, base) {
+  const info = n => L[String(n).toLowerCase()] || { head: null, party: false };
+  let a = 0, c = 0;
+  V.forEach(v => {
+    if (v.cancelled) return;
+    const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
+    const isS = /sales/.test(b), isCN = /credit note/.test(b);
+    if (!isS && !isCN) return;
+    const sign = isCN ? -1 : 1;
+    const taxed = v.lines.some(l => info(l.led).head && (isCN ? l.amt < 0 : l.amt > 0));
+    const sales = v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && (isCN ? l.amt < 0 : l.amt > 0); }).reduce((s2, l) => s2 + Math.abs(l.amt), 0);
+    if (taxed) a += sign * sales; else c += sign * sales;
+  });
+  return { a, c };
+}
+
+async function autoRunOne(c) {
+  const M = autoMonth();
+  const [L, base] = [await autoLedgers(c), await autoVoucherTypes(c)];
+  const V = await autoVouchers(c, M);
+  const g3b = await autoGstr3b(c, M);
+  const pr = autoPurchaseRows(V, L, base);
+  const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const per = `1-${MONS[M.m]}-${String(M.y).slice(2)} to ${M.last}-${MONS[M.m]}-${String(M.y).slice(2)}`;
+  const top = [[c.name.replace(/[",]/g, ' ')], ['GST Registration:', c.gstin || ''], ['GSTR-3B'], [per]];
+  let rows3b;
+  const notes = [`Read from TallyPrime (port ${c.port}): ${V.length} voucher(s) of ${M.label}, ${pr.rows.length} purchase line(s) with input tax.`].concat(pr.notes);
+  if (g3b) rows3b = top.concat([['Particulars', 'Taxable Amount', 'IGST', 'CGST', 'SGST/UTGST', 'Cess', 'Tax Amount']]).concat(g3b);
+  else {
+    const t = autoSalesSummary(V, L, base);
+    rows3b = top.concat([['Table', 'Nature of Supplies', 'Taxable Value'], ['3.1(a)', 'Outward taxable supplies', t.a.toFixed(2)], ['3.1(c)', 'Other outward supplies (Nil rated, exempted)', t.c.toFixed(2)]]);
+    notes.push('<b>Tally\'s GSTR-3B report could not be read, so the turnover was worked out from the sales vouchers</b> (an invoice with GST counts as taxable, one without as exempt). Check 3.1(a) and 3.1(c) against GSTR-3B before relying on it.');
+  }
+  const csv = rows3b.map(r => r.map(x => { const v = String(x == null ? '' : x); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\n');
+  const file = new File([csv], `Tally ${c.name} GSTR-3B.csv`, { type: 'text/csv' });
+  window._autoInject = { rows: pr.rows, notes };
+  await new Promise(res => { window._afterUpload = res; processUploadedFiles([file]); });
+  calcAll();
+  const k = window._calc1 || {};
+  const nCheck = new Set(importedRows.filter(r => r.check && r.in2B !== false).map(r => r.ledger)).size;
+  const gap = /differs from GSTR-3B Table 4\(A\)/.test(impNotes.join(' '));
+  return { name: c.name, gstin: $('meta_gstin').value, port: c.port, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: collectState(), at: new Date().toLocaleString('en-GB') };
+}
+async function autoRunSelected() {
+  const sel = AUTO.companies.filter(c => c.sel);
+  if (!sel.length) return;
+  if (hasWork() && !confirm('Auto mode replaces the client now on screen. Continue?')) return;
+  AUTO.stop = false; $('auto_go').disabled = true; $('auto_stop').classList.remove('hide');
+  for (let i = 0; i < sel.length; i++) {
+    if (AUTO.stop) break;
+    const c = sel[i];
+    $('auto_prog').textContent = `Working on ${i + 1} of ${sel.length}: ${c.name}…`;
+    try { const r = await autoRunOne(c); AUTO.results = AUTO.results.filter(x => !(x.name === r.name && x.port === r.port)).concat([r]); }
+    catch (e) { AUTO.results = AUTO.results.filter(x => !(x.name === c.name && x.port === c.port)).concat([{ name: c.name, port: c.port, gstin: c.gstin, error: e.message, at: new Date().toLocaleString('en-GB') }]); autoLog('company-failed', { company: c.name, error: e.message }); }
+    autoRenderResults();
+  }
+  $('auto_prog').textContent = AUTO.stop ? 'Stopped.' : `Done: ${sel.length} compan${sel.length === 1 ? 'y' : 'ies'}. Open each one to review.`;
+  $('auto_go').disabled = false; $('auto_stop').classList.add('hide');
+  showTab(6);
+}
+function autoStop() { AUTO.stop = true; }
+function autoRenderResults() {
+  const R = AUTO.results;
+  if (!R.length) { $('auto_results').innerHTML = ''; return; }
+  const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `${r.checks} ledger(s) to check`] : ['ok', 'Ready to review'];
+  const order = r => r.error ? 0 : r.blocked ? 1 : r.gap ? 2 : r.checks ? 3 : 4;
+  const sorted = R.map((r, i) => ({ r, i })).sort((a, b) => order(a.r) - order(b.r));
+  $('auto_results').innerHTML = `<div class="card-title" style="margin-top:6px"><span>Batch: ${R.length} compan${R.length === 1 ? 'y' : 'ies'}, ${$('meta_period').value}</span></div><div class="scroll"><table><thead><tr><th>Company</th><th>GSTIN</th><th style="text-align:right">ITC (T)</th><th style="text-align:right">Reversal 4(B)(1)</th><th>Status</th><th>Turnover from</th><th></th></tr></thead><tbody>
+    ${sorted.map(({ r, i }) => { const [cls, t] = st(r); return `<tr><td><b>${escA(r.name)}</b></td><td>${r.gstin || ''}</td><td style="text-align:right">${r.error ? '' : fmt(r.T)}</td><td style="text-align:right"><b>${r.error || r.blocked ? '—' : fmt(r.rev)}</b></td><td><span class="pill" style="background:var(--${cls === 'ok' ? 'ok' : cls === 'warn' ? 'warn' : 'bad'});color:#fff">${t}</span></td><td class="hint">${r.error ? '' : r.from3b ? 'Tally GSTR-3B' : 'sales vouchers (check)'}</td><td>${r.state ? `<button class="sm p" onclick="autoOpen(${i})">Open</button>` : ''}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function autoOpen(i) {
+  const r = AUTO.results[i]; if (!r || !r.state) return;
+  applyState(r.state);
+  showTab(0);
+  notify(`${r.name}: review the ledgers marked Check, then Single period.`);
+}
+function autoSaveBatch() {
+  if (!AUTO.results.length) { notify('No batch yet.'); return; }
+  const blob = new Blob([JSON.stringify({ kind: 'ITC Desk batch', period: $('meta_period').value, results: AUTO.results })], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ITC_Desk_batch_${$('meta_period').value.replace(/\s+/g, '_')}.json`; a.click();
+}
+function autoDiagnostic() {
+  const blob = new Blob([JSON.stringify({ kind: 'ITC Desk diagnostic', when: new Date().toISOString(), page: location.protocol, ports: AUTO.ports, companies: AUTO.companies.map(c => ({ name: c.name, port: c.port, gstin: c.gstin })), log: AUTO.log }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ITC_Desk_diagnostic.json'; a.click();
+  notify('Diagnostic saved. It contains what Tally answered, including client data: share it only with someone you trust.');
+}
+function autoDownloadLink() {
+  const bat = window.ITC_LINK_BAT || '';
+  if (!bat) { notify('The link file is not built into this copy.'); return; }
+  const blob = new Blob([bat.replace(/\r?\n/g, '\r\n')], { type: 'application/octet-stream' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ITC Tally link.bat'; a.click();
+  notify('Saved "ITC Tally link.bat". Double-click it on the PC where Tally runs.');
+}
+
+window.ITC_LINK_BAT = "@echo off\ntitle ITC Tally link\necho.\necho  ITC Tally link\necho  Lets ITC Desk read from TallyPrime on this computer. Read-only: it refuses\necho  any request that would create, alter or delete anything in Tally.\necho  Keep this window open while you use Auto mode; close it when done.\necho.\npowershell -NoProfile -ExecutionPolicy Bypass -Command \"$s=[IO.File]::ReadAllText('%~f0'); iex ($s.Substring($s.LastIndexOf('#'+'PS-START')))\"\necho.\npause\nexit /b\n\n#PS-START\n$ErrorActionPreference = 'Stop'\n$Port = 9800\n# Pages allowed to use the link: ITC Desk opened from a file, or its published page\n$Allowed = @('null', 'https://g-avinash21.github.io')\n$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)\ntry { $listener.Start() } catch { Write-Host \" Port $Port is in use. ITC Tally link may already be running in another window.\"; return }\nWrite-Host \" Running on http://127.0.0.1:$Port  (only this computer can reach it)\"\nWrite-Host \"\"\n\nfunction Send($stream, [int]$code, [string]$origin, [byte[]]$body, [string]$type) {\n  $reason = @{200='OK';204='No Content';400='Bad Request';403='Forbidden';404='Not Found';502='Bad Gateway'}[$code]\n  $h = \"HTTP/1.1 $code $reason`r`n\"\n  if ($origin) { $h += \"Access-Control-Allow-Origin: $origin`r`nVary: Origin`r`n\" }\n  $h += \"Access-Control-Allow-Methods: GET, POST, OPTIONS`r`nAccess-Control-Allow-Headers: Content-Type`r`nAccess-Control-Allow-Private-Network: true`r`n\"\n  if (-not $body) { $body = [byte[]]@() }\n  if ($type) { $h += \"Content-Type: $type`r`n\" }\n  $h += \"Content-Length: $($body.Length)`r`nConnection: close`r`n`r`n\"\n  $hb = [Text.Encoding]::ASCII.GetBytes($h)\n  $stream.Write($hb, 0, $hb.Length)\n  if ($body.Length) { $stream.Write($body, 0, $body.Length) }\n}\nfunction Json($o) { [Text.Encoding]::UTF8.GetBytes(($o | ConvertTo-Json -Compress -Depth 5)) }\n\nwhile ($true) {\n  $client = $listener.AcceptTcpClient()\n  try {\n    $s = $client.GetStream(); $s.ReadTimeout = 20000\n    $ms = New-Object IO.MemoryStream; $buf = New-Object byte[] 65536; $hEnd = -1\n    while ($hEnd -lt 0) {\n      $n = $s.Read($buf, 0, $buf.Length); if ($n -le 0) { break }\n      $ms.Write($buf, 0, $n)\n      $hEnd = [Text.Encoding]::ASCII.GetString($ms.ToArray()).IndexOf(\"`r`n`r`n\")\n    }\n    if ($hEnd -lt 0) { continue }\n    $all = $ms.ToArray()\n    $head = [Text.Encoding]::ASCII.GetString($all, 0, $hEnd)\n    $lines = $head -split \"`r`n\"\n    $parts = $lines[0] -split ' '\n    $method = $parts[0]; $path = $parts[1]\n    $hdr = @{}\n    foreach ($l in $lines[1..($lines.Length - 1)]) { $i = $l.IndexOf(':'); if ($i -gt 0) { $hdr[$l.Substring(0, $i).Trim().ToLower()] = $l.Substring($i + 1).Trim() } }\n    $origin = $hdr['origin']\n    $len = 0; if ($hdr['content-length']) { $len = [int]$hdr['content-length'] }\n    $body = New-Object IO.MemoryStream\n    $have = $all.Length - ($hEnd + 4)\n    if ($have -gt 0) { $body.Write($all, $hEnd + 4, $have) }\n    while ($body.Length -lt $len) { $n = $s.Read($buf, 0, $buf.Length); if ($n -le 0) { break }; $body.Write($buf, 0, $n) }\n    $bodyBytes = $body.ToArray()\n\n    if ($origin -and ($Allowed -notcontains $origin)) { Send $s 403 $null (Json @{ error = \"This page is not allowed to read Tally: $origin\" }) 'application/json'; Write-Host \" Refused a request from $origin\"; continue }\n    $ao = $origin\n    if ($method -eq 'OPTIONS') { Send $s 204 $ao $null $null; continue }\n\n    $q = @{}\n    if ($path.Contains('?')) { foreach ($kv in $path.Split('?')[1].Split('&')) { $p = $kv.Split('='); if ($p.Length -eq 2) { $q[$p[0]] = [Uri]::UnescapeDataString($p[1]) } } }\n    $route = $path.Split('?')[0]\n\n    if ($route -eq '/ping') { Send $s 200 $ao (Json @{ ok = $true; name = 'ITC Tally link'; version = 1 }) 'application/json'; continue }\n\n    if ($route -eq '/scan') {\n      $from = 9000; $to = 9010\n      if ($q['from']) { $from = [int]$q['from'] }; if ($q['to']) { $to = [int]$q['to'] }\n      if ($to - $from -gt 40) { $to = $from + 40 }\n      $found = @()\n      foreach ($p in $from..$to) {\n        $tc = New-Object System.Net.Sockets.TcpClient\n        $ar = $tc.BeginConnect('127.0.0.1', $p, $null, $null)\n        $ok = $ar.AsyncWaitHandle.WaitOne(250)\n        if ($ok -and $tc.Connected) {\n          $tc.Close()\n          $txt = ''\n          try {\n            $r = [System.Net.HttpWebRequest]::Create(\"http://127.0.0.1:$p/\"); $r.Proxy = $null; $r.Timeout = 3000\n            $resp = $r.GetResponse(); $sr = New-Object IO.StreamReader($resp.GetResponseStream()); $txt = $sr.ReadToEnd(); $resp.Close()\n          } catch { $txt = '' }\n          if ($txt.Length -gt 200) { $txt = $txt.Substring(0, 200) }\n          $found += @{ port = $p; reply = $txt }\n        } else { $tc.Close() }\n      }\n      Send $s 200 $ao (Json @{ ports = @($found) }) 'application/json'; continue\n    }\n\n    if ($route -eq '/tally' -and $method -eq 'POST') {\n      $tp = 9000; if ($q['port']) { $tp = [int]$q['port'] }\n      $xml = [Text.Encoding]::UTF8.GetString($bodyBytes)\n      # Read-only: only Export requests; nothing that imports, creates, alters or deletes\n      if ($xml -notmatch '<TALLYREQUEST>\\s*Export' -or $xml -match '<TALLYREQUEST>\\s*Import' -or $xml -match 'ACTION\\s*=\\s*\"(Create|Alter|Delete|Cancel)\"') {\n        Send $s 403 $ao (Json @{ error = 'Refused: ITC Tally link only reads from Tally.' }) 'application/json'; Write-Host ' Refused a request that was not read-only'; continue\n      }\n      try {\n        $r = [System.Net.HttpWebRequest]::Create(\"http://127.0.0.1:$tp/\"); $r.Proxy = $null\n        $r.Method = 'POST'; $r.ContentType = 'text/xml;charset=utf-8'; $r.Timeout = 300000; $r.ReadWriteTimeout = 300000\n        $rs = $r.GetRequestStream(); $rs.Write($bodyBytes, 0, $bodyBytes.Length); $rs.Close()\n        $resp = $r.GetResponse(); $out = New-Object IO.MemoryStream; $resp.GetResponseStream().CopyTo($out); $resp.Close()\n        Send $s 200 $ao $out.ToArray() 'application/octet-stream'\n        Write-Host (\" Read from Tally on port {0}: {1:N0} bytes\" -f $tp, $out.Length)\n      } catch {\n        Send $s 502 $ao (Json @{ error = \"Tally on port $tp did not answer: $($_.Exception.Message)\" }) 'application/json'\n      }\n      continue\n    }\n    Send $s 404 $ao (Json @{ error = 'Not found' }) 'application/json'\n  } catch {\n    Write-Host \" Error: $($_.Exception.Message)\"\n  } finally { $client.Close() }\n}\n";
 /* ---------- INIT ---------- */
 (function init() {
   let savedTheme = null;

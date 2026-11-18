@@ -11,6 +11,9 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
 - **Buckets every ledger** (T1, T2, T3, T4, C2, Tc) with a written reason. Doubtful ones are marked **Check**. Section 17(5) items are recognised clause by clause, and reverse-charge services by their nature.
 - **Rule 42 and 43** for a single period and month by month for the year, including the second proviso to Rule 42(1)(i) (a month without sales uses the last month that had sales) and the Rule 42(2) annual true-up.
 - **Rule 37**: bills unpaid after 180 days.
+- **Section 16(4) time limit**: bills older than the limit (30 November after their financial year) are kept out of T and shown in Table 4(D)(2); bills in their last month get a warning.
+- **Whole year (for notices and the Rule 42(2) true-up)**: import a year's files and choose Full Year; the year's required reversal is set against what GSTR-3B reversed, with interest from 1 April after the year, and the reverse-charge credit that Rule 42 actually reverses.
+- **Rule 43 catch-up**: for capital goods whose monthly Te was never reversed, the missed reversal for each earlier month of the 60, with interest from each due date.
 - **Interest and penalty** estimates (sections 50, 73, 74 and 74A by financial year).
 - **Checks**: GSTIN check digit, ITC against GSTR-3B Table 4(A), Nature View against Return View, sales that may be untaxed in 3.1(a).
 - **GSTR-3B Table 4 as on the portal**: 4(A)(1) to (5), 4(B)(1) and (2), 4(C) and 4(D), by IGST, CGST, SGST and Cess, filled from the bills (reverse charge in 4(A)(3), imports in 4(A)(1), ISD in 4(A)(4)), with the GSTR-9 Table 7 split of the reversal.
@@ -30,6 +33,17 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
    Not on Tally: drop GSTR-2B instead (gst.gov.in > Returns Dashboard > month > GSTR-2B > View > Download Excel) and type Table 3.1 of GSTR-3B in the turnover boxes, or use **Download template**.
 4. On the **Vouchers** tab, type the ledger names and GST registration as in Tally, click **Download Tally XML**, and import it in Tally (Alt+O > Import > Transactions). Check GSTR-3B Table 4(B)(1) afterwards.
 5. **Save backup** keeps a client's work as a file; the page itself starts empty every time it is opened.
+
+## Auto mode (from TallyPrime, test version)
+
+The **Auto** tab reads straight from TallyPrime and works out every loaded company in one batch, then stops for review. Nothing is posted to Tally.
+
+1. In each TallyPrime window: F1 > Settings > Connectivity > Client/Server configuration: TallyPrime is acting as **Both**, Port **9000** (a second window 9001, and so on).
+2. Load the companies (F3, Spacebar to select several). Only loaded companies can be read.
+3. Double-click `ITC Tally link.bat` and keep its window open. It uses Windows PowerShell, installs nothing, listens only on this computer, and refuses any request that would change Tally.
+4. In ITC Desk: Auto > Find Tally > tick the companies > Work out selected. Open each result to review it like a normal import.
+
+If Tally's GSTR-3B report cannot be read, the turnover is worked out from sales vouchers and marked for checking. **Download diagnostic** saves what Tally answered, to help fix a company that fails.
 
 ## Optional assistant (offline AI)
 
