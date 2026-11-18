@@ -1467,7 +1467,7 @@ function renderImporterTable() {
     if (i >= ROW_CAP) return '';
     return `
       <tr style="${r.in2B === false ? 'opacity:0.65' : ''}">
-        <td><input type="text" value="${r.date || ''}" placeholder="date" style="min-width:112px" oninput="importedRows[${i}].date=this.value"></td>
+        <td><input type="text" value="${fmtDate(r.date)}" placeholder="dd-mm-yyyy" style="min-width:112px" onchange="importedRows[${i}].date=normDate(this.value);this.value=fmtDate(importedRows[${i}].date);renderImporterTable();pushImportToCalculator(false)"></td>
         <td><input type="text" value="${(r.party || '').replace(/"/g, '&quot;')}" style="min-width:150px" oninput="importedRows[${i}].party=this.value"></td>
         <td><input type="text" value="${(r.ledger || '').replace(/"/g, '&quot;')}" style="min-width:190px;font-weight:600" oninput="importedRows[${i}].ledger=this.value;importedRows[${i}].bucket=autoClassifyLedger(this.value);renderImporterTable();pushImportToCalculator(false)"></td>
         <td><input type="number" value="${r.taxable || 0}" style="min-width:95px" oninput="importedRows[${i}].taxable=parseFloat(this.value)||0;renderImporterTable();pushImportToCalculator(false)"></td>
@@ -1739,6 +1739,15 @@ function resetAllLedgers() {
 /* ---------- DATE HELPERS (Excel serials, Tally dd-Mon-yy, dd-mm-yyyy, YYYYMMDD) ---------- */
 const SHORT_MONTHS = ['apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar'];
 const CAL_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+// Dates are shown as dd-mm-yyyy everywhere; inside the tool they are kept as yyyy-mm-dd
+function fmtDate(v) {
+  if (v === null || v === undefined || v === '') return '';
+  let d = v;
+  if (!(v instanceof Date)) { const iso = normDate(v); const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return String(v); return `${m[3]}-${m[2]}-${m[1]}`; }
+  if (isNaN(d)) return '';
+  return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+}
+const fmtStamp = d => `${fmtDate(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 function normDate(v) {
   const pad = n => String(n).padStart(2, '0');
   if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
@@ -2567,7 +2576,7 @@ function workingModel() {
   (impNotes || []).filter(n => /differs from GSTR-3B Table 4\(A\)|may include sales without tax|two GSTR-3B views disagree/.test(n)).forEach(n => notes.push(String(n).replace(/<[^>]+>/g, '')));
   return {
     name: $('meta_name').value || '', gstin: $('meta_gstin').value || '', period: $('meta_period').value || '', fyLabel: `${fy}-${String(fy + 1).slice(2)}`,
-    type: $('meta_cat').selectedOptions[0] ? $('meta_cat').selectedOptions[0].textContent : '', prepared: new Date().toLocaleDateString('en-GB'),
+    type: $('meta_cat').selectedOptions[0] ? $('meta_cat').selectedOptions[0].textContent : '', prepared: fmtDate(new Date()),
     c, tv, d2: $('D2on').checked, ledgers: L, bills: importedRows.slice(), notes, m: window._calc2 || { rows: [] }
   };
 }
@@ -2639,7 +2648,8 @@ function exportExcel() {
   M.bills.forEach((r, k) => {
     const n = k + 2, out = r.in2B === false;
     const tx = out ? S.grey : S.td, nx = out ? S.greyN : S.inp;
-    put(Bs, 'A' + n, sv(r.date), tx); put(Bs, 'B' + n, sv(r.party), tx); put(Bs, 'C' + n, sv(r.ledger), tx);
+    const dm = String(normDate(r.date)).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    put(Bs, 'A' + n, dm ? { t: 'n', v: (Date.UTC(+dm[1], +dm[2] - 1, +dm[3]) - Date.UTC(1899, 11, 30)) / 864e5, z: 'dd-mm-yyyy' } : sv(r.date), out ? S.grey : Object.assign({}, S.td, { alignment: { vertical: 'top', horizontal: 'left' } })); put(Bs, 'B' + n, sv(r.party), tx); put(Bs, 'C' + n, sv(r.ledger), tx);
     put(Bs, 'D' + n, nv(r.taxable), nx); put(Bs, 'E' + n, nv(r.igst), nx); put(Bs, 'F' + n, nv(r.cgst), nx); put(Bs, 'G' + n, nv(r.sgst), nx);
     put(Bs, 'H' + n, fv(`E${n}+F${n}+G${n}`, (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)), out ? S.greyN : S.num);
     put(Bs, 'I' + n, sv(out ? 'No' : 'Yes'), out ? S.chk : S.tdC); put(Bs, 'J' + n, sv(r.bucket), out ? S.grey : S.tdC); put(Bs, 'K' + n, sv(r.rcm ? 'Yes' : ''), S.tdC);
@@ -3672,7 +3682,7 @@ function sec164Deadline(iso) {
 }
 function applySec164() {
   const due = returnDueDate(); if (!due) return;
-  const fmtD = x => x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmtD = x => fmtDate(x);
   let barred = 0, barredAmt = 0, last = 0, lastAmt = 0, lastDl = null;
   const next = new Date(due.getFullYear(), due.getMonth() + 1, 20);
   importedRows.forEach(r => {
@@ -4132,7 +4142,7 @@ function renderCGCatchup() {
       ${Object.keys(per).sort().map(fy => { const p = per[fy]; return `<tr><td>FY ${fy}-${String(+fy + 1).slice(2)}</td><td>${p.n} (${mon(p.first)} to ${mon(p.last)})</td><td style="text-align:right">${fmt(p.te)}</td><td style="text-align:right"><b>${fmt(p.short)}</b></td><td style="text-align:right">${fmt(p.int)}</td></tr>`; }).join('')}
       <tr class="tot"><td colspan="2">Total</td><td style="text-align:right">${fmt(tot.te)}</td><td style="text-align:right;color:var(--bad)">₹ ${fmt(tot.short)}</td><td style="text-align:right;color:var(--bad)">₹ ${fmt(tot.int)}</td></tr>
     </tbody></table></div>
-    <p class="hint" style="margin-top:10px">${tot.short > 0.5 ? `<b>To set right:</b> reverse ₹ ${fmt(tot.short)} with interest of about ₹ ${fmt(tot.int)} (section 50, at ${rate}% from each month's due date to ${new Date(upto).toLocaleDateString('en-GB')}), either in the current GSTR-3B (Table 4(B)(1), interest in Table 5.1) or through DRC-03, and show it in GSTR-9 Table 7D for the years concerned where those returns are still open. Months beyond the time limit for a notice (sections 73, 74 and 74A) still carry the reversal in law; whether and how to pay them is a professional judgement for each client.` : 'Nothing is short: the Te already reversed covers the months above.'} Assets past their 60 months need no reversal from then on.</p>`;
+    <p class="hint" style="margin-top:10px">${tot.short > 0.5 ? `<b>To set right:</b> reverse ₹ ${fmt(tot.short)} with interest of about ₹ ${fmt(tot.int)} (section 50, at ${rate}% from each month's due date to ${fmtDate(new Date(upto))}), either in the current GSTR-3B (Table 4(B)(1), interest in Table 5.1) or through DRC-03, and show it in GSTR-9 Table 7D for the years concerned where those returns are still open. Months beyond the time limit for a notice (sections 73, 74 and 74A) still carry the reversal in law; whether and how to pay them is a professional judgement for each client.` : 'Nothing is short: the Te already reversed covers the months above.'} Assets past their 60 months need no reversal from then on.</p>`;
 }
 let _cgT = null; function renderCGCatchupSoon() { clearTimeout(_cgT); _cgT = setTimeout(() => { const a = document.activeElement && document.activeElement.id; renderCGCatchup(); if (a && $(a)) { $(a).focus(); const v = $(a).value; if ($(a).setSelectionRange && $(a).type !== 'number') $(a).setSelectionRange(v.length, v.length); } }, 500); }
 const fyOf2 = d => d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
@@ -4439,7 +4449,7 @@ function calc1() {
         <tr><td>Reversal the year needed, 4(B)(1): T1 + T2 + T3 + D1 + D2 + Te on the year's totals</td><td>₹ ${fmt(rev4B1)}</td></tr>
         <tr><td>Reversed in GSTR-3B 4(B)(1) during the year</td><td>₹ ${fmt(filed)}${filed ? '' : ' <span class="hint">(type it under "Whole year", or import the annual GSTR-3B)</span>'}</td></tr>
         <tr class="tot"><td>${short >= 0 ? 'Short reversed' : 'Reversed in excess (can be re-claimed under Rule 42(2)(b))'}</td><td style="color:${short > 0 ? 'var(--bad)' : 'var(--ok)'}">₹ ${fmt(Math.abs(short))}</td></tr>
-        ${short > 0 ? `<tr><td>Interest under section 50 from ${from.toLocaleDateString('en-GB')} (1 April after the year, Rule 42(2)(a)) to ${upto.toLocaleDateString('en-GB')}: ${days} days at ${num('RATE') || 18}%</td><td>₹ ${fmt(intr)}</td></tr>` : ''}
+        ${short > 0 ? `<tr><td>Interest under section 50 from ${fmtDate(from)} (1 April after the year, Rule 42(2)(a)) to ${fmtDate(upto)}: ${days} days at ${num('RATE') || 18}%</td><td>₹ ${fmt(intr)}</td></tr>` : ''}
         ${rcmAll ? `<tr><td>Reverse-charge credit in the year (Table 4(A)(3))</td><td>₹ ${fmt(rcmAll)}</td></tr>
         <tr><td>Of it, reversible under Rule 42: in full only where blocked, non-business or used only for exempt supplies; common credit in the ratio E ÷ F (${pct(ratio)})</td><td>₹ ${fmt(rcmRev)}</td></tr>` : ''}
         ${demand ? `<tr class="tot"><td>Demanded in the notice</td><td>₹ ${fmt(demand)}</td></tr><tr><td>${demand > Math.max(0, short) ? 'Excess of the demand over this working' : 'Demand below this working'}</td><td>₹ ${fmt(Math.abs(demand - Math.max(0, short)))}</td></tr>` : ''}
@@ -4698,11 +4708,11 @@ function calc2() {
     mset(i, 'E', fmt(E)); mset(i, 'F', fmt(F)); mset(i, 'R', pct(r) + (borrowed ? ' *' : ''));
     mset(i, 'C2', fmt(C2)); mset(i, 'D1', fmt(D1)); mset(i, 'D2', fmt(D2));
     mset(i, 'TE', fmt(TE)); mset(i, 'RQ', fmt(RQ)); mset(i, 'SH', fmt(SH));
-    mset(i, 'DD', dd.toLocaleDateString('en-GB'));
+    mset(i, 'DD', fmtDate(dd));
     mset(i, 'DY', SH > 0 ? days : '0');
     mset(i, 'IN', fmt(IN));
 
-    out2.rows.push({ i, mon: MN[i], a, b, c, e, T, T1, T2, T3, T4, Tc, fl, E, F, r, borrowed, C2, D1, D2, TE, RQ, SH, days, IN, dd: dd.toLocaleDateString('en-GB') });
+    out2.rows.push({ i, mon: MN[i], a, b, c, e, T, T1, T2, T3, T4, Tc, fl, E, F, r, borrowed, C2, D1, D2, TE, RQ, SH, days, IN, dd: fmtDate(dd) });
     S.a += a; S.b += b; S.c += c; S.e += e; S.T += T; S.T1 += T1; S.T2 += T2; S.T3 += T3; S.T4 += T4; S.Tc += Tc; S.fl += fl;
     S.E += E; S.F += F; S.C2 += C2; S.D1 += D1; S.D2 += D2; S.TE += TE; S.RQ += RQ; S.SH += SH; S.IN += IN;
   }
@@ -4761,7 +4771,7 @@ function calc2() {
         <tr><td>Annual D2 (5% Non-Business Common Credit)</td><td>${d2 ? '5% × ΣC2' : 'Off'}</td><td>${fmt(D2y)}</td></tr>
         <tr><td>Less: Provisional D1 + D2 Reversed Monthly</td><td>Σ Monthly (D1 + D2)</td><td>(${fmt(monthlyD)})</td></tr>
         <tr class="tot"><td>Net Annual True-Up (${tu >= 0 ? 'Shortfall to Reverse by September Return of ' + (y + 1) + ' [Rule 42(2)]' : 'Excess Reversed — Reclaim in GSTR-3B by September Return of ' + (y + 1) + ' [Rule 42(2)]'})</td><td>Annual (D1+D2) − Monthly Σ(D1+D2)</td><td style="color:${tu > 0 ? 'var(--bad)' : 'var(--ok)'}">₹ ${fmt(tu)}</td></tr>
-        <tr><td>Interest on Annual True-Up Shortfall u/s 50(1)</td><td>From 1 April ${y + 1} to ${upto.toLocaleDateString('en-GB')} (${dY} days @ ${num('RATE2')}%)</td><td>₹ ${fmt(intTU)}</td></tr>
+        <tr><td>Interest on Annual True-Up Shortfall u/s 50(1)</td><td>From 1 April ${y + 1} to ${fmtDate(upto)} (${dY} days @ ${num('RATE2')}%)</td><td>₹ ${fmt(intTU)}</td></tr>
         <tr><td>Estimated Penalty on True-Up Shortfall</td><td>${penTrueUp.label}</td><td>₹ ${fmt(penTrueUp.penalty)}</td></tr>
         <tr class="tot"><td>Total DRC-03 Payable on Monthly Unfiled Shortfall (Tax + Monthly Interest + Penalty)</td><td>₹${fmt(Math.max(0, S.SH))} + ₹${fmt(S.IN)} + ₹${fmt(penMonthly.penalty)}</td><td style="color:var(--bad)">₹ ${fmt(Math.max(0, S.SH) + S.IN + penMonthly.penalty)}</td></tr>
       </tbody>
@@ -5197,7 +5207,7 @@ function renderR37Table() {
         <td><input type="text" value="${(b.party || '').replace(/"/g, '&quot;')}" style="min-width:135px" oninput="r37Bills[${i}].party=this.value;saveState()"></td>
         <td><input type="text" value="${(b.billNo || '').replace(/"/g, '&quot;')}" style="min-width:90px" oninput="r37Bills[${i}].billNo=this.value;saveState()"></td>
         <td><input type="date" value="${b.invDate}" oninput="r37Bills[${i}].invDate=this.value;renderR37Table();saveState()"></td>
-        <td style="white-space:nowrap">${m.due180.toLocaleDateString('en-GB')}</td>
+        <td style="white-space:nowrap">${fmtDate(m.due180)}</td>
         <td><input type="number" value="${b.gross}" style="min-width:95px" oninput="r37Bills[${i}].gross=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
         <td><input type="number" value="${b.itc}" style="min-width:85px" oninput="r37Bills[${i}].itc=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
         <td><input type="number" value="${b.paid180}" style="min-width:95px" oninput="r37Bills[${i}].paid180=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
@@ -5433,7 +5443,7 @@ function exportCSV() {
   const rows = [
     ['ITC DESK: RULE 42 AND 43 ITC REVERSAL WORKING'],
     ['Client', $('meta_name').value || '', 'GSTIN', $('meta_gstin').value || '', 'Return period', $('meta_period').value, 'Financial year', `${fy}-${String(fy + 1).slice(2)}`],
-    ['Prepared on', new Date().toLocaleDateString('en-IN'), 'Taxpayer type', $('meta_cat').selectedOptions[0] ? $('meta_cat').selectedOptions[0].textContent : ''],
+    ['Prepared on', fmtDate(new Date()), 'Taxpayer type', $('meta_cat').selectedOptions[0] ? $('meta_cat').selectedOptions[0].textContent : ''],
     [],
     ['SINGLE PERIOD: ' + $('meta_period').value],
     ['Item', 'Amount (₹)', 'How it is worked out'],
@@ -5814,7 +5824,7 @@ async function autoRunOne(c) {
   const k = window._calc1 || {};
   const nCheck = new Set(importedRows.filter(r => r.check && r.in2B !== false).map(r => r.ledger)).size;
   const gap = /differs from GSTR-3B Table 4\(A\)/.test(impNotes.join(' '));
-  return { name: c.name, gstin: $('meta_gstin').value, port: c.port, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: collectState(), at: new Date().toLocaleString('en-GB') };
+  return { name: c.name, gstin: $('meta_gstin').value, port: c.port, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: collectState(), at: fmtStamp(new Date()) };
 }
 async function autoRunSelected() {
   const sel = AUTO.companies.filter(c => c.sel);
@@ -5826,7 +5836,7 @@ async function autoRunSelected() {
     const c = sel[i];
     $('auto_prog').textContent = `Working on ${i + 1} of ${sel.length}: ${c.name}…`;
     try { const r = await autoRunOne(c); AUTO.results = AUTO.results.filter(x => !(x.name === r.name && x.port === r.port)).concat([r]); }
-    catch (e) { AUTO.results = AUTO.results.filter(x => !(x.name === c.name && x.port === c.port)).concat([{ name: c.name, port: c.port, gstin: c.gstin, error: e.message, at: new Date().toLocaleString('en-GB') }]); autoLog('company-failed', { company: c.name, error: e.message }); }
+    catch (e) { AUTO.results = AUTO.results.filter(x => !(x.name === c.name && x.port === c.port)).concat([{ name: c.name, port: c.port, gstin: c.gstin, error: e.message, at: fmtStamp(new Date()) }]); autoLog('company-failed', { company: c.name, error: e.message }); }
     autoRenderResults();
   }
   $('auto_prog').textContent = AUTO.stop ? 'Stopped.' : `Done: ${sel.length} compan${sel.length === 1 ? 'y' : 'ies'}. Open each one to review.`;
