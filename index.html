@@ -6313,7 +6313,17 @@ async function autoGstr3b(c, M) {
 // Purchase lines from the vouchers, as the purchase register would show them
 function autoPurchaseRows(V, L, base) {
   const rows = [], notes = [], info = n => L[String(n).toLowerCase()] || { name: n, prim: '', head: null, party: false };
-  let skippedJ = 0, ourRev = 0;
+  let skippedJ = 0, ourRev = 0, skippedPay = 0, skippedPayAmt = 0; const payNos = [], blind = [];
+  // GST rate of a purchase or expense line: as Tally stores it on the line, else from the ledger's name ("GST Purchase @ 5%", "Exempted")
+  const lineRate = l => {
+    const R = l.rate || {};
+    if (R.i > 0) return R.i;
+    if (R.c > 0 || R.s > 0) return (R.c || 0) + (R.s || 0);
+    const n = String(l.led || '');
+    if (/exempt|nil\s*rated|non[\s-]*gst|without\s*gst|\bnil\b/i.test(n)) return 0;
+    const m = n.match(/(\d+(?:\.\d+)?)\s*%/);
+    return m ? +m[1] : null;
+  };
   V.forEach(v => {
     if (v.cancelled) return;
     const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
@@ -6332,17 +6342,27 @@ function autoPurchaseRows(V, L, base) {
     // Round-off carries no tax: keep the input tax on the real purchase or expense lines
     const real = exp.filter(l => !/round(ing)?\s*-?\s*off|rounding/i.test(l.led));
     if (real.length) exp = real;
+    // A payment that debits only GST ledgers is the payment of GST itself (cash ledger, challan), not a purchase
+    if (!exp.length && isPay) { skippedPay++; skippedPayAmt += tax.reduce((a, l) => a + Math.abs(l.amt), 0); payNos.push(v.no || v.date); return; }
     if (!exp.length) exp = [{ led: v.rcm || isJ ? 'Reverse charge: ITC claimed by journal' : 'Purchase (ledger not read)', amt: 0 }];
-    const tot = exp.reduce((a, l) => a + Math.abs(l.amt), 0);
-    exp.forEach(l => {
-      const w = tot ? Math.abs(l.amt) / tot : 1 / exp.length;
+    // Share the bill's tax between its lines by the tax each line carries (value × its GST rate), so an exempt line
+    // gets none and a 5% and an 18% line on one bill get their own tax. Only when a rate is unknown is the share by value.
+    const rts = exp.map(lineRate), known = exp.length > 1 && rts.every(r => r != null) && rts.some(r => r > 0);
+    const wt = exp.map((l, k) => Math.abs(l.amt) * (known ? rts[k] : 1));
+    const tot = wt.reduce((a, x) => a + x, 0);
+    if (exp.length > 1 && !known) blind.push(v.no || v.date);
+    const share = {}; // split each head exactly: the last line takes the paise left over
+    ['i', 'c', 's'].forEach(h => { let left = Math.round(heads[h] * 100); share[h] = wt.map((x, k) => { if (k === wt.length - 1) return left / 100; const p = Math.round(heads[h] * 100 * (tot ? x / tot : 1 / wt.length)); left -= p; return p / 100; }); });
+    exp.forEach((l, k) => {
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ taxLed, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * +(heads.i * w).toFixed(2), cgst: sign * +(heads.c * w).toFixed(2), sgst: sign * +(heads.s * w).toFixed(2), in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
   rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
   if (skippedJ) notes.push(`${skippedJ} journal(s) touching input tax ledgers were left out because they carry no GST Stat Adjustment for input tax credit. Check them in Tally.`);
+  if (skippedPay) notes.push(`${skippedPay} payment voucher(s) debiting only GST ledgers (₹ ${fmt(skippedPayAmt)}) were left out: they pay GST already due, they are not purchases. Voucher no. ${payNos.slice(0, 6).join(', ')}${payNos.length > 6 ? '…' : ''}.`);
+  if (blind.length) notes.push(`${blind.length} bill(s) with more than one purchase or expense ledger had no GST rate on some line, so their tax was shared by value. Check: voucher no. ${blind.slice(0, 6).join(', ')}${blind.length > 6 ? '…' : ''}.`);
   if (ourRev) notes.push(`${ourRev} journal(s) already reversing input tax credit this month were left out of T (they are the reversal itself).`);
   return { rows, notes };
 }
