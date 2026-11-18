@@ -388,6 +388,7 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 .dropzone { flex: 1; display: flex; flex-direction: column; justify-content: center; border: 1.5px dashed var(--mut); background: var(--bg); border-radius: var(--radius); padding: 24px 22px; text-align: left; cursor: pointer; transition: border-color .1s, background .1s; }
 /* Most months come through Auto: the manual drop area stays compact instead of filling the column */
 body.on-auto .metabar { display: none; }
+.dnwhy { margin: 0 0 6px; padding: 6px 9px; border-left: 3px solid var(--warn); background: var(--bg); font-size: 12.5px; line-height: 1.45; }
 #tallyDropzone { flex: none; padding: 14px 18px; min-height: 0; }
 #tallyDropzone .hint { margin: 2px 0 0; }
 .dropzone:hover, .dropzone.dragover { border-color: var(--acc); border-style: solid; background: var(--acc-bg); }
@@ -1613,7 +1614,10 @@ function renderLedgerSummary() {
     const key = String(r.ledger || '').trim().toLowerCase();
     const o = g[key] || (g[key] = { name: r.ledger, n: 0, tax: 0, buckets: {}, why: r.why || '', check: !!r.check, rcm: !!r.rcm, differs: !!r.differs, how: r.how || 'auto' });
     o.n++;
-    o.tax += (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
+    const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
+    o.tax += t;
+    // Debit notes (purchase returns) lower the credit: kept apart so the reason for a difference from Tally's Purchase Register is shown here
+    if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
     o.buckets[r.bucket] = 1;
   });
   const keys = Object.keys(g).sort((a, b) => g[b].tax - g[a].tax);
@@ -1629,7 +1633,7 @@ function renderLedgerSummary() {
       <thead><tr><th>Ledger</th><th>Rows</th><th>ITC (₹)</th><th>Bucket for every row of this ledger</th><th style="text-align:left;min-width:300px">Why</th>${aiHas ? '<th style="text-align:left;min-width:260px">Assistant</th>' : ''}</tr></thead>
       <tbody>${keys.slice(0, 80).map((k, i) => {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
-        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
+        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}${esc(o.why)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }
@@ -6423,11 +6427,16 @@ function autoPurchaseRows(V, L, base) {
     exp.forEach((l, k) => {
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ taxLed, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, dn: isDN || undefined, vno: v.no || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
   rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
   if (skippedJ) notes.push(`${skippedJ} journal(s) touching input tax ledgers were left out because they carry no GST Stat Adjustment for input tax credit. Check them in Tally.`);
+  const dnRows = rows.filter(r => r.dn);
+  if (dnRows.length) {
+    const dnTax = -dnRows.reduce((x, r) => x + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0), led = [...new Set(dnRows.map(r => r.ledger))];
+    notes.push(`<b>Debit notes reduce the credit by ₹ ${fmt(dnTax)}</b> (${new Set(dnRows.map(r => r.vno || r.date)).size} purchase return(s), in ${led.slice(0, 3).join(', ')}${led.length > 3 ? '…' : ''}). Tally's Purchase Register lists purchases only, so its tax is higher by this amount; GSTR-3B Table 4(A) is net of them, as here. The ledger-wise summary shows the return under each ledger.`);
+  }
   if (skippedPay) notes.push(`${skippedPay} payment voucher(s) debiting only GST ledgers (₹ ${fmt(skippedPayAmt)}) were left out: they pay GST already due, they are not purchases. Voucher no. ${payNos.slice(0, 6).join(', ')}${payNos.length > 6 ? '…' : ''}.`);
   if (blind.length) notes.push(`${blind.length} bill(s) with more than one purchase or expense ledger had no GST rate on some line, so their tax was shared by value. Check: voucher no. ${blind.slice(0, 6).join(', ')}${blind.length > 6 ? '…' : ''}.`);
   if (ourRev) notes.push(`${ourRev} journal(s) already reversing input tax credit this month were left out of T (they are the reversal itself).`);
