@@ -174,7 +174,7 @@ input:focus, select:focus { outline: none; border-color: var(--ink); box-shadow:
 input[readonly] { background: var(--bg); color: var(--mut); }
 input[type=checkbox] { accent-color: var(--acc); }
 .hint { font-size: 12px; color: var(--mut); margin-top: 4px; line-height: 1.45; }
-p.hint { max-width: 100ch; }
+p.hint { max-width: none; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Buttons: every button sits on a plinth and presses down; crimson only for the main action */
@@ -234,7 +234,8 @@ tr.tot td { font-weight: 700; border-top: 1px solid var(--ink); border-bottom: 1
 tfoot tr.tot td { border-bottom: 3px double var(--ink); }
 tr.subhead td { font-weight: 700; text-align: left; background: var(--bg); }
 td input, td select { min-width: 0; }
-.mt input { min-width: 92px; padding: 5px 6px; font-size: 12.5px; }
+.mt input { min-width: 118px; padding: 5px 6px; font-size: 12.5px; text-align: right; }
+.mt td:first-child, .mt th:first-child { position: sticky; left: 0; background: var(--card); z-index: 1; }
 .mt td:first-child { white-space: nowrap; }
 
 .alert { padding: 10px 14px; border-radius: var(--radius); margin: 8px 0; font-size: 13px; border: 1px solid var(--line); border-left-width: 4px; background: var(--card); color: var(--ink); }
@@ -317,6 +318,19 @@ td input, td select { min-width: 0; }
 .ast.work i { background: var(--acc); animation: apulse 1s infinite; } .ast.ok i { background: #1f8a4c; } .ast.bad i { background: var(--bad); } .ast.warn i { background: var(--warn, #b7791f); }
 @media (prefers-reduced-motion: reduce) { .astep-fill, .astep-c, .abar-fill { transition: none; } .alive-dot, .tdot.busy, .ast.work i { animation: none; } }
 #auto_companies th, #auto_companies td { text-align: left; }
+.ledname.notin { border-color: var(--bad) !important; background: rgba(200, 30, 40, .06); }
+.asteps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 0 0 14px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.as { display: flex; gap: 10px; padding: 12px 14px; background: var(--card); border-left: 1px solid var(--line); align-items: flex-start; }
+.as:first-child { border-left: 0; }
+.as b { display: block; font-size: 13.5px; }
+.as small { display: block; color: var(--mut); font-size: 12px; line-height: 1.4; margin: 2px 0 8px; }
+.asn { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); color: var(--mut); font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center; }
+.as.now { background: var(--bg); box-shadow: inset 0 -3px 0 var(--acc); }
+.as.now .asn { border-color: var(--acc); background: var(--acc); color: #fff; }
+.as.now button { background: var(--acc); color: #fff; border-color: var(--acc); }
+.as.done .asn { border-color: #1f8a4c; background: #1f8a4c; color: #fff; font-size: 0; }
+.as.done .asn::after { content: "\2713"; font-size: 13px; }
+@media (max-width: 1100px) { .asteps { grid-template-columns: 1fr 1fr; } }
 .anext { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
 .anext > div { padding: 12px 16px; font-size: 12.5px; line-height: 1.55; color: var(--mut); }
 .anext > div + div { border-left: 1px solid var(--line); }
@@ -1052,17 +1066,17 @@ summary:hover { color: var(--acc); }
              ondragover="event.preventDefault();this.classList.add('dragover')"
              ondragleave="this.classList.remove('dragover')"
              ondrop="handleR37Drop(event)" style="padding:14px">
-          <div class="drop-title">Drop the Tally Bills Payable export here (Excel or CSV)</div>
+          <div class="drop-title">Drop the Tally bills export here (Excel, XML or CSV)</div>
           <div class="hint">
-            Path in TallyPrime: <code>Display More Reports &gt; Statements of Accounts &gt; Outstandings &gt; Payables (Bills Payable) &gt; Alt+E (Export Excel)</code>. The tracker works out the 180-day date, the days overdue, the proportionate reversal and the interest for each bill.
+            Path in TallyPrime: <code>Display More Reports &gt; Exception Reports &gt; Overdue Payables</code> (or <code>Statements of Accounts &gt; Outstandings &gt; Payables</code>), then <code>Alt+E</code> Export as Excel or XML. The tracker works out the 180-day date, the days overdue, the proportionate reversal and the interest for each bill.
           </div>
-          <input type="file" id="r37Files" accept=".xlsx,.xls,.csv,.txt" class="hide" onchange="handleR37Upload(event)">
+          <input type="file" id="r37Files" accept=".xlsx,.xls,.csv,.txt,.xml" class="hide" onchange="handleR37Upload(event)">
         </div>
 
         <div class="grid" style="align-content:start">
           <div>
             <label><b>Position as on</b></label>
-            <input type="date" id="r37_cutoff" value="2026-10-20" oninput="renderR37Table();saveState()">
+            <input type="date" id="r37_cutoff" value="" oninput="renderR37Table();saveState()">
             <div class="hint">Used to check if 180 days have elapsed &amp; count interest days</div>
           </div>
           <div>
@@ -1075,9 +1089,9 @@ summary:hover { color: var(--acc); }
             <div class="hint">Rule 88B interest applies only to the extent wrongly availed ITC is utilized</div>
           </div>
           <div>
-            <label><b>GST rate to assume when the export has no ITC column, %</b></label>
-            <input type="number" id="r37_defrate" value="18" oninput="renderR37Table();saveState()">
-            <div class="hint">Extracts reverse-calculated ITC = Bill × Rate ÷ (100 + Rate)</div>
+            <label><b>GST rate for bills whose ITC is not known, %</b></label>
+            <input type="number" id="r37_defrate" value="" placeholder="Leave blank if unsure" oninput="renderR37Table();saveState()">
+            <div class="hint">Tally's Overdue Payables has no GST column. Leave this blank and the ITC cells of those bills stay red until you type the ITC (bills of exempt goods carry none). Auto mode reads the ITC from each purchase voucher instead. A rate typed here fills them as Bill × Rate ÷ (100 + Rate).</div>
           </div>
           <div>
             <label><b>Show</b></label>
@@ -1127,24 +1141,32 @@ summary:hover { color: var(--acc); }
         <div class="row no-print">
           <button class="sm" onclick="autoDownloadLink()">Download launcher</button>
           <button class="sm" onclick="autoStopLink()" title="Switch the background Tally link off">Stop link</button>
-          <button class="sm p" onclick="autoConnect()">Find Tally</button>
         </div>
       </div>
-      <div class="grid-2" style="margin-bottom:12px">
+      <div class="asteps" id="asteps">
+        <div class="as" id="as1"><span class="asn">1</span><div><b>Find Tally</b><small>Finds the open Tally windows and their loaded companies</small><button class="sm" onclick="autoConnect()">Find Tally</button></div></div>
+        <div class="as" id="as2"><span class="asn">2</span><div><b>Tick the companies</b><small>In the list below. Check the month: <b id="as2m"></b></small></div></div>
+        <div class="as" id="as3"><span class="asn">3</span><div><b>Work out</b><small>Reads each company and does the whole working</small><button class="sm" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button></div></div>
+        <div class="as" id="as4"><span class="asn">4</span><div><b>Check with GSTR-3B</b><small>Before filing: choose the GSTR-3B Excel exports</small><button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button></div></div>
+        <div class="as" id="as5"><span class="asn">5</span><div><b>Review</b><small>Open each company and settle the ledgers marked Check</small></div></div>
+      </div>
+      <details class="hint" style="margin:0 0 12px"><summary style="cursor:pointer;font-size:13px"><b>First time on a computer:</b> Tally settings and the launcher</summary>
+      <div class="grid-2" style="margin:10px 0 0">
         <ol class="hint" style="font-size:13px;line-height:1.65;margin:0;padding-left:20px">
           <li><b>Tally:</b> F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>. A second Tally window on this PC needs its own port (9001, 9002…).</li>
           <li><b>Load the companies</b>: F3 (Select Company), mark several with Spacebar. Only loaded companies can be read; with many clients, work in batches of 20 to 30.</li>
           <li><b>Open ITC Desk with <code>ITC Desk.bat</code></b> (first time: Download launcher, and keep it in the same folder as ITC_Desk.html). It opens ITC Desk and starts the Tally link in the background, with no window. The link only reads: it refuses anything that would change Tally.</li>
-          <li>Click <b>Find Tally</b>, tick the companies, check the month, and click <b>Work out selected</b>.</li>
+          <li>Then follow steps 1 to 5 above.</li>
         </ol>
         <div>
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
             <div><label>Tally ports to look at</label><input type="text" id="auto_ports" value="9000-9005"></div>
             <div><label>Month</label><input type="text" id="auto_month_lbl" readonly title="Change it with Return period at the top"></div>
           </div>
-          <div class="hint" id="auto_status" style="margin-top:8px">Not connected yet.</div>
         </div>
       </div>
+      </details>
+      <div class="hint" id="auto_status" style="margin:0 0 8px">Not connected yet.</div>
       <div id="auto_conn" class="aconn"></div>
       <div id="auto_live" class="alive hide" aria-live="polite">
         <div class="alive-head"><span class="alive-dot"></span><b id="alive_co">Waiting</b><span class="hint" id="alive_sub"></span><span class="alive-count" id="alive_count"></span></div>
@@ -1156,9 +1178,7 @@ summary:hover { color: var(--acc); }
       </div>
       <div id="auto_companies"></div>
       <div class="row no-print" style="gap:8px;margin:10px 0;flex-wrap:wrap">
-        <button class="sm p" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button>
         <button class="sm hide" id="auto_stop" onclick="autoStop()">Stop</button>
-        <button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button>
         <button class="sm" onclick="autoDiagnostic()" title="For setting up: what Tally answered to each request">Download diagnostic</button>
         <button class="sm" onclick="autoSaveBatch()">Save batch</button>
         <span class="hint" id="auto_prog"></span>
@@ -3173,7 +3193,6 @@ function parseTallyWorkbook(wb, fileName) {
 }
 
 function parseTallySheetRows(rows, fileName) {
-  const defRate = num('r37_defrate') || 18;
   const fname = fileName || 'file';
   const head = rows.slice(0, 12).map(r => r.map(c => String(c).toLowerCase()).join(' ')).join(' \n ');
   const isRcmSheet = head.includes('voucher register') && head.includes('reverse charge');
@@ -3370,13 +3389,13 @@ function parseTallySheetRows(rows, fileName) {
       const billNo = String(r37Map.bill !== -1 ? row[r37Map.bill] : 'BILL-' + i).trim();
       const nd = normDate(r37Map.date !== -1 ? row[r37Map.date] : '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(nd)) continue; // a bill without a readable date cannot be aged
-      const gross = r37Map.gross !== -1 ? Math.abs(cleanNum(row[r37Map.gross])) : 0;
+      let gross = r37Map.gross !== -1 ? Math.abs(cleanNum(row[r37Map.gross])) : 0;
       const pending = r37Map.pending !== -1 ? Math.abs(cleanNum(row[r37Map.pending])) : 0;
       const paid180 = r37Map.paid !== -1 ? Math.abs(cleanNum(row[r37Map.paid])) : Math.max(0, gross - pending);
+      if (gross === 0 && pending > 0) gross = pending + paid180;
       if (gross === 0) continue;
       const itcRaw = r37Map.itc !== -1 ? Math.abs(cleanNum(row[r37Map.itc])) : 0;
-      const itc = itcRaw > 0 ? itcRaw : +(gross * defRate / (100 + defRate)).toFixed(2);
-      r37Bills.push({ party, billNo, invDate: nd, gross, itc, paid180, statusOverride: 'auto' });
+      r37Bills.push({ party, billNo, invDate: nd, gross, itc: itcRaw, itcEst: !(itcRaw > 0), paid180, statusOverride: 'auto' });
       n++;
     }
     impNotes.push(`${fname}: ${n} supplier bill(s) sent to the 180-day tracker.`);
@@ -3511,7 +3530,11 @@ function parseTallySheetRows(rows, fileName) {
     const bucket = validBuckets.includes(explicitBucket) ? explicitBucket : autoClassifyLedger(ledgerTxt || 'Unspecified ledger');
     const how = validBuckets.includes(explicitBucket) ? 'file' : 'auto';
 
+    // The tax ledgers of this bill: in a Tally register each tax column is a ledger, named as in Tally
+    const taxLed = {};
+    if (!isRcmSheet) [['i', 'igst'], ['c', 'cgst'], ['s', 'sgst']].forEach(([h, hd]) => { const k = colMap.taxCols[hd].filter(k => cleanNum(row[k])).sort((a, b) => Math.abs(cleanNum(row[b])) - Math.abs(cleanNum(row[a])))[0]; if (k !== undefined) { const nm = String(rows[hdrIdx][k] || '').replace(/\s+/g, ' ').trim(); if (nm) taxLed[h] = nm; } });
     importedRows.push({
+      taxLed: Object.keys(taxLed).length ? taxLed : undefined,
       date: colMap.date !== -1 ? normDate(row[colMap.date]) : '',
       party: partyTxt,
       ledger: ledgerTxt || 'Unmapped ledger',
@@ -3890,6 +3913,7 @@ function finalizeUpload(count) {
   judgeBuckets();
   const nCheck = new Set(importedRows.filter(r => r.check).map(r => r.ledger)).size;
   if (nCheck) banner.innerHTML += `<br><b>${nCheck} ledger(s) marked "Check" in the ledger-wise summary.</b> Their bucket is a judgement that needs the bills or the client's confirmation.`;
+  if (!window._autoInject) { const tm = tlMapFromRows(false); if (tm.length) banner.innerHTML += `<br>Credit ledgers for the reversal journal, as named in the register: ${tm.map(n => n.replace(/</g, '&lt;')).join(', ')}.`; }
   renderImporterTable();
   pushImportToCalculator(false);
   renderTurnHelp();
@@ -4991,6 +5015,16 @@ const TV_NATURE = {
 const DR_DEF = { dr42: 'GST ITC Reversal Expense - Rule 42 & 43', drblk: 'Ineligible & Sec 17(5) Blocked ITC Expense' };
 // Rate of the tax ledger itself, as Tally stores it: CGST and SGST carry half the GST rate
 const ledRate = (h, r) => r === null || r === undefined || r === '' ? null : h === 'i' ? +r : h === 'z' ? null : +(r / 2).toFixed(3);
+// Credit ledger names judged from the bills: each bill knows the tax ledgers it used (from Tally, or from the
+// register's column headings), so "CGST", "Input CGST" or "CGST @ 2.5%" is taken as the client actually names it.
+// force: Auto mode (Tally's own names win); otherwise only names not typed by hand are filled.
+function tlMapFromRows(force) {
+  const byKey = {}, F = { i: 'igst', c: 'cgst', s: 'sgst', z: 'cess' };
+  importedRows.forEach(r => { if (!r.taxLed || r.in2B === false) return; const rate = billRate(r); Object.entries(r.taxLed).forEach(([h, n]) => { [h + '|' + (rate ?? ''), h + '|'].forEach(k => { const m = byKey[k] = byKey[k] || {}; m[n] = (m[n] || 0) + Math.abs(r[F[h]] || 0); }); }); });
+  const have = (tlGet().names) || {}, mapped = [];
+  Object.entries(byKey).forEach(([k, m]) => { const n = Object.entries(m).sort((a, b) => b[1] - a[1])[0][0]; if (force || !(have[k] && have[k].trim())) { tlSetName(k, n); mapped.push(n); } });
+  return [...new Set(mapped)];
+}
 function tallyVouchers(d) {
   if (d.isBank) return null;
   const mode = tlGet().mode || 'rate';
@@ -5020,12 +5054,25 @@ function tallyVouchers(d) {
       const lr = ledRate(l.head, l.rate) ?? (typedRate !== '' && isFinite(+typedRate) ? +typedRate : null);
       return { key: nameKey, head: l.head, rate: l.rate, ledRate: lr, rateTyped: l.rate === null || l.rate === undefined, name: tlName(nameKey, def), amt: Math.round(l.amt * 100) / 100 };
     }).filter(l => Math.abs(l.amt) >= 0.005).sort((a, b) => order[a.head] - order[b.head] || (a.rate || 0) - (b.rate || 0));
+    // Tally refuses a voucher whose CGST and SGST differ ("CGST and SGST/UTGST amounts cannot be different"):
+    // each CGST line and its SGST line at the same rate get the same amount, half of the two together
+    lines.filter(l => l.head === 'c').forEach(cl => {
+      const sl = lines.find(l => l.head === 's' && (l.rate ?? null) === (cl.rate ?? null)); if (!sl) return;
+      const half = Math.round((cl.amt + sl.amt) * 50) / 100;
+      cl.amt = half; sl.amt = half;
+      if (cl.ledRate == null && sl.ledRate != null) cl.ledRate = sl.ledRate;
+      if (sl.ledRate == null && cl.ledRate != null) sl.ledRate = cl.ledRate;
+    });
     return { comp: c, ...TV_NATURE[c], drName: tlName(TV_NATURE[c].dr, DR_DEF[TV_NATURE[c].dr]), drKey: TV_NATURE[c].dr, lines };
   }).filter(v => v.lines.length);
-  // The vouchers must add up to the reversal to the paisa: the largest line takes any rounding
+  // The vouchers must add up to the reversal to the paisa. A tax line cannot take the paisa (CGST must equal SGST),
+  // so any rounding goes to the round-off ledger, whose name is editable like the others
   const all = V.flatMap(v => v.lines), diff = Math.round((d.rev4B1 - all.reduce((a, l) => a + l.amt, 0)) * 100) / 100;
-  if (all.length && Math.abs(diff) >= 0.01 && Math.abs(diff) < 1) { const big = all.reduce((a, b) => Math.abs(b.amt) > Math.abs(a.amt) ? b : a); big.amt = Math.round((big.amt + diff) * 100) / 100; }
-  V.forEach(v => { v.total = Math.round(v.lines.reduce((a, l) => a + l.amt, 0) * 100) / 100; v.lines.forEach(l => { l.taxable = l.ledRate ? Math.round(l.amt / (l.ledRate / 100) * 100) / 100 : null; }); });
+  if (all.length && Math.abs(diff) >= 0.01 && Math.abs(diff) < 1) {
+    const big = V.reduce((a, b) => b.lines.reduce((x, l) => x + l.amt, 0) > a.lines.reduce((x, l) => x + l.amt, 0) ? b : a);
+    big.lines.push({ key: 'roundoff', head: 'r', rate: null, ledRate: null, roundoff: true, name: tlName('roundoff', 'ROUND OFF'), amt: diff });
+  }
+  V.forEach(v => { v.total = Math.round(v.lines.reduce((a, l) => a + l.amt, 0) * 100) / 100; v.lines.forEach(l => { l.taxable = l.roundoff ? null : l.ledRate ? Math.round(l.amt / (l.ledRate / 100) * 100) / 100 : null; }); });
   return V;
 }
 function tlRegName() {
@@ -5056,6 +5103,7 @@ function renderTallyVoucher(d) {
 
   const tlMode = tlGet().mode || 'rate';
   const V = tallyVouchers(d);
+  const known = tlGet().known, notIn = n => Array.isArray(known) && known.length && !known.some(k => k.toLowerCase() === String(n || '').trim().toLowerCase());
   window._tlVouchers = V;
   const gst = ($('meta_gstin').value || '').trim().toUpperCase();
   const tlBar = `<div class="row no-print" style="gap:8px;align-items:center;margin:0 0 10px;flex-wrap:wrap">
@@ -5081,18 +5129,21 @@ function renderTallyVoucher(d) {
       <div class="scroll"><table class="tally-tbl">
         <thead><tr><th style="width:60px">Dr / Cr</th><th>Ledger</th><th style="width:110px">Rate</th><th style="width:150px">Taxable value</th><th style="width:140px">Debit (₹)</th><th style="width:140px">Credit (₹)</th></tr></thead>
         <tbody>
-          <tr><td><span class="pill T1">Dr</span></td><td><input class="ledname" value="${escA(v.drName)}" size="${Math.max(14, v.drName.length + 2)}" oninput="tlSetName('${v.drKey}', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses)</span></td><td></td><td></td><td><b>${fmt(v.total)}</b></td><td>—</td></tr>
-          ${v.lines.map(l => `<tr><td><span class="pill T4">Cr</span></td>
-            <td style="padding-left:22px">To <input class="ledname" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false"> <span class="hint">input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''}</span></td>
+          <tr><td><span class="pill T1">Dr</span></td><td><input list="tlKnownList" class="ledname${notIn(v.drName) ? ' notin' : ''}" value="${escA(v.drName)}" size="${Math.max(14, v.drName.length + 2)}" oninput="tlSetName('${v.drKey}', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses)</span></td><td></td><td></td><td><b>${fmt(v.total)}</b></td><td>—</td></tr>
+          ${v.lines.map(l => l.roundoff ? `<tr><td><span class="pill ${l.amt < 0 ? 'T1' : 'T4'}">${l.amt < 0 ? 'Dr' : 'Cr'}</span></td>
+            <td style="padding-left:22px">${l.amt < 0 ? '' : 'To '}<input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('roundoff', this.value)" title="Your round-off ledger, exactly as named in Tally" spellcheck="false"> <span class="hint">paisa left after making CGST equal to SGST</span></td>
+            <td></td><td></td><td>${l.amt < 0 ? `<b>${fmt(-l.amt)}</b>` : '—'}</td><td>${l.amt < 0 ? '—' : `<b>${fmt(l.amt)}</b>`}</td></tr>` : `<tr><td><span class="pill T4">Cr</span></td>
+            <td style="padding-left:22px">To <input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false"> <span class="hint">input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''}</span></td>
             <td>${l.rateTyped ? `<input class="ledname" style="width:70px" value="${l.ledRate ?? ''}" placeholder="rate %" onchange="tlSetName('rate:${l.head}', this.value); if (lastTallyData) renderTallyVoucher(lastTallyData)" title="The bills' rate is not known: type this ledger's rate (CGST 9 for 18% goods)">%` : `${l.ledRate}%`}</td>
             <td>${l.taxable !== null ? fmt(l.taxable) : '<span style="color:var(--bad)">rate needed</span>'}</td>
             <td>—</td><td><b>${fmt(l.amt)}</b></td></tr>`).join('')}
         </tbody>
         <tfoot><tr class="tot"><td colspan="4">Voucher total</td><td>₹ ${fmt(v.total)}</td><td>₹ ${fmt(v.total)}</td></tr></tfoot>
       </table></div>
-    </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}, equal to Table 4(B)(1).${V.some(v => v.lines.some(l => l.taxable === null)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
+    </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}, equal to Table 4(B)(1).${(() => { const m = [...new Set(V.flatMap(v => [v.drName].concat(v.lines.map(l => l.name))).filter(notIn))]; return m.length ? ` <b style="color:var(--bad)">Not in Tally: ${m.map(escA).join(', ')}. Create ${m.length > 1 ? 'these ledgers' : 'this ledger'} in Tally, or type the name Tally uses, before importing.</b>` : ''; })()}${V.some(v => v.lines.some(l => l.taxable === null && !l.roundoff)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
     : `<div class="alert warn">${d.isBank ? 'Rule 38 (banks): pass the journal by hand with Alt+J and the nature your Tally lists for it; ITC Desk does not write this voucher.' : 'The tax-wise split is not known, so the Tally voucher cannot be written. Import the bills, or tick "Enter IGST, CGST and SGST separately" under Single period.'} Reversal for Table 4(B)(1): <b>₹ ${fmt(d.rev4B1)}</b>.</div>`;
-  $('tallyVoucherText').innerHTML = tlBar + vHtml + `
+  const dl = Array.isArray(known) && known.length ? `<datalist id="tlKnownList">${known.map(n => `<option value="${escA(n)}">`).join('')}</datalist>` : '';
+  $('tallyVoucherText').innerHTML = dl + tlBar + vHtml + `
     <div class="tally-screen" style="margin-top:14px">
       <div class="tally-hdr">
         <span>Voucher 2: temporary reversal and re-claim, Tables 4(B)(2) and 4(D)(1)</span>
@@ -5151,7 +5202,7 @@ function copyTallyVoucherPlain() {
   V.forEach((v, n) => {
     out.push(`JOURNAL ${n + 1} (F7, Alt+J) - ${period}`, `Type of duty/tax: GST | Nature: Reversal of Input Tax Credit | Additional: ${v.add}`, '-'.repeat(78));
     out.push(`Dr. ${v.drName}`.padEnd(58) + `₹ ${fmt(v.total)}`);
-    v.lines.forEach(l => out.push(`    Cr. To ${l.name} (rate ${l.ledRate ?? '?'}%, taxable ₹ ${l.taxable !== null ? fmt(l.taxable) : '?'})`.padEnd(58) + `₹ ${fmt(l.amt)}`));
+    v.lines.forEach(l => out.push(l.roundoff ? `    ${l.amt < 0 ? 'Dr.' : 'Cr. To'} ${l.name} (round off)`.padEnd(58) + `₹ ${fmt(Math.abs(l.amt))}` : `    Cr. To ${l.name} (rate ${l.ledRate ?? '?'}%, taxable ₹ ${l.taxable !== null ? fmt(l.taxable) : '?'})`.padEnd(58) + `₹ ${fmt(l.amt)}`));
     out.push('');
   });
   out.push(`Total, GSTR-3B Table 4(B)(1): ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}`);
@@ -5164,7 +5215,7 @@ function exportTallyXMLVoucher() {
   if (!V) { notify('No Tally XML: the tax-wise split is not known, or this is a bank (Rule 38). Pass the journal by hand.'); return; }
   const gstin = ($('meta_gstin').value || '').trim().toUpperCase();
   if (!/^\d{2}[0-9A-Z]{13}$/.test(gstin)) { notify('Type the client\'s GSTIN first: the voucher needs the GST registration.'); return; }
-  if (V.some(v => v.lines.some(l => l.taxable === null))) { notify('Type the missing ledger rates on the voucher first.'); return; }
+  if (V.some(v => v.lines.some(l => l.taxable === null && !l.roundoff))) { notify('Type the missing ledger rates on the voucher first.'); return; }
   const pDate = parsePeriodDate(), last = new Date(pDate.getFullYear(), pDate.getMonth() + 1, 0);
   const ymd = `${last.getFullYear()}${String(last.getMonth() + 1).padStart(2, '0')}${String(last.getDate()).padStart(2, '0')}`;
   const state = GST_STATES[gstin.slice(0, 2)] || '';
@@ -5192,7 +5243,13 @@ function exportTallyXMLVoucher() {
        <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
        <ISLASTDEEMEDPOSITIVE>Yes</ISLASTDEEMEDPOSITIVE>
        <AMOUNT>-${v.total.toFixed(2)}</AMOUNT>
-      </ALLLEDGERENTRIES.LIST>${v.lines.map(l => `
+      </ALLLEDGERENTRIES.LIST>${v.lines.map(l => l.roundoff ? `
+      <ALLLEDGERENTRIES.LIST>
+       <LEDGERNAME>${escX(l.name)}</LEDGERNAME>
+       <ISDEEMEDPOSITIVE>${l.amt < 0 ? 'Yes' : 'No'}</ISDEEMEDPOSITIVE>
+       <ISLASTDEEMEDPOSITIVE>${l.amt < 0 ? 'Yes' : 'No'}</ISLASTDEEMEDPOSITIVE>
+       <AMOUNT>${l.amt.toFixed(2)}</AMOUNT>
+      </ALLLEDGERENTRIES.LIST>` : `
       <ALLLEDGERENTRIES.LIST>
        <LEDGERNAME>${escX(l.name)}</LEDGERNAME>
        <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
@@ -5253,7 +5310,7 @@ function computeR37Row(b, cutoffDate, utilMode) {
 }
 
 function getR37Totals() {
-  const cutoff = $('r37_cutoff') && $('r37_cutoff').value ? new Date($('r37_cutoff').value) : new Date('2026-10-20');
+  const cutoff = $('r37_cutoff') && $('r37_cutoff').value ? new Date($('r37_cutoff').value) : new Date(new Date().toISOString().slice(0, 10));
   const utilMode = $('r37_util') ? $('r37_util').value : 'from181';
   let revTotal = 0, intTotal = 0, reclaimTotal = 0, overdueCount = 0, unpaidSum = 0;
   r37Bills.forEach(b => {
@@ -5275,7 +5332,7 @@ function renderR37Table() {
   const sumBox = $('resRule37Summary');
   if (!tbody) return;
 
-  const cutoff = $('r37_cutoff') && $('r37_cutoff').value ? new Date($('r37_cutoff').value) : new Date('2026-10-20');
+  const cutoff = $('r37_cutoff') && $('r37_cutoff').value ? new Date($('r37_cutoff').value) : new Date(new Date().toISOString().slice(0, 10));
   const utilMode = $('r37_util') ? $('r37_util').value : 'from181';
   const filter = $('r37_filter') ? $('r37_filter').value : 'all';
 
@@ -5288,6 +5345,10 @@ function renderR37Table() {
   }
 
   let totGross = 0, totItc = 0, totPaid = 0, totUnpaid = 0, totRev = 0, totInt = 0, totReclaim = 0, overdueBills = 0;
+  // ITC not in the export: filled from the rate typed above, or left at 0 and shown red
+  const estRate = num('r37_defrate');
+  r37Bills.forEach(b => { if (b.itcEst) b.itc = estRate > 0 ? +(b.gross * estRate / (100 + estRate)).toFixed(2) : 0; });
+  const nNoItc = r37Bills.filter(b => b.itcEst && !(estRate > 0)).length;
 
   const rowsHtml = r37Bills.map((b, i) => {
     const m = computeR37Row(b, cutoff, utilMode);
@@ -5316,7 +5377,7 @@ function renderR37Table() {
         <td><input type="date" value="${b.invDate}" oninput="r37Bills[${i}].invDate=this.value;renderR37Table();saveState()"></td>
         <td style="white-space:nowrap">${fmtDate(m.due180)}</td>
         <td><input type="number" value="${b.gross}" style="min-width:95px" oninput="r37Bills[${i}].gross=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
-        <td><input type="number" value="${b.itc}" style="min-width:85px" oninput="r37Bills[${i}].itc=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
+        <td><input type="number" value="${b.itcEst && !(estRate > 0) ? '' : b.itc}" placeholder="${b.itcEst && !(estRate > 0) ? 'ITC?' : ''}" title="${b.itcEst ? (estRate > 0 ? 'Worked out at ' + estRate + '% — type the actual ITC to replace it' : 'Not in the export — type the ITC on this bill (0 for exempt goods)') : ''}" style="min-width:85px${b.itcEst ? (estRate > 0 ? ';background:#fff8e6' : ';background:#fdecec;border-color:var(--bad)') : ''}" onchange="r37Bills[${i}].itc=parseFloat(this.value)||0;r37Bills[${i}].itcEst=false;renderR37Table();saveState()"></td>
         <td><input type="number" value="${b.paid180}" style="min-width:95px" oninput="r37Bills[${i}].paid180=parseFloat(this.value)||0;renderR37Table();saveState()"></td>
         <td><b>${fmt(m.unpaid)}</b></td>
         <td style="color:${m.isOver180 && m.unpaid > 0 ? 'var(--bad)' : 'var(--ink)'};font-weight:700">${m.ageDays}d ${m.isOver180 ? `<span class="hint">(+${m.overdueDays}d &gt;180)</span>` : ''}</td>
@@ -5351,7 +5412,7 @@ function renderR37Table() {
     </tr>
   `;
 
-  sumBox.innerHTML = `
+  sumBox.innerHTML = (nNoItc ? `<div class="banner warn" style="margin-bottom:10px">${nNoItc} bill(s) have no ITC yet (red cells), so their reversal shows ₹0. Type the ITC on each bill (0 for exempt goods), or a GST rate above, or use Auto mode, which reads it from the purchase vouchers.</div>` : '') + `
     <div class="tiles" style="margin:0">
       <div class="tile"><div class="l">Bills over 180 days</div><div class="v" style="color:var(--bad)">${overdueBills} of ${r37Bills.length}</div><div class="s">Unpaid Value: ₹ ${fmt(totUnpaid)}</div></div>
       <div class="tile"><div class="l">Reversal in Table 4(B)(2)</div><div class="v" style="color:var(--bad)">₹ ${fmt(totRev)}</div><div class="s">Proportionate Unpaid ITC</div></div>
@@ -5418,6 +5479,16 @@ function handleR37Upload(ev) {
 
 function parseR37File(file) {
   const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'xml') {
+    const r = new FileReader();
+    r.onload = e => {
+      const rows = r37XmlRows(tallyText(new Uint8Array(e.target.result)));
+      if (!rows) { notify('This XML is not a Tally bills report. Export Exception Reports > Overdue Payables (or Outstandings > Payables) as XML or Excel.'); return; }
+      parseR37RowsArray(rows);
+    };
+    r.readAsArrayBuffer(file);
+    return;
+  }
   if (ext === 'csv' || ext === 'txt') {
     const r = new FileReader();
     r.onload = e => {
@@ -5446,13 +5517,25 @@ function parseR37File(file) {
   reader.readAsArrayBuffer(file);
 }
 
+// Tally's bills reports in XML: <BILLFIXED><BILLDATE/><BILLREF/><BILLPARTY/></BILLFIXED><BILLCL/>...
+function r37XmlRows(t) {
+  const un = x => String(x || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").trim();
+  const tag = (blk, n) => { const m = blk.match(new RegExp('<' + n + '>([\\s\\S]*?)</' + n + '>')); return m ? un(m[1]) : ''; };
+  const re = /<BILLFIXED>([\s\S]*?)<\/BILLFIXED>([\s\S]*?)(?=<BILLFIXED>|<\/ENVELOPE>|$)/g;
+  const rows = [['Date', 'Ref. No.', "Party's Name", 'Pending Amount']];
+  let m;
+  while ((m = re.exec(t))) rows.push([tag(m[1], 'BILLDATE'), tag(m[1], 'BILLREF'), tag(m[1], 'BILLPARTY'), tag(m[2], 'BILLCL')]);
+  return rows.length > 1 ? rows : null;
+}
+
 function parseR37RowsArray(rows) {
-  const defRate = num('r37_defrate') || 18;
   let hdrIdx = -1;
   let map = { party: -1, bill: -1, date: -1, gross: -1, itc: -1, paid: -1, pending: -1 };
   for (let i = 0; i < Math.min(rows.length, 25); i++) {
     const r = rows[i].map(c => String(c).trim().toLowerCase());
-    if (r.some(c => c.includes('party') || c.includes('supplier') || c.includes('vendor') || c.includes('ref') || c.includes('pending') || c.includes('bill'))) {
+    // The heading row names several columns (a title such as "Bills Payable" alone is not it)
+    const hits = [r.some(c => c.includes('party') || c.includes('supplier') || c.includes('vendor')), r.some(c => c.includes('ref') || c.includes('bill no') || c.includes('inv')), r.some(c => c.includes('pending') || c.includes('unpaid') || c.includes('balance') || c.includes('closing')), r.some(c => c === 'date' || c.includes('bill date') || c.includes('inv date'))].filter(Boolean).length;
+    if (hits >= 2) {
       hdrIdx = i;
       r.forEach((col, idx) => {
         if (map.party === -1 && (col.includes('party') || col.includes('supplier') || col.includes('vendor') || col.includes('account'))) map.party = idx;
@@ -5479,36 +5562,27 @@ function parseR37RowsArray(rows) {
     const party = String(map.party !== -1 ? row[map.party] : '').trim();
     if (!party || /^(total|grand total)$/i.test(party)) continue;
     const billNo = String(map.bill !== -1 ? row[map.bill] : 'BILL-' + i).trim();
-    let rawDate = map.date !== -1 ? row[map.date] : '2026-03-10';
-    let invDate = '2026-03-10';
-    if (typeof rawDate === 'number') {
-      const d = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
-      if (!isNaN(d)) invDate = d.toISOString().slice(0, 10);
-    } else if (rawDate) {
-      const parsed = new Date(rawDate);
-      if (!isNaN(parsed)) invDate = parsed.toISOString().slice(0, 10);
-    }
+    // A bill without a readable date cannot be aged: it is skipped, never given a made-up date
+    const invDate = normDate(map.date !== -1 ? row[map.date] : '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(invDate)) continue;
 
-    let gross = map.gross !== -1 ? cleanNum(row[map.gross]) : 0;
-    let pending = map.pending !== -1 ? cleanNum(row[map.pending]) : 0;
-    let paid180 = map.paid !== -1 ? cleanNum(row[map.paid]) : Math.max(0, gross - pending);
+    let gross = map.gross !== -1 ? Math.abs(cleanNum(row[map.gross])) : 0;
+    let pending = map.pending !== -1 ? Math.abs(cleanNum(row[map.pending])) : 0;
+    let paid180 = map.paid !== -1 ? Math.abs(cleanNum(row[map.paid])) : Math.max(0, gross - pending);
     if (gross === 0 && pending > 0) gross = pending + paid180;
     if (gross === 0) continue;
 
-    let itc = map.itc !== -1 ? cleanNum(row[map.itc]) : 0;
-    if (itc === 0) {
-      itc = +(gross * defRate / (100 + defRate)).toFixed(2);
-    }
-
-    imported.push({ party, billNo, invDate, gross, itc, paid180, statusOverride: 'auto' });
+    const itc = map.itc !== -1 ? Math.abs(cleanNum(row[map.itc])) : 0;
+    imported.push({ party, billNo, invDate, gross, itc, itcEst: !(itc > 0), paid180, statusOverride: 'auto' });
   }
 
   if (imported.length) {
     r37Bills = imported;
     renderR37Table();
     saveState();
-    notify(`Imported ${imported.length} supplier bills into 180-Day Rule 37 Tracker.`);
-  }
+    const nEst = imported.filter(b => b.itcEst).length;
+    notify(`Imported ${imported.length} supplier bills into the 180-day tracker.` + (nEst ? ` ${nEst} bill(s) have no ITC in the export (Tally's Overdue Payables shows no GST): their ITC cells are red. Type the ITC for each, or a GST rate above if all are at one rate, or use Auto mode, which reads the ITC from each purchase voucher.` : ''));
+  } else notify('No supplier bills found in this file. Export Exception Reports > Overdue Payables (or Outstandings > Payables) from Tally as Excel or XML.');
 }
 
 function downloadR37Template() {
@@ -5759,6 +5833,124 @@ function autoMonth() {
 }
 
 
+
+/* ---------- AUTO: earlier periods (capital goods under Rule 43, supplier bills under Rule 37) ---------- */
+const isoOf = d => d && d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d;
+const ymdOf = dt => `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
+const tdlDate = dt => `${dt.getDate()}-${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dt.getMonth()]}-${dt.getFullYear()}`;
+const tdlStr = x => '"' + String(x).replace(/"/g, '""') + '"';
+// The same registration's other years, if their companies are loaded in Tally (one company per financial year)
+function autoSameReg(c) { return AUTO.companies.filter(x => x !== c && x.gstin && x.gstin === c.gstin); }
+async function autoVchWhere(cc, formula, label, ms) {
+  const tdl = `<COLLECTION NAME="ITCDeskQ" ISMODIFY="No"><TYPE>Voucher</TYPE><FETCH>${VCH_FETCH}</FETCH><FILTER>ITCDeskQF</FILTER></COLLECTION><SYSTEM TYPE="Formulae" NAME="ITCDeskQF">${formula}</SYSTEM>`;
+  const doc = await tallyAsk(cc.port, tReqCollection('ITCDeskQ', cc.name, tdl), label, ms || 120000);
+  return Array.from(doc.getElementsByTagName('VOUCHER')).map(autoParseVch);
+}
+// Capital goods with credit taken in the 60 months before this month: Rule 43 reverses a share every month,
+// whether or not it was reversed when they were bought. They are added to the capital goods register.
+// Section 17(3) and Explanation 1 items, read from the month's vouchers: outward supplies on which the recipient pays
+// tax, sale of securities and of land or building (added to E and F), and interest earned (left out of both)
+function autoSec17(V, L, base) {
+  const info = n => L[String(n).toLowerCase()] || {};
+  const r = { rcm: 0, sec: 0, land: 0, fd: 0, scrip: 0, led: { rcm: new Set(), sec: new Set(), land: new Set(), fd: new Set(), scrip: new Set() } };
+  V.forEach(v => {
+    if (v.cancelled) return;
+    const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
+    if (/memorandum|reversing/.test(b)) return;
+    if (/sales/.test(b) && v.rcm) v.lines.forEach(l => { const f = info(l.led); if (!f.head && !f.party && l.amt > 0) { r.rcm += l.amt; r.led.rcm.add(l.led); } });
+    v.lines.forEach(l => {
+      const f = info(l.led), n = String(l.led).toLowerCase();
+      if (l.amt <= 0 || f.head || f.party) return;
+      if (/investments/.test(f.prim || '')) { r.sec += l.amt; r.led.sec.add(l.led); }
+      else if (/fixed assets/.test(f.prim || '') && /\b(land|building|plot|site|flat|premises|property)\b/.test(n)) { r.land += l.amt; r.led.land.add(l.led); }
+      else if (/incomes/.test(f.prim || '') && /interest|discount (earned|received on (deposit|loan))/.test(n) && !/paid|payable/.test(n)) { r.fd += l.amt; r.led.fd.add(l.led); }
+      else if (/meis|rodtep|scrip|duty credit/.test(n) && /incomes/.test(f.prim || '')) { r.scrip += l.amt; r.led.scrip.add(l.led); }
+    });
+  });
+  return r;
+}
+async function autoCapitalGoods(c, M, L) {
+  const monthStart = new Date(M.y, M.m, 1), winStart = new Date(M.y, M.m - 60, 1);
+  const out = { assets: [], notes: [], checked: [] };
+  for (const cc of [c].concat(autoSameReg(c))) {
+    const LL = cc === c ? L : await autoLedgers(cc);
+    const fa = Object.values(LL).filter(x => x.asset).map(x => x.name);
+    if (!fa.length) { out.checked.push(cc.name); continue; }
+    if (fa.length > 60) { out.notes.push(`${cc.name}: ${fa.length} fixed-asset ledgers; only the first 60 were checked.`); }
+    const inFA = fa.slice(0, 60).map(n => `$LedgerName = ${tdlStr(n)}`).join(' OR ');
+    const f = `$Date &gt;= $$Date:"${tdlDate(winStart)}" AND $Date &lt; $$Date:"${tdlDate(monthStart)}" AND NOT $IsCancelled AND NOT $IsOptional AND $$FilterCount:AllLedgerEntries:ITCDeskIsFA &gt; 0</SYSTEM><SYSTEM TYPE="Formulae" NAME="ITCDeskIsFA">${xmlEsc(inFA).replace(/&amp;gt;/g, '&gt;')}`;
+    const V = await autoVchWhere(cc, f, `capital goods: ${cc.name}`);
+    const faSet = new Set(fa.map(n => n.toLowerCase()));
+    V.forEach(v => {
+      if (v.cancelled || v.date < isoOf(ymdOf(winStart)) || v.date >= isoOf(ymdOf(monthStart))) return;
+      const info = n => LL[String(n).toLowerCase()] || {};
+      const tax = v.lines.filter(l => info(l.led).head && l.amt < 0).reduce((a, l) => a - l.amt, 0);
+      if (tax < 0.01) return; // no credit taken on it
+      const debits = v.lines.filter(l => !info(l.led).head && !info(l.led).party && l.amt < 0);
+      const tot = debits.reduce((a, l) => a - l.amt, 0);
+      debits.filter(l => faSet.has(l.led.toLowerCase())).forEach(l => {
+        const gst = Math.round(tax * (-l.amt) / (tot || -l.amt) * 100) / 100;
+        if (gst >= 0.01) out.assets.push({ fromAuto: true, name: `${l.led} (${v.party || 'voucher ' + (v.no || '')})`, invDate: v.date, mode: 'common', switchDate: v.date, gst });
+      });
+    });
+    out.checked.push(cc.name);
+    await pause(200);
+  }
+  // Years in the 60-month window whose company is not loaded cannot be checked
+  const fys = new Set([c].concat(autoSameReg(c)).map(x => autoCompanyFY(x)).filter(x => x != null));
+  const missing = [];
+  for (let y = (winStart.getMonth() >= 3 ? winStart.getFullYear() : winStart.getFullYear() - 1); y < (M.m >= 3 ? M.y : M.y - 1); y++) if (!fys.has(y)) missing.push(`${y}-${String(y + 1).slice(2)}`);
+  if (fys.size && missing.length) out.notes.push(`Capital goods bought in FY ${missing.join(', ')} were not checked, as those years' companies are not loaded in Tally. Load them (F3) and run again, or add such assets in the Capital goods tab.`);
+  autoLog('capital-goods', { checked: out.checked, assets: out.assets.length, missing });
+  return out;
+}
+// Supplier bills older than 180 days and not fully paid: Rule 37 reverses their credit in Table 4(B)(2)
+async function autoRule37(c, M, L) {
+  const monthEnd = new Date(M.y, M.m + 1, 0), due = new Date(M.y, M.m + 1, 0 - 180);
+  const out = { bills: [], notes: [] };
+  let bills = [];
+  const doc = await tallyAsk(c.port, tReqCollection('ITCDeskBills', c.name, `<COLLECTION NAME="ITCDeskBills" ISMODIFY="No"><TYPE>Bills</TYPE><CHILDOF>Sundry Creditors</CHILDOF><BELONGSTO>Yes</BELONGSTO><FETCH>Name, Parent, BillDate, ClosingBalance, OpeningBalance</FETCH></COLLECTION>`, `<SVFROMDATE>${M.from}</SVFROMDATE><SVTODATE>${ymdOf(monthEnd)}</SVTODATE>`), 'bills payable', 60000);
+  Array.from(doc.querySelectorAll('COLLECTION > *')).forEach(b => {
+    const name = b.getAttribute('NAME') || kid(b, 'NAME'), party = kid(b, 'PARENT'), bd = kid(b, 'BILLDATE'), cl = parseFloat(kid(b, 'CLOSINGBALANCE'));
+    if (name && party && /^\d{8}$/.test(bd) && isFinite(cl)) bills.push({ name, party, date: isoOf(bd), unpaid: cl });
+  });
+  autoLog('bills payable read', { n: bills.length, sample: bills.slice(0, 5) });
+  if (!bills.length) throw new Error('Tally sent no supplier bills (bill-wise details may be off for creditors)');
+  // Creditors' bills are credit balances: positive in Tally's XML
+  const overdue = bills.filter(b => b.date <= isoOf(ymdOf(due)) && b.unpaid > 0.5);
+  if (!overdue.length) { out.notes.push(`Rule 37: no supplier bill dated on or before ${fmtDate(isoOf(ymdOf(due)))} is unpaid. Nothing to reverse in Table 4(B)(2).`); return out; }
+  // Find each overdue bill's purchase voucher, for its GST, in this year's company or the year it was booked in
+  const parties = [...new Set(overdue.map(b => b.party))].slice(0, 40);
+  const pf = parties.map(p => `$PartyLedgerName = ${tdlStr(p)}`).join(' OR ');
+  const found = {};
+  for (const cc of [c].concat(autoSameReg(c))) {
+    const LL = cc === c ? L : await autoLedgers(cc);
+    let V = [];
+    try { V = await autoVchWhere(cc, `$Date &lt;= $$Date:"${tdlDate(due)}" AND NOT $IsCancelled AND NOT $IsOptional AND (${xmlEsc(pf)})`, `rule 37 bills: ${cc.name}`); } catch (e) { if (AUTO.stop) throw e; out.notes.push(`${cc.name}: the purchase vouchers could not be read (${e.message}).`); continue; }
+    V.forEach(v => (v.bills || []).forEach(bl => {
+      if (!/new ref/i.test(bl.type)) return;
+      const k = (v.party + '|' + bl.name).toLowerCase(); if (found[k]) return;
+      const info = n => LL[String(n).toLowerCase()] || {};
+      const itc = v.lines.filter(l => info(l.led).head && l.amt < 0).reduce((a, l) => a - l.amt, 0);
+      found[k] = { itc, gross: Math.abs(bl.amt) };
+    }));
+    await pause(200);
+  }
+  const notFound = [];
+  overdue.forEach(b => {
+    const f = found[(b.party + '|' + b.name).toLowerCase()];
+    if (!f) { notFound.push(b); return; }
+    if (f.itc < 0.01) return; // bought without GST: nothing to reverse
+    const gross = Math.max(f.gross, b.unpaid);
+    out.bills.push({ fromAuto: true, party: b.party, billNo: b.name, invDate: b.date, gross: Math.round(gross * 100) / 100, itc: Math.round(f.itc * 100) / 100, paid180: Math.round((gross - b.unpaid) * 100) / 100, statusOverride: 'auto' });
+  });
+  if (notFound.length) {
+    const amt = notFound.reduce((a, b) => a + b.unpaid, 0), fy = [...new Set(notFound.map(b => { const y = +b.date.slice(0, 4), m = +b.date.slice(5, 7); const s0 = m >= 4 ? y : y - 1; return `${s0}-${String(s0 + 1).slice(2)}`; }))].join(', ');
+    out.notes.push(`<b>Rule 37: ${notFound.length} unpaid bill(s) over 180 days (₹ ${fmt(amt)} pending, booked in FY ${fy}) could not be matched to their purchase vouchers</b>, so their credit is not known. Load those years' companies in Tally (F3) and run again; bills bought without GST then drop out by themselves. Largest: ${notFound.sort((a, b) => b.unpaid - a.unpaid).slice(0, 5).map(b => `${escA(b.party)} ${escA(b.name)} ₹ ${fmt(b.unpaid)}`).join('; ')}.`);
+  }
+  autoLog('rule 37', { overdue: overdue.length, withCredit: out.bills.length, notFound: notFound.length });
+  return out;
+}
 /* ---------- AUTO MODE: what the user sees while Tally is read ---------- */
 const ASTEPS = [
   ['Connect', '<path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0z"/><path d="M12 16v5"/>'],
@@ -5801,11 +5993,21 @@ function autoConnRender(linkOk) {
   if (dot) { dot.className = 'tdot' + (AUTO.companies.length ? ' on' : ''); dot.title = AUTO.companies.length ? `Connected: ${AUTO.ports.length} Tally window(s), ${AUTO.companies.length} compan${AUTO.companies.length === 1 ? 'y' : 'ies'}` : 'Link running, no company loaded'; }
 }
 async function autoCheckLink() {
+  autoStepsRender();
   if (AUTO.companies.length) return;
   let ok = false;
   try { const r = await linkFetch('/ping', null, 2500); ok = !!(r && (r.ok || /ITC Tally link/.test(JSON.stringify(r)))); } catch (e) {}
   if (ok) { $('auto_conn').innerHTML = `<div class="achip link"><div><b>Tally link running</b><small>Read-only · this computer only. Click Find Tally.</small></div></div>`; if ($('auto_dot')) { $('auto_dot').className = 'tdot'; $('auto_dot').title = 'Link running, not yet connected to Tally'; } }
   else autoConnRender(false);
+}
+
+function autoStepsRender() {
+  if (!$('asteps')) return;
+  const R = AUTO.results || [];
+  const done = [AUTO.companies.length > 0, AUTO.companies.some(c => c.sel), R.some(r => r.state), R.length > 0 && R.filter(r => r.state).every(r => r.chk), false];
+  const next = done.findIndex((d, i) => !d && !(i === 3 && !done[2]));
+  [1, 2, 3, 4, 5].forEach(k => { const el = $('as' + k); if (el) el.className = 'as' + (done[k - 1] ? ' done' : '') + (next === k - 1 ? ' now' : ''); });
+  if ($('as2m')) $('as2m').textContent = $('meta_period').value || '';
 }
 async function autoStopLink() {
   try { await linkFetch('/quit', null, 3000); } catch (e) {}
@@ -5858,11 +6060,12 @@ async function autoConnect() {
   autoRenderCompanies();
 }
 function autoRenderCompanies() {
+  setTimeout(autoStepsRender, 0);
   const box = $('auto_companies');
   if (!AUTO.companies.length && !AUTO.ports.length) { box.innerHTML = ''; $('auto_go').disabled = true; return; }
   if (!AUTO.companies.length) { box.innerHTML = '<div class="alert warn">Tally answered, but no company is loaded. Load companies with F3 and click Find Tally again.</div>'; $('auto_go').disabled = true; return; }
   box.innerHTML = `<div class="scroll"><table><thead><tr><th style="width:36px"><input type="checkbox" ${AUTO.companies.every(c => c.sel) ? 'checked' : ''} onchange="AUTO.companies.forEach(c=>c.sel=this.checked);autoRenderCompanies()"></th><th>Company</th><th>GSTIN</th><th>Port</th><th>Status</th><th>Note</th></tr></thead><tbody>
-    ${AUTO.companies.map((c, i) => `<tr><td><input type="checkbox" ${c.sel ? 'checked' : ''} onchange="AUTO.companies[${i}].sel=this.checked;$('auto_go').disabled=!AUTO.companies.some(x=>x.sel)"></td><td><b>${escA(c.name)}</b></td><td>${c.gstin || '<span style="color:var(--mut)">not read</span>'}</td><td>${c.port}</td><td>${c.st ? `<span class="ast ${c.st[0]}"><i></i>${c.st[1]}</span>` : `<span class="ast"><i></i>${c.sel ? 'Queued' : '—'}</span>`}</td><td class="hint">${c.multi ? `${c.multi} GST registrations: only the first is worked out` : ''}</td></tr>`).join('')}
+    ${AUTO.companies.map((c, i) => `<tr><td><input type="checkbox" ${c.sel ? 'checked' : ''} onchange="AUTO.companies[${i}].sel=this.checked;$('auto_go').disabled=!AUTO.companies.some(x=>x.sel);autoStepsRender()"></td><td><b>${escA(c.name)}</b></td><td>${c.gstin || '<span style="color:var(--mut)">not read</span>'}</td><td>${c.port}</td><td>${c.st ? `<span class="ast ${c.st[0]}"><i></i>${c.st[1]}</span>` : `<span class="ast"><i></i>${c.sel ? 'Queued' : '—'}</span>`}</td><td class="hint">${c.multi ? `${c.multi} GST registrations: only the first is worked out` : ''}</td></tr>`).join('')}
   </tbody></table></div>`;
   $('auto_go').disabled = !AUTO.companies.some(c => c.sel);
 }
@@ -6034,7 +6237,11 @@ async function autoVouchers(c, M) {
     const d2 = await tallyAsk(c.port, tReqReport('Day Book', c.name, M.from, M.to), 'day book');
     V = Array.from(d2.getElementsByTagName('VOUCHER'));
   }
-  return V.map(v => {
+  return V.map(autoParseVch).filter(v => v.date >= `${M.from.slice(0, 4)}-${M.from.slice(4, 6)}-01` && v.date <= `${M.to.slice(0, 4)}-${M.to.slice(4, 6)}-${M.to.slice(6)}`);
+}
+// One voucher as ITC Desk uses it: ledger lines, stock lines with taxability, bill references, flags
+function autoParseVch(v) {
+  {
     const rates = e => { const o = {}; kids(e, 'RATEDETAILS.LIST').forEach(rd => { const h = kid(rd, 'GSTRATEDUTYHEAD').toLowerCase(), r = parseFloat(kid(rd, 'GSTRATE')); if (r > 0) o[/igst|integrated/.test(h) ? 'i' : /cgst|central/.test(h) ? 'c' : /sgst|utgst|state tax/.test(h) && !/cess/.test(h) ? 's' : 'x'] = r; }); return o; };
     const ent = tag => Array.from(v.getElementsByTagName(tag)).map(e => ({ led: kid(e, 'LEDGERNAME'), amt: parseFloat(kid(e, 'AMOUNT')) || 0, rcm: /^\s*(yes|applicable)\s*$/i.test(kid(e, 'GSTOVRDNISREVCHARGEAPPL')), rate: rates(e) })).filter(x => x.led);
     let lines = ent('ALLLEDGERENTRIES.LIST'); if (!lines.length) lines = ent('LEDGERENTRIES.LIST');
@@ -6052,8 +6259,9 @@ async function autoVouchers(c, M) {
     const optional = /yes/i.test(kid(v, 'ISOPTIONAL')), cancelledOnly = /yes/i.test(kid(v, 'ISCANCELLED'));
     const rcmAny = /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')) || Array.from(v.getElementsByTagName('GSTOVRDNISREVCHARGEAPPL')).some(e => /^\s*(yes|applicable)\s*$/i.test(e.textContent));
     return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), party: kid(v, 'PARTYLEDGERNAME'),
-      rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines };
-  }).filter(v => v.date >= `${M.from.slice(0, 4)}-${M.from.slice(4, 6)}-01` && v.date <= `${M.to.slice(0, 4)}-${M.to.slice(4, 6)}-${M.to.slice(6)}`);
+      rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines,
+      bills: Array.from(v.getElementsByTagName('BILLALLOCATIONS.LIST')).map(b => ({ name: kid(b, 'NAME'), type: kid(b, 'BILLTYPE'), amt: parseFloat(kid(b, 'AMOUNT')) || 0 })) };
+  }
 }
 // GSTR-3B as Tally computes it: tried under the names TallyPrime uses for the report
 // Report names tried once per Tally window; the first that answers with a full GSTR-3B is kept for the rest of the batch
@@ -6114,6 +6322,8 @@ function autoPurchaseRows(V, L, base) {
     if (!tax.length) return;
     if (isJ && !/input tax credit/i.test(v.adj)) { skippedJ++; return; }
     const heads = { i: 0, c: 0, s: 0, z: 0 }; tax.forEach(l => heads[info(l.led).head] += Math.abs(l.amt));
+    // The tax ledgers this bill used, by head, so the reversal voucher can credit the same ledgers
+    const taxLed = {}; ['i', 'c', 's', 'z'].forEach(h => { const t = tax.filter(l => info(l.led).head === h).sort((a, b) => Math.abs(b.amt) - Math.abs(a.amt))[0]; if (t) taxLed[h] = info(t.led).name || t.led; });
     let exp = v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && (isDN ? l.amt > 0 : l.amt < 0); });
     // Round-off carries no tax: keep the input tax on the real purchase or expense lines
     const real = exp.filter(l => !/round(ing)?\s*-?\s*off|rounding/i.test(l.led));
@@ -6124,7 +6334,7 @@ function autoPurchaseRows(V, L, base) {
       const w = tot ? Math.abs(l.amt) / tot : 1 / exp.length;
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * +(heads.i * w).toFixed(2), cgst: sign * +(heads.c * w).toFixed(2), sgst: sign * +(heads.s * w).toFixed(2), in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * +(heads.i * w).toFixed(2), cgst: sign * +(heads.c * w).toFixed(2), sgst: sign * +(heads.s * w).toFixed(2), in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
   rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
@@ -6165,6 +6375,7 @@ function autoSalesSummary(V, L, base) {
     const isS = /sales/.test(b), isCN = /credit note/.test(b);
     if (!isS && !isCN) return;
     const sign = isCN ? -1 : 1;
+    if (v.rcm) return; // tax paid by the recipient: section 17(3), added to E and F separately
     // Best: the taxability Tally recorded on each stock line
     if (v.inv && v.inv.length && v.inv.every(x => x.tax)) {
       const taxedInv = v.lines.some(l => info(l.led).head);
@@ -6239,6 +6450,76 @@ async function autoRunOne(c) {
     await new Promise(res => { window._afterUpload = res; processUploadedFiles([new File([toCsv(sc.rows)], `Tally ${c.name} GSTR-3B.csv`, { type: 'text/csv' })]); });
   }
   calcAll();
+  const nNotes0 = impNotes.length;
+  // Section 17(3) items and interest earned, from the vouchers
+  { const x = autoSec17(V, L, base), set = (id, v) => { if ($(id)) { $(id).value = v ? v.toFixed(2) : ''; $(id).dispatchEvent(new Event('input')); } };
+    set('adj_rcm', x.rcm); set('adj_sec', x.sec); set('adj_land', x.land); set('adj_scrip', x.scrip);
+    if (x.fd) { set('imp_fd', x.fd); set('FD', x.fd); }
+    const lst = k => [...x.led[k]].slice(0, 4).join(', ');
+    const parts = [];
+    if (x.rcm) parts.push(`outward supplies with tax paid by the recipient ₹ ${fmt(x.rcm)} (${lst('rcm')}), added to E and F`);
+    if (x.sec) parts.push(`sale of securities ₹ ${fmt(x.sec)} (${lst('sec')}): 1% is added to E and F. Use the sale value, not the cost credited to the investment ledger`);
+    if (x.land) parts.push(`sale of land or building ₹ ${fmt(x.land)} (${lst('land')}): replace it with the stamp duty value`);
+    if (x.fd) parts.push(`interest earned ₹ ${fmt(x.fd)} (${lst('fd')}), left out of E and F (not for a bank or NBFC)`);
+    if (x.scrip) parts.push(`sale of duty credit scrips ₹ ${fmt(x.scrip)} (${lst('scrip')}), left out of E`);
+    impNotes.push(parts.length ? `<b>Section 17(3) items found in Tally:</b> ${parts.map(escA).join('; ')}. They are in Single period > Section 17(3) adjustments; check each one.` : 'Section 17(3): no outward reverse-charge supply, sale of securities, land or building, or interest income was found this month.');
+    calcAll(); }
+  // Ledger names for the reversal journal, taken from Tally: the tax ledgers the bills used, the round-off ledger,
+  // an expense ledger for the reversal if one exists, and the GST registration's name
+  { const mapped = tlMapFromRows(true);
+    const all = Object.values(L);
+    // The round-off ledger, however it is spelt: "ROUND OFF", "Round of", "Roundoff", "Round offf", "Rounding Off", "R/Off"
+    const roScore = x => {
+      if (x.head || x.party || /sales|purchase|stock|capital|fixed|loan|bank|cash/.test(x.prim)) return 0;
+      const n = x.name.toLowerCase().trim();
+      let sc = /\bround(ed|ing)?[\s\-_./]*o+f*\b|\brounding\b|\br[\s./]*off\b|\brnd[\s./]*off\b/.test(n) ? 3 : 0;
+      if (!sc) return 0;
+      if (/incomes|expenses/.test(x.prim)) sc += 1;
+      if (/^(round(ing)?[\s\-_./]*o+f*|roundoff|r[\s./]*off)$/.test(n)) sc += 1;
+      return sc;
+    };
+    const ro = all.map(x => [x, roScore(x)]).filter(z => z[1]).sort((a, b) => b[1] - a[1])[0]?.[0]; if (ro) { tlSetName('roundoff', ro.name); mapped.push(ro.name); }
+    // The client's own reversal ledger, whatever it is called: "ITC Reversal", "Rule 42 ledger", "GST Reversed", "Reversal of Input Credit"...
+    const drScore = x => {
+      if (x.head || x.party || /sales|purchase|stock|capital|fixed|loan|bank|cash/.test(x.prim)) return 0;
+      const n = x.name.toLowerCase(); let sc = 0;
+      if (/rever(s|t)/.test(n)) sc += 2;
+      if (/\bitc\b|input|credit|\bgst\b/.test(n)) sc += 1;
+      if (/rule\s*-?\s*4[23]|17\s*\(?\s*2\s*\)?|common credit|exempt/.test(n)) sc += 2;
+      if (/blocked|ineligible|17\s*\(?\s*5/.test(n)) sc -= 3;
+      if (/expenses/.test(x.prim)) sc += 1;
+      return sc >= 3 ? sc : 0;
+    };
+    const dr = all.map(x => [x, drScore(x)]).filter(z => z[1]).sort((a, b) => b[1] - a[1])[0]?.[0]; if (dr) { tlSetName('dr42', dr.name); mapped.push(dr.name); }
+    const bl = all.find(x => !x.head && !x.party && /expenses/.test(x.prim) && /ineligible|blocked|17\s*\(?5\)?/i.test(x.name)); if (bl) { tlSetName('drblk', bl.name); mapped.push(bl.name); }
+    if (c.reg) tlSetName('reg', c.reg);
+    // Remember which ledgers exist in Tally (GST, expenses, incomes), so the journal can warn about a name Tally lacks
+    { const t = tlGet(); t.known = all.filter(x => x.head || /expenses|incomes|duties/.test(x.prim)).map(x => x.name).slice(0, 1500); tlSave(t); }
+    const need = [tlName('dr42', DR_DEF.dr42)], miss = need.filter(n => !all.some(x => x.name.toLowerCase() === n.toLowerCase()));
+    if (miss.length) { impNotes.push(`<b>Ledger not in Tally: "${escA(miss[0])}".</b> Create it in Tally under Indirect Expenses before importing the reversal journal, or type the name of your existing reversal expense ledger on the Vouchers tab. Otherwise Tally will refuse the journal.`); window._autoMissLed = miss; } else window._autoMissLed = [];
+    if (mapped.length) impNotes.push(`Ledger names for the reversal journal taken from Tally: ${[...new Set(mapped)].join(', ')}.${dr ? '' : ' No expense ledger for the reversal was found; the journal suggests one, rename it on the Vouchers tab or create it in Tally.'}`); }
+  // Earlier periods: capital goods (Rule 43) and supplier bills unpaid beyond 180 days (Rule 37)
+  let cgInfo = null, r37Info = null;
+  try {
+    cgInfo = await autoCapitalGoods(c, M, L);
+    cgAssets = cgAssets.filter(a => !a.fromAuto).concat(cgInfo.assets);
+    if (typeof renderCG === 'function') renderCG();
+    impNotes.push(cgInfo.assets.length ? `Capital goods: ${cgInfo.assets.length} asset(s) with credit taken in the 60 months before ${M.label} were found in Tally and added to the Capital goods register as common (Rule 43). Mark any used only for taxable or only for exempt supplies there. If their monthly reversal was never made, see "Earlier months not reversed" on that tab.` : `Capital goods: no asset with credit taken in the 60 months before ${M.label} was found in ${cgInfo.checked.join(', ') || 'Tally'}.`);
+    cgInfo.notes.forEach(n => impNotes.push(n));
+    aliveLog(`Capital goods: ${cgInfo.assets.length} found in earlier months`);
+  } catch (e) { if (AUTO.stop) throw e; autoLog('capital-goods-failed', { error: e.message }); impNotes.push(`Capital goods of earlier months could not be read from Tally (${escA(e.message)}). Add them in the Capital goods tab.`); }
+  try {
+    r37Info = await autoRule37(c, M, L);
+    r37Bills = r37Bills.filter(b => !b.fromAuto).concat(r37Info.bills);
+    if ($('r37_cutoff')) $('r37_cutoff').value = isoOf(M.to);
+    if (typeof renderR37Table === 'function') renderR37Table();
+    if (r37Info.bills.length) impNotes.push(`Rule 37: ${r37Info.bills.length} supplier bill(s) with credit are unpaid beyond 180 days. They are in the 180-day tab, with the reversal for Table 4(B)(2) and interest.`);
+    r37Info.notes.forEach(n => impNotes.push(n));
+    aliveLog(`Supplier bills unpaid beyond 180 days: ${r37Info.bills.length}`);
+  } catch (e) { if (AUTO.stop) throw e; autoLog('rule37-failed', { error: e.message }); impNotes.push(`Supplier bills could not be read from Tally (${escA(e.message)}). For Rule 37, drop the Bills Payable export on the 180-day tab.`); }
+  calcAll();
+  // Show the notes added after the import in the import banner too
+  { const b = $('importStatusBanner'); const extra = impNotes.slice(nNotes0); if (b && extra.length) b.innerHTML += extra.map(n => '<br>' + (/^<b>/.test(n) ? n : String(n).replace(/</g, '&lt;'))).join(''); }
   // Cross-check Tally's turnover with the sales vouchers: a large gap means a figure was read from the wrong place
   let turnDiff = 0;
   if (g3b) { const t = autoSalesSummary(V, L, base), mine = t.a + t.c + t.e, theirs = ['imp_31a', 'imp_31b', 'imp_31c', 'imp_31e'].reduce((x, id) => x + (+$(id).value || 0), 0);
@@ -6253,7 +6534,7 @@ async function autoRunOne(c) {
   const gap = /differs from GSTR-3B Table 4\(A\)/.test(impNotes.join(' '));
   const st0 = collectState();
   astepSet(5); aliveLog(`Reversal ${k.blocked ? 'not worked out' : '₹ ' + fmt(k.rev4B1 || 0)}${nCheck ? `, ${nCheck} ledger(s) to check` : ''}`);
-  return { name: c.name, gstin: $('meta_gstin').value, port: c.port, vch: V.length, rcmPending: rcmV && !rcmRows ? rcmV : 0, turnDiff, checkNames, books, maths, month: M.label, a31: +$('imp_31a').value || 0, c31: +$('imp_31c').value || 0, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: st0, autoState: st0, sales: { a: SS.a, c: SS.c, e: SS.e, exGst: SS.exGst }, at: fmtStamp(new Date()) };
+  return { name: c.name, gstin: $('meta_gstin').value, port: c.port, vch: V.length, rcmPending: rcmV && !rcmRows ? rcmV : 0, missLed: (window._autoMissLed || []).slice(), turnDiff, checkNames, books, maths, cg: cgInfo ? cgInfo.assets.length : null, r37: r37Info ? r37Info.bills.length : null, month: M.label, a31: +$('imp_31a').value || 0, c31: +$('imp_31c').value || 0, rev: k.rev4B1 || 0, T: k.T || 0, checks: nCheck, blocked: !!k.blocked, gap, from3b: !!g3b, state: st0, autoState: st0, notes: impNotes.slice(), banner: $('importStatusBanner') ? [$('importStatusBanner').className, $('importStatusBanner').innerHTML] : null, sales: { a: SS.a, c: SS.c, e: SS.e, exGst: SS.exGst }, at: fmtStamp(new Date()) };
 }
 /* Which financial year a loaded company holds: from its name ("…, 2025-2026") or its books-from date */
 function autoCompanyFY(c) {
@@ -6311,10 +6592,11 @@ function autoStop() {
   $('auto_prog').textContent = 'Stopping…';
 }
 function autoRenderResults() {
+  setTimeout(autoStepsRender, 0);
   const R = AUTO.results;
   if ($('auto_chk_btn')) { const on = R.some(r => r.state); $('auto_chk_btn').disabled = !on; $('auto_chk_btn').title = on ? 'Choose one or more GSTR-3B Excel exports from Tally; each file finds its company by its GSTIN' : 'Available once a company has been worked out'; }
   if (!R.length) { $('auto_results').innerHTML = ''; return; }
-  const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.books && r.books.nBad ? ['bad', `Read differs from Tally's books (${r.books.nBad} ledger${r.books.nBad === 1 ? '' : 's'})`] : r.maths && !r.maths.ok ? ['bad', 'Arithmetic check failed'] : r.vch === 0 ? ['bad', `No vouchers in ${r.month || 'this month'}: check the month`] : r.rcmPending && !r.chk ? ['bad', `Reverse charge credit missing: check with GSTR-3B`] : r.turnDiff && !r.chk ? ['warn', 'Turnover differs from sales vouchers'] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `To check: ${(r.checkNames || []).slice(0, 3).join(', ') || r.checks + ' ledger(s)'}${(r.checkNames || []).length > 3 ? ` +${r.checkNames.length - 3}` : ''}`] : ['ok', 'Ready to review'];
+  const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.books && r.books.nBad ? ['bad', `Read differs from Tally's books (${r.books.nBad} ledger${r.books.nBad === 1 ? '' : 's'})`] : r.maths && !r.maths.ok ? ['bad', 'Arithmetic check failed'] : r.vch === 0 ? ['bad', `No vouchers in ${r.month || 'this month'}: check the month`] : r.rcmPending && !r.chk ? ['bad', `Reverse charge credit missing: check with GSTR-3B`] : r.turnDiff && !r.chk ? ['warn', 'Turnover differs from sales vouchers'] : r.missLed && r.missLed.length ? ['warn', `Create ledger in Tally: ${r.missLed[0]}`] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `To check: ${(r.checkNames || []).slice(0, 3).join(', ') || r.checks + ' ledger(s)'}${(r.checkNames || []).length > 3 ? ` +${r.checkNames.length - 3}` : ''}`] : ['ok', 'Ready to review'];
   const order = r => r.error ? 0 : r.rcmPending && !r.chk ? 1 : r.blocked ? 1 : r.gap ? 2 : r.checks ? 3 : 4;
   const sorted = R.map((r, i) => ({ r, i })).sort((a, b) => order(a.r) - order(b.r));
   $('auto_results').innerHTML = `<div class="card-title" style="margin-top:6px"><span>Batch: ${R.length} compan${R.length === 1 ? 'y' : 'ies'}, ${$('meta_period').value}</span></div><div class="scroll"><table><thead><tr><th>Company</th><th>GSTIN</th><th style="text-align:right">ITC (T)</th><th style="text-align:right">Reversal 4(B)(1)</th><th>Status</th><th>Second opinion</th><th>Turnover from</th><th>Tally's GSTR-3B</th><th></th></tr></thead><tbody>
@@ -6338,8 +6620,39 @@ async function autoChkPeek(file) {
     const g = (txt.match(/\b\d{2}[A-Z]{5}\d{4}[A-Z][0-9A-Z]Z[0-9A-Z]\b/) || [])[0] || '';
     const pm = txt.match(/(\d{1,2})-([A-Za-z]{3})-(\d{2,4})\s+to\s+(\d{1,2})-([A-Za-z]{3})-(\d{2,4})/);
     const first = String((rows[0] || [])[0] || '').trim();
-    return { gstin: g, company: first, period: pm ? pm[0] : '', from: pm ? pm.slice(1, 4) : null, to: pm ? pm.slice(4, 7) : null, top: rows.slice(0, 9).map(r => r.filter(x => x !== '').join(' ')).filter(Boolean).join(' / ').slice(0, 200) };
+    // Tally prints "Company name, 2025-2026" on the first line and the report's name a few lines below
+    const fyM = first.match(/,\s*(\d{4})\s*-\s*(\d{4})\s*$/);
+    const lines = rows.slice(0, 12).map(r => r.filter(x => x !== '').join(' ').trim().toLowerCase());
+    const title = lines.find(l => /^gstr-?3b\b/.test(l)) || '';
+    return { gstin: g, company: first, coBase: fyM ? first.slice(0, fyM.index).trim() : first, coFY: fyM ? +fyM[1] : null, title, period: pm ? pm[0] : '', from: pm ? pm.slice(1, 4) : null, to: pm ? pm.slice(4, 7) : null, top: rows.slice(0, 9).map(r => r.filter(x => x !== '').join(' ')).filter(Boolean).join(' / ').slice(0, 200) };
   } catch (e) { return { error: e.message || String(e) }; }
+}
+// Is this export the GSTR-3B of the same Tally company, for the same whole period? Returns the reason it is not, or ''
+function autoChkVet(r, file, pk) {
+  // 1. The right report: GSTR-3B itself (Return view or Nature view), not a drill-down register or another report
+  if (!pk.title) return (`${file.name} is not Tally's GSTR-3B report. It begins: "${pk.top || 'empty'}". Export GSTR-3B itself (Alt+E, Excel), not a register opened from it.`);
+  if (/register|voucher/.test(pk.title)) return (`${file.name} is "${pk.title}", a list of vouchers opened from GSTR-3B. Go back to the GSTR-3B report itself and export that.`);
+  // 2. The right company: GSTIN and Tally company name must both agree when the file shows them
+  const nm = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const sameCo = !pk.company || nm(pk.company) === nm(r.name) || nm(pk.coBase) === nm(r.name);
+  if (!pk.gstin && !(pk.company && sameCo)) return (`${file.name} shows neither a GSTIN nor the company name ${r.name} at the top.`);
+  if (pk.gstin && r.gstin && pk.gstin !== r.gstin) return (`wrong company. ${file.name} is for GSTIN ${pk.gstin}${pk.company ? ` (${pk.company})` : ''}, but ${r.name} is ${r.gstin}.`);
+  if (r.name && !sameCo && nm(pk.coBase) === nm(String(r.name).replace(/,\s*\d{4}\s*-\s*\d{4}\s*$/, ''))) return (`wrong year. ${file.name} was exported from the Tally company "${pk.company}", but this result is from "${r.name}". Open the GSTR-3B in the same year's company.`);
+  if (r.name && !sameCo) return (`wrong company. ${file.name} was exported from the Tally company "${pk.company}", but this result is "${r.name}". Both may share a GSTIN; export from the same company.`);
+  // 3. The right period: the whole month (or the whole year) worked out, day 1 to the last day
+  if (!pk.from) return (`${file.name} shows no period at the top, as Tally's GSTR-3B export does.`);
+  {
+    const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const y = v => (+v < 100 ? 2000 + +v : +v);
+    const f = new Date(y(pk.from[2]), MON.indexOf(pk.from[1].toLowerCase()), +pk.from[0]), t = new Date(y(pk.to[2]), MON.indexOf(pk.to[1].toLowerCase()), +pk.to[0]);
+    applyState(r.autoState || r.state);
+    const per = $('meta_period').value, full = /full year/i.test(per), d = parsePeriodDate(), fy = +$('FY').value;
+    const wf = full ? new Date(fy, 3, 1) : new Date(d.getFullYear(), d.getMonth(), 1), wt = full ? new Date(fy + 1, 2, 31) : new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const ds = x => `${x.getDate()}-${MON[x.getMonth()][0].toUpperCase()}${MON[x.getMonth()].slice(1)}-${x.getFullYear()}`;
+    if (isNaN(f) || isNaN(t) || f.getTime() !== wf.getTime() || t.getTime() !== wt.getTime()) return (`wrong period. ${file.name} covers ${pk.period}, but ${r.name} was worked out for ${r.month || per} (${ds(wf)} to ${ds(wt)}).${f.getTime() === wf.getTime() || t.getTime() === wt.getTime() ? ' Part of the period is not enough: in GSTR-3B press F2 and give the whole period.' : ''}`);
+    if (pk.coFY && !(f >= new Date(pk.coFY, 3, 1) && t <= new Date(pk.coFY + 1, 2, 31))) return (`${file.name} comes from the Tally company for ${pk.coFY}-${pk.coFY + 1}, which does not hold ${pk.period}.`);
+  }
+  return '';
 }
 async function autoChkRun(i, file, quiet) {
   const say = m => { if (!quiet) notify(m); return m; };
@@ -6347,17 +6660,7 @@ async function autoChkRun(i, file, quiet) {
   if (!/\.xlsx?$/i.test(file.name)) { return say('Choose the Excel export of GSTR-3B (Alt+E, Excel). The XML export has no GSTIN or period in it, so ITC Desk cannot check that it is the right file.'); }
   const pk = await autoChkPeek(file);
   if (pk.error) return say(`ITC Desk could not open ${file.name} (${pk.error}). If it is open in Excel, close it and try again.`);
-  if (!pk.gstin && pk.company && pk.company === r.name) pk.gstin = r.gstin; // export without the GSTIN line: the Tally company name identifies it
-  if (!pk.gstin || !pk.from) { return say(`This file does not show ${!pk.from ? 'a period' : 'a GSTIN or the company name'} at the top, as Tally's GSTR-3B export does. Nothing changed.`); }
-  if (pk.gstin && r.gstin && pk.gstin !== r.gstin) { return say(`Wrong file: it is for GSTIN ${pk.gstin}, but ${r.name} is ${r.gstin}. Nothing changed.`); }
-  if (pk.from) {
-    const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const y = v => (+v < 100 ? 2000 + +v : +v), m1 = MON.indexOf(pk.from[1].toLowerCase()), m2 = MON.indexOf(pk.to[1].toLowerCase());
-    const d = (() => { applyState(r.autoState || r.state); return parsePeriodDate(); })();
-    if (!(m1 === d.getMonth() && y(pk.from[2]) === d.getFullYear() && m2 === d.getMonth() && y(pk.to[2]) === d.getFullYear()) && !/full year/i.test($('meta_period').value)) {
-      return say(`Wrong period: the file covers ${pk.period}, but this result is for ${r.month || $('meta_period').value}. Nothing changed.`);
-    }
-  }
+  { const why = autoChkVet(r, file, pk); if (why) return say(`Not used: ${why} Nothing changed.`); }
   // Always start from the Auto working, so checking twice (or with Check all, then Check) gives the same result
   applyState(r.autoState || r.state);
   calcAll();
@@ -6418,10 +6721,11 @@ async function autoChkAll(files) {
     const pk = await autoChkPeek(f);
     if (pk.error) { out.push(['bad', f.name, `Could not open the file (${pk.error}). If it is open in Excel, close it and try again.`]); continue; }
     let idx = pk.gstin ? AUTO.results.map((r, k) => k).filter(k => AUTO.results[k].gstin === pk.gstin && AUTO.results[k].state) : [];
-    if (!idx.length && pk.company) idx = AUTO.results.map((r, k) => k).filter(k => AUTO.results[k].name === pk.company && AUTO.results[k].state);
+    if (!idx.length && pk.company) { const nm = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); idx = AUTO.results.map((r, k) => k).filter(k => [nm(pk.company), nm(pk.coBase)].includes(nm(AUTO.results[k].name)) && AUTO.results[k].state); }
     if (!pk.gstin && !idx.length) { out.push(['bad', f.name, `Neither a GSTIN nor a company of this batch at the top of the file. It begins: "${pk.top || 'empty'}". Skipped.`]); continue; }
     if (!idx.length) { out.push(['bad', f.name, `GSTIN ${pk.gstin} is not in this batch. Skipped.`]); continue; }
     if (idx.length > 1) { out.push(['bad', f.name, `GSTIN ${pk.gstin} is in the batch more than once (two companies with one registration). Use Check on the right row. Skipped.`]); continue; }
+    { const why = autoChkVet(AUTO.results[idx[0]], f, pk); if (why) { out.push(['bad', f.name, why.charAt(0).toUpperCase() + why.slice(1)]); continue; } }
     if (used.has(idx[0])) { out.push(['bad', f.name, `A second file for ${AUTO.results[idx[0]].name}: skipped. Only the first was used.`]); continue; }
     $('auto_prog').textContent = `Checking ${out.length + 1} of ${files.length}: ${AUTO.results[idx[0]].name}…`;
     const msg = await autoChkRun(idx[0], f, true);
@@ -6477,6 +6781,9 @@ function autoChkShow(i) {
 function autoOpen(i) {
   const r = AUTO.results[i]; if (!r || !r.state) return;
   applyState(r.state);
+  // Each company's own import notes, not those of the last company worked out
+  if (Array.isArray(r.notes)) impNotes = r.notes.slice();
+  if (r.banner && $('importStatusBanner')) { $('importStatusBanner').className = r.banner[0]; $('importStatusBanner').innerHTML = r.banner[1]; }
   showTab(0);
   notify(`${r.name}: review the ledgers marked Check, then Single period.`);
 }

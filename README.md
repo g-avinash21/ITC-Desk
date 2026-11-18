@@ -10,14 +10,14 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
 - **Not on Tally?** Drop GSTR-2B from the GST portal (Excel or JSON: B2B, credit and debit notes, ISD and imports; ITC marked not available is kept out) and type the GSTR-3B 3.1 sales. Each supplier is one line, and the bucket chosen is remembered for that client next month. Or fill the Excel template from any software's purchase register (Busy, Marg, Zoho Books, Excel).
 - **Buckets every ledger** (T1, T2, T3, T4, C2, Tc) with a written reason. Doubtful ones are marked **Check**. Section 17(5) items are recognised clause by clause, and reverse-charge services by their nature.
 - **Rule 42 and 43** for a single period and month by month for the year, including the second proviso to Rule 42(1)(i) (a month without sales uses the last month that had sales) and the Rule 42(2) annual true-up.
-- **Rule 37**: bills unpaid after 180 days.
+- **Rule 37**: bills unpaid after 180 days, from Tally's Overdue Payables or Outstandings > Payables (Excel or XML). That export has no GST, so ITC is never guessed: each bill's ITC is typed, set from one rate, or read from the purchase voucher in Auto mode.
 - **Section 16(4) time limit**: bills older than the limit (30 November after their financial year) are kept out of T and shown in Table 4(D)(2); bills in their last month get a warning.
 - **Whole year (for notices and the Rule 42(2) true-up)**: import a year's files and choose Full Year; the year's required reversal is set against what GSTR-3B reversed, with interest from 1 April after the year, and the reverse-charge credit that Rule 42 actually reverses.
 - **Rule 43 catch-up**: for capital goods whose monthly Te was never reversed, the missed reversal for each earlier month of the 60, with interest from each due date.
 - **Interest and penalty** estimates (sections 50, 73, 74 and 74A by financial year).
 - **Checks**: GSTIN check digit, ITC against GSTR-3B Table 4(A), Nature View against Return View, sales that may be untaxed in 3.1(a).
 - **GSTR-3B Table 4 as on the portal**: 4(A)(1) to (5), 4(B)(1) and (2), 4(C) and 4(D), by IGST, CGST, SGST and Cess, filled from the bills (reverse charge in 4(A)(3), imports in 4(A)(1), ISD in 4(A)(4)), with the GSTR-9 Table 7 split of the reversal.
-- **Tally journals that land in 4(B)(1)**: the XML carries the Stat Adjustment (GST, Reversal of Input Tax Credit, with Rule 42(1)(m), Rule 43(1)(h) or Ineligible Credit), and the rate and taxable value of every tax line. Ledger names and the GST registration are editable to match your Tally, rate-wise or one per tax, and remembered for each client.
+- **Tally journals that land in 4(B)(1)**: the XML carries the Stat Adjustment (GST, Reversal of Input Tax Credit, with Rule 42(1)(m), Rule 43(1)(h) or Ineligible Credit), and the rate and taxable value of every tax line. CGST and SGST are always equal, with any paisa difference on an editable Round Off line, so Tally does not list the journal under Uncertain Transactions. Ledger names and the GST registration are editable to match your Tally, rate-wise or one per tax, and remembered for each client.
 - **Output**: Excel working with live formulas (bills, ledgers, working, month-wise and true-up), a printable A4 working paper, the journal entries and Tally XML.
 - **ICAI references**: beside each bucket's reason, the ICAI study material page or GST handbook page that supports it (for example *ICAI Blocked credit handbook p. 71* for cab hire). The link opens ICAI's website, where the publications are free to download.
 - **Optional assistant**: a small AI model running on your own computer (llama.cpp with a Hugging Face model) can suggest buckets for ledgers marked Check. It only suggests; nothing changes until you accept. See `ITC assistant.bat`.
@@ -42,15 +42,19 @@ The **Auto** tab reads straight from TallyPrime and works out every loaded compa
 2. Load the companies (F3, Spacebar to select several). Only loaded companies can be read.
 3. Open ITC Desk by double-clicking `ITC Desk.bat` (keep it in the same folder as the HTML file). It opens the page and starts the Tally link in the background, with no extra window. It uses Windows PowerShell, installs nothing, listens only on this computer, and refuses any request that would change Tally. The Auto tab shows which Tally windows and companies are connected, and a "Stop link" button switches the link off.
    The first time, it offers to start the link whenever Windows starts, so Auto mode always finds it.
-4. In ITC Desk: Auto > Find Tally > tick the companies > Work out selected. A progress bar shows each company and each step. Open each result to review it like a normal import.
+4. In ITC Desk, follow the numbered steps on the Auto tab: 1 Find Tally, 2 tick the companies and Work out selected, 3 review, 4 Check with Tally's GSTR-3B before filing. A progress bar shows each company and each step. Open each result to review it like a normal import.
 
 What Auto does for each company, and how it checks itself:
 
 - **Purchases and credit** from the vouchers; reverse charge credit worked out from each reverse-charge line at the rate Tally stores on it; round-off lines get no tax.
 - **Turnover item by item**, from the taxability Tally stores on each stock item. Exempt items sold on invoices that also charge GST are counted as exempt, as Rule 42 requires; Tally's own GSTR-3B counts them in 3.1(a).
+- **Section 17(3)** items (reverse charge, securities, land, duty credit scrips) are found from the ledgers and kept out of turnover as the law requires.
+- **Capital goods (Rule 43)**: assets bought with credit in the last 60 months are found and added to the Capital goods register.
+- **Rule 37**: bills of this month's suppliers unpaid after 180 days, with the ITC from each purchase voucher.
+- **Ledger names read from Tally**: the journal uses your own GST, reversal and round-off ledgers, recognised even when named differently ("Input CGST", "CGST @2.5%", "ITC reversal", "Roundoff"). If the reversal ledger does not exist in Tally, you are told before posting.
 - **Second opinion**: Tally's own ledger totals for the month (GST, sales, purchase and expense ledgers) must equal the vouchers read, to the paisa. Any difference is listed by ledger.
 - **Purchase ledgers verified from stock items**: when every item bought with GST was sold only with GST that month, the T4 bucket is confirmed without asking.
-- **Check with Tally's GSTR-3B**: choose one or many GSTR-3B Excel exports (detailed view, Alt+F5); each file finds its company by GSTIN, a wrong company or month is refused, and the differences are shown and explained.
+- **Check with Tally's GSTR-3B**: choose one or many GSTR-3B Excel exports (detailed view, Alt+F5); each file finds its company by GSTIN. A file for another GSTIN, another Tally company or year, another month or part of a month, or any report other than GSTR-3B itself is refused with the reason, and nothing changes. Differences are shown and explained.
 - The month is checked against the company's financial year, Stop works at once, and vouchers are read a few days at a time so Tally stays responsive.
 
 **Download diagnostic** saves every request made to Tally with its timing, to help fix a company that fails.
