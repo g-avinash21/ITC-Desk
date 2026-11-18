@@ -117,7 +117,7 @@ code { font-family: inherit; font-size: 12.5px; background: var(--bg); border: 1
 .tabs { display: flex; align-items: flex-end; gap: 4px; padding-top: 10px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; }
 /* Seven tabs: on narrower screens the side notes and the small labels give way, so every tab stays visible */
 @media (max-width: 1640px) { .side-foot { display: none; } }
-@media (max-width: 1460px) { .tab small { display: none; } .tab { padding: 10px 11px 9px; } }
+@media (max-width: 1640px) { .tab small { display: none; } .tab { padding: 10px 11px 9px; } }
 .tabs::-webkit-scrollbar { display: none; }
 /* Tabs sit on the bar's rule; the open one is a crimson block on its plinth edge, like the main buttons */
 .tab {
@@ -319,7 +319,7 @@ td input, td select { min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .astep-fill, .astep-c, .abar-fill { transition: none; } .alive-dot, .tdot.busy, .ast.work i { animation: none; } }
 #auto_companies th, #auto_companies td { text-align: left; }
 .ledname.notin { border-color: var(--bad) !important; background: rgba(200, 30, 40, .06); }
-.asteps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 0 0 14px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.asteps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin: 0 0 14px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
 .as { display: flex; gap: 10px; padding: 12px 14px; background: var(--card); border-left: 1px solid var(--line); align-items: flex-start; }
 .as:first-child { border-left: 0; }
 .as b { display: block; font-size: 13.5px; }
@@ -330,7 +330,8 @@ td input, td select { min-width: 0; }
 .as.now button { background: var(--acc); color: #fff; border-color: var(--acc); }
 .as.done .asn { border-color: #1f8a4c; background: #1f8a4c; color: #fff; font-size: 0; }
 .as.done .asn::after { content: "\2713"; font-size: 13px; }
-@media (max-width: 1100px) { .asteps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1100px) { .asteps { grid-template-columns: 1fr 1fr 1fr; } }
+.as select { width: 100%; font-size: 12.5px; padding: 4px 6px; margin: 0 0 6px; }
 .anext { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
 .anext > div { padding: 12px 16px; font-size: 12.5px; line-height: 1.55; color: var(--mut); }
 .anext > div + div { border-left: 1px solid var(--line); }
@@ -385,6 +386,10 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 .tally-narration { padding: 10px 14px; background: var(--bg); font-size: 12.5px; border-top: 1px solid var(--line); }
 
 .dropzone { flex: 1; display: flex; flex-direction: column; justify-content: center; border: 1.5px dashed var(--mut); background: var(--bg); border-radius: var(--radius); padding: 24px 22px; text-align: left; cursor: pointer; transition: border-color .1s, background .1s; }
+/* Most months come through Auto: the manual drop area stays compact instead of filling the column */
+body.on-auto .metabar { display: none; }
+#tallyDropzone { flex: none; padding: 14px 18px; min-height: 0; }
+#tallyDropzone .hint { margin: 2px 0 0; }
 .dropzone:hover, .dropzone.dragover { border-color: var(--acc); border-style: solid; background: var(--acc-bg); }
 .drop-title { font-weight: 700; font-size: 14.5px; }
 .side-note { border-left: 1px solid var(--line); padding: 2px 0 2px 22px; }
@@ -466,13 +471,13 @@ summary:hover { color: var(--acc); }
       <div class="ref">Rules 42, 43 and 37, CGST Rules</div>
     </div>
     <nav class="tabs" aria-label="Sections">
-      <button class="tab on" id="t0" onclick="showTab(0)"><span>Import</span><small>Tally, portal, Excel</small></button>
+      <button class="tab on" id="t6" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
+      <button class="tab" id="t0" onclick="showTab(0)"><span>Import</span><small>Tally, portal, Excel</small></button>
       <button class="tab" id="t1" onclick="showTab(1)"><span>Single period</span><small>Rule 42</small></button>
       <button class="tab" id="t2" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
       <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
       <button class="tab" id="t4" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
       <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
-      <button class="tab" id="t6" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
     </nav>
     <div class="side-foot">
       <span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span>
@@ -510,7 +515,7 @@ summary:hover { color: var(--acc); }
     </div>
     <div>
       <label><b>Financial year</b></label>
-      <select id="FY" onchange="buildPeriodDropdown();buildMonths();calcAll();saveState()">
+      <select id="FY" onchange="buildPeriodDropdown();buildMonths();calcAll();saveState();autoStepsRender()">
         <option value="2026">FY 2026-27</option>
         <option value="2025">FY 2025-26</option>
         <option value="2024">FY 2024-25</option>
@@ -521,7 +526,7 @@ summary:hover { color: var(--acc); }
     </div>
     <div>
       <label><b>Return period</b></label>
-      <select id="meta_period" onchange="calcAll();saveState()"></select>
+      <select id="meta_period" onchange="calcAll();saveState();autoStepsRender()"></select>
     </div>
     <div>
       <label><b>Taxpayer type</b></label>
@@ -534,7 +539,7 @@ summary:hover { color: var(--acc); }
 
 
   <!-- ==================== TAB 0: ZERO-TOUCH TALLY / EXCEL / JSON IMPORTER ==================== -->
-  <div id="p0">
+  <div id="p0" class="hide">
     <div class="card">
       <div class="card-title">
         <span>Import the month</span>
@@ -552,14 +557,14 @@ summary:hover { color: var(--acc); }
                ondragleave="this.classList.remove('dragover')"
                ondrop="handleFileDrop(event)">
             <div class="drop-title">Drop the files here, or click to choose</div>
-            <div class="hint">Drop one client's files for one month together: the three Tally reports, or GSTR-2B from the GST portal, or the filled template. The client, GSTIN and month are read from the files.</div>
+            <div class="hint">One client's files for one month: the three Tally reports, GSTR-2B, or the filled template. Client, GSTIN and month are read from the files. Working from TallyPrime? Use the <a href="#" onclick="event.stopPropagation();showTab(6);return false">Auto tab</a> instead.</div>
             <input type="file" id="tallyFiles" accept=".xlsx,.xls,.csv,.txt,.json,.xml" multiple class="hide" onchange="handleTallyUpload(event)">
           </div>
 
         </div>
 
-        <div class="side-note">
-          <div class="lead">Where are the client's books kept?</div>
+        <details class="side-note">
+          <summary class="lead" style="cursor:pointer">Manual import: where are the client's books kept, and what to export</summary>
           <div class="seg no-print" role="tablist" style="margin:6px 0 10px">
             <button class="sm on" id="rt_tally" onclick="importRoute('tally')">TallyPrime</button>
             <button class="sm" id="rt_portal" onclick="importRoute('portal')">Other software, or none</button>
@@ -591,7 +596,7 @@ summary:hover { color: var(--acc); }
             <li><b>Sales:</b> type the 3.1 figures on the GSTR-3B sheet. Put the client's name, GSTIN and month at the top of each sheet, then drop the file.</li>
           </ol>
           </div>
-        </div>
+        </details>
       </div>
       <div id="importStatusBanner" class="alert ok hide" style="margin:0 0 14px"></div>
       <details class="no-print" id="aiPanel">
@@ -1134,7 +1139,7 @@ summary:hover { color: var(--acc); }
 
 
   <!-- ==================== TAB 6: AUTO MODE, STRAIGHT FROM TALLYPRIME ==================== -->
-  <div id="p6" class="hide">
+  <div id="p6">
     <div class="card">
       <div class="card-title">
         <span>Auto: extract from TallyPrime and work out every loaded company</span>
@@ -1144,11 +1149,12 @@ summary:hover { color: var(--acc); }
         </div>
       </div>
       <div class="asteps" id="asteps">
-        <div class="as" id="as1"><span class="asn">1</span><div><b>Find Tally</b><small>Finds the open Tally windows and their loaded companies</small><button class="sm" onclick="autoConnect()">Find Tally</button></div></div>
-        <div class="as" id="as2"><span class="asn">2</span><div><b>Tick the companies</b><small>In the list below. Check the month: <b id="as2m"></b></small></div></div>
-        <div class="as" id="as3"><span class="asn">3</span><div><b>Work out</b><small>Reads each company and does the whole working</small><button class="sm" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button></div></div>
-        <div class="as" id="as4"><span class="asn">4</span><div><b>Check with GSTR-3B</b><small>Before filing: choose the GSTR-3B Excel exports</small><button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button></div></div>
-        <div class="as" id="as5"><span class="asn">5</span><div><b>Review</b><small>Open each company and settle the ledgers marked Check</small></div></div>
+        <div class="as" id="as0"><span class="asn">1</span><div><b>Choose the month</b><small>The return period to work out, every time</small><select id="auto_fy" onchange="autoPeriodPick('fy')" aria-label="Financial year"></select><select id="auto_per" onchange="autoPeriodPick('per')" aria-label="Return period"></select><button class="sm" id="auto_per_ok" onclick="autoPeriodConfirm()">Use this month</button></div></div>
+        <div class="as" id="as1"><span class="asn">2</span><div><b>Find Tally</b><small>Finds the open Tally windows and their loaded companies</small><button class="sm" id="auto_find" onclick="autoFindClick()">Find Tally</button></div></div>
+        <div class="as" id="as2"><span class="asn">3</span><div><b>Tick the companies</b><small>In the list below, for <b id="as2m"></b></small></div></div>
+        <div class="as" id="as3"><span class="asn">4</span><div><b>Work out</b><small>Reads each company and does the whole working</small><button class="sm" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button></div></div>
+        <div class="as" id="as4"><span class="asn">5</span><div><b>Check with GSTR-3B</b><small>Before filing: choose the GSTR-3B Excel exports</small><button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button></div></div>
+        <div class="as" id="as5"><span class="asn">6</span><div><b>Review</b><small>Open each company and settle the ledgers marked Check</small></div></div>
       </div>
       <details class="hint" style="margin:0 0 12px"><summary style="cursor:pointer;font-size:13px"><b>First time on a computer:</b> Tally settings and the launcher</summary>
       <div class="grid-2" style="margin:10px 0 0">
@@ -1156,7 +1162,7 @@ summary:hover { color: var(--acc); }
           <li><b>Tally:</b> F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>. A second Tally window on this PC needs its own port (9001, 9002…).</li>
           <li><b>Load the companies</b>: F3 (Select Company), mark several with Spacebar. Only loaded companies can be read; with many clients, work in batches of 20 to 30.</li>
           <li><b>Open ITC Desk with <code>ITC Desk.bat</code></b> (first time: Download launcher, and keep it in the same folder as ITC_Desk.html). It opens ITC Desk and starts the Tally link in the background, with no window. The link only reads: it refuses anything that would change Tally.</li>
-          <li>Then follow steps 1 to 5 above.</li>
+          <li>Then follow steps 1 to 6 above.</li>
         </ol>
         <div>
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
@@ -1453,6 +1459,8 @@ function showTab(k) {
     if ($('p' + i)) $('p' + i).classList.toggle('hide', i !== k);
     if ($('t' + i)) $('t' + i).classList.toggle('on', i === k);
   });
+  // On Auto the month is chosen in step 1 and the client comes from Tally: the top bar would only repeat it
+  document.body.classList.toggle('on-auto', k === 6);
   if (k === 6 && typeof autoCheckLink === 'function') autoCheckLink();
 }
 
@@ -4016,7 +4024,7 @@ function clearAllSheets() {
 
   // 7. Auto tab: batch results, live panel and company status (the Tally connection stays)
   if (typeof AUTO !== 'undefined') {
-    AUTO.results = []; AUTO.companies.forEach(c => { c.st = null; });
+    AUTO.results = []; AUTO.periodOk = null; AUTO.companies.forEach(c => { c.st = null; });
     if ($('auto_results')) $('auto_results').innerHTML = '';
     if ($('alive_log')) $('alive_log').innerHTML = '';
     if ($('auto_live')) $('auto_live').classList.add('hide');
@@ -4952,8 +4960,8 @@ function tlSave(c) { const st = tlStore(), id = clientId(); if (id === 'NO CLIEN
 function tlGet() { return clientId() === 'NO CLIENT' && window._tlTemp ? window._tlTemp : tlClient(); }
 function tlName(key, def) { const n = (tlGet().names || {})[key]; return n && n.trim() ? n.trim() : def; }
 function tlSetName(key, v) { const c = tlGet(); c.names = c.names || {}; c.names[key] = v; tlSave(c); }
-function tlSetMode(m) { const c = tlGet(); c.mode = m; tlSave(c); if (lastTallyData) renderTallyVoucher(lastTallyData); }
-function tlReset() { const c = tlGet(); c.names = {}; tlSave(c); if (lastTallyData) renderTallyVoucher(lastTallyData); }
+function tlSetMode(m, auto) { const c = tlGet(); c.mode = m; if (!auto) c.modeUser = true; tlSave(c); if (lastTallyData) renderTallyVoucher(lastTallyData); }
+function tlReset() { const c = tlGet(); c.names = {}; delete c.modeUser; tlSave(c); if (lastTallyData) renderTallyVoucher(lastTallyData); }
 const HEAD_LAB = { i: 'IGST', c: 'CGST', s: 'SGST', z: 'Cess' };
 // GST rate of a bill: from GSTR-2B, from the ledger name ("@ 18%"), or from tax ÷ taxable value
 function billRate(r) {
@@ -5023,6 +5031,14 @@ function tlMapFromRows(force) {
   importedRows.forEach(r => { if (!r.taxLed || r.in2B === false) return; const rate = billRate(r); Object.entries(r.taxLed).forEach(([h, n]) => { [h + '|' + (rate ?? ''), h + '|'].forEach(k => { const m = byKey[k] = byKey[k] || {}; m[n] = (m[n] || 0) + Math.abs(r[F[h]] || 0); }); }); });
   const have = (tlGet().names) || {}, mapped = [];
   Object.entries(byKey).forEach(([k, m]) => { const n = Object.entries(m).sort((a, b) => b[1] - a[1])[0][0]; if (force || !(have[k] && have[k].trim())) { tlSetName(k, n); mapped.push(n); } });
+  // Tally keeps one ledger per tax (just "CGST" for every rate): write one line per tax, not one per rate.
+  // Ledgers per rate ("CGST @ 2.5%", "CGST @ 9%"): one line per rate. A choice made by hand is kept.
+  const c = tlGet();
+  if (Object.keys(byKey).length && !c.modeUser) {
+    const perHead = {}; Object.entries(byKey).forEach(([k, m]) => { const [h, r] = k.split('|'); if (r === '') return; (perHead[h] = perHead[h] || new Set()).add(Object.entries(m).sort((a, b) => b[1] - a[1])[0][0]); });
+    const one = Object.values(perHead).every(st => st.size <= 1);
+    if ((c.mode || 'rate') !== (one ? 'head' : 'rate')) { c.mode = one ? 'head' : 'rate'; tlSave(c); }
+  }
   return [...new Set(mapped)];
 }
 function tallyVouchers(d) {
@@ -5104,6 +5120,8 @@ function renderTallyVoucher(d) {
   const tlMode = tlGet().mode || 'rate';
   const V = tallyVouchers(d);
   const known = tlGet().known, notIn = n => Array.isArray(known) && known.length && !known.some(k => k.toLowerCase() === String(n || '').trim().toLowerCase());
+  // Beside each ledger: whether that exact name exists in the client's Tally (read in Auto mode)
+  const inT = n => Array.isArray(known) && known.length ? (notIn(n) ? ' <span style="color:var(--bad);font-size:12px;font-weight:700">✗ not in Tally</span>' : ' <span style="color:var(--ok);font-size:12px">✓ from Tally</span>') : '';
   window._tlVouchers = V;
   const gst = ($('meta_gstin').value || '').trim().toUpperCase();
   const tlBar = `<div class="row no-print" style="gap:8px;align-items:center;margin:0 0 10px;flex-wrap:wrap">
@@ -5117,7 +5135,15 @@ function renderTallyVoucher(d) {
       <button class="sm" onclick="tlReset()">Reset names</button>
     </div>
     <p class="hint" style="margin:0 0 10px">Type each ledger and the registration exactly as in Tally; ITC Desk remembers them for this client. The XML carries the Stat Adjustment, rate and taxable value of every line, so it lands in GSTR-3B Table 4(B)(1) with nothing to fix in Tally.</p>`;
-  const vHtml = V ? V.map((v, n) => `
+  // Nothing to reverse: say why in plain words instead of showing "0 voucher"
+  const noRev = V && !V.length ? `<div class="alert ok"><b>No Stat Adjustment journal is needed for ${period}: Table 4(B)(1) is ₹ 0.</b>
+      <ul style="margin:6px 0 0 18px;padding:0">
+        <li>Exempt and non-GST turnover (E) is ₹ ${fmt(d.E || 0)}${(d.E || 0) < 0.5 ? ', so no common credit is reversed under Rule 42 (D1 and D2 are nil). All sales of the month are taxable.' : '.'}</li>
+        <li>Credit used only for exempt supplies or blocked under section 17(5) (T1, T2, T3): ₹ ${fmt(blocked_exp)}.</li>
+        <li>Capital goods share under Rule 43 (Te): ₹ ${fmt(d.Te || 0)}.</li>
+      </ul>
+      <div class="hint" style="margin-top:6px">If a month with exempt sales was expected, check 3.1(c) and 3.1(e) on the Single period tab. Any Rule 37 or GSTR-2B reversal is shown below as its own voucher.</div></div>` : '';
+  const vHtml = noRev ? noRev : V ? V.map((v, n) => `
     <div class="tally-screen" style="margin-top:${n ? 14 : 0}px">
       <div class="tally-hdr"><span>Voucher ${n + 1}: ${v.title}</span><span>Journal (F7), Alt+J</span></div>
       <div class="tally-meta">
@@ -5129,11 +5155,11 @@ function renderTallyVoucher(d) {
       <div class="scroll"><table class="tally-tbl">
         <thead><tr><th style="width:60px">Dr / Cr</th><th>Ledger</th><th style="width:110px">Rate</th><th style="width:150px">Taxable value</th><th style="width:140px">Debit (₹)</th><th style="width:140px">Credit (₹)</th></tr></thead>
         <tbody>
-          <tr><td><span class="pill T1">Dr</span></td><td><input list="tlKnownList" class="ledname${notIn(v.drName) ? ' notin' : ''}" value="${escA(v.drName)}" size="${Math.max(14, v.drName.length + 2)}" oninput="tlSetName('${v.drKey}', this.value)" spellcheck="false"> <span class="hint">(Indirect Expenses)</span></td><td></td><td></td><td><b>${fmt(v.total)}</b></td><td>—</td></tr>
+          <tr><td><span class="pill T1">Dr</span></td><td><input list="tlKnownList" class="ledname${notIn(v.drName) ? ' notin' : ''}" value="${escA(v.drName)}" size="${Math.max(14, v.drName.length + 2)}" oninput="tlSetName('${v.drKey}', this.value)" spellcheck="false">${inT(v.drName)} <span class="hint">(Indirect Expenses)</span></td><td></td><td></td><td><b>${fmt(v.total)}</b></td><td>—</td></tr>
           ${v.lines.map(l => l.roundoff ? `<tr><td><span class="pill ${l.amt < 0 ? 'T1' : 'T4'}">${l.amt < 0 ? 'Dr' : 'Cr'}</span></td>
-            <td style="padding-left:22px">${l.amt < 0 ? '' : 'To '}<input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('roundoff', this.value)" title="Your round-off ledger, exactly as named in Tally" spellcheck="false"> <span class="hint">paisa left after making CGST equal to SGST</span></td>
+            <td style="padding-left:22px">${l.amt < 0 ? '' : 'To '}<input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('roundoff', this.value)" title="Your round-off ledger, exactly as named in Tally" spellcheck="false">${inT(l.name)} <span class="hint">paisa left after making CGST equal to SGST</span></td>
             <td></td><td></td><td>${l.amt < 0 ? `<b>${fmt(-l.amt)}</b>` : '—'}</td><td>${l.amt < 0 ? '—' : `<b>${fmt(l.amt)}</b>`}</td></tr>` : `<tr><td><span class="pill T4">Cr</span></td>
-            <td style="padding-left:22px">To <input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false"> <span class="hint">input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''}</span></td>
+            <td style="padding-left:22px">To <input list="tlKnownList" class="ledname${notIn(l.name) ? ' notin' : ''}" value="${escA(l.name)}" size="${Math.max(12, l.name.length + 2)}" oninput="tlSetName('${l.key}', this.value)" title="Type the ledger name exactly as in Tally" spellcheck="false">${inT(l.name)} <span class="hint">input ${HEAD_LAB[l.head]}${l.rate !== null && l.rate !== undefined ? `, bills at ${l.rate}%` : ''}</span></td>
             <td>${l.rateTyped ? `<input class="ledname" style="width:70px" value="${l.ledRate ?? ''}" placeholder="rate %" onchange="tlSetName('rate:${l.head}', this.value); if (lastTallyData) renderTallyVoucher(lastTallyData)" title="The bills' rate is not known: type this ledger's rate (CGST 9 for 18% goods)">%` : `${l.ledRate}%`}</td>
             <td>${l.taxable !== null ? fmt(l.taxable) : '<span style="color:var(--bad)">rate needed</span>'}</td>
             <td>—</td><td><b>${fmt(l.amt)}</b></td></tr>`).join('')}
@@ -5146,7 +5172,7 @@ function renderTallyVoucher(d) {
   $('tallyVoucherText').innerHTML = dl + tlBar + vHtml + `
     <div class="tally-screen" style="margin-top:14px">
       <div class="tally-hdr">
-        <span>Voucher 2: temporary reversal and re-claim, Tables 4(B)(2) and 4(D)(1)</span>
+        <span>Voucher ${V && V.length ? V.length + 1 : 1}: temporary reversal and re-claim, Tables 4(B)(2) and 4(D)(1)</span>
         <span>Rule 37 and invoices not yet in GSTR-2B</span>
       </div>
       <div class="tally-meta">
@@ -6005,14 +6031,50 @@ async function autoCheckLink() {
   else autoConnRender(false);
 }
 
+/* Step 1 of Auto: the month is chosen on purpose every time ITC Desk is opened, never assumed */
+function autoPeriodOk() { return !!AUTO.periodOk && AUTO.periodOk === ($('meta_period') || {}).value && /^[A-Z][a-z]+ \d{4}$/.test(AUTO.periodOk); }
+function autoPeriodSync() {
+  const fy = $('auto_fy'), per = $('auto_per'); if (!fy || !per) return;
+  if (fy.options.length !== $('FY').options.length) fy.innerHTML = $('FY').innerHTML;
+  fy.value = $('FY').value;
+  // Auto works month by month: quarters and the full year are left out
+  const months = Array.from($('meta_period').options).filter(o => /^[A-Z][a-z]+ \d{4}$/.test(o.value)).map(o => o.value);
+  const want = (/^[A-Z][a-z]+ \d{4}$/.test($('meta_period').value) ? '' : '<option value="" selected disabled>Choose a month</option>') + months.map(m => `<option>${m}</option>`).join('');
+  if (per.innerHTML !== want) per.innerHTML = want;
+  if (months.includes($('meta_period').value)) per.value = $('meta_period').value;
+  if ($('auto_per_ok')) $('auto_per_ok').textContent = autoPeriodOk() ? '✓ ' + AUTO.periodOk : 'Use this month';
+}
+function autoPeriodPick(which) {
+  if (which === 'fy') { $('FY').value = $('auto_fy').value; buildPeriodDropdown(); buildMonths(); }
+  else if ($('auto_per').value) $('meta_period').value = $('auto_per').value;
+  calcAll(); saveState();
+  AUTO.periodOk = null; // a new choice must be confirmed
+  autoPeriodSync(); autoStepsRender();
+}
+function autoPeriodConfirm() {
+  const v = $('meta_period').value;
+  if (!/^[A-Z][a-z]+ \d{4}$/.test(v)) { autoStatus('Choose a month first: Auto works one month at a time.', 'bad'); return; }
+  AUTO.periodOk = v;
+  if ($('auto_month_lbl')) $('auto_month_lbl').value = v;
+  autoPeriodSync(); autoStepsRender();
+  autoStatus(`Month set to <b>${v}</b>. ${AUTO.companies.length ? 'Tick the companies and click Work out selected.' : 'Now click Find Tally.'}`, 'ok');
+}
+function autoFindClick() {
+  if (!autoPeriodOk()) { autoStatus('<b>Step 1 first:</b> choose the month and click Use this month.', 'bad'); $('as0') && $('as0').scrollIntoView({ block: 'nearest' }); return; }
+  autoConnect();
+}
 function autoStepsRender() {
   if (!$('asteps')) return;
+  autoPeriodSync();
   const R = AUTO.results || [];
-  const done = [AUTO.companies.length > 0, AUTO.companies.some(c => c.sel), R.some(r => r.state), R.length > 0 && R.filter(r => r.state).every(r => r.chk), false];
-  const next = done.findIndex((d, i) => !d && !(i === 3 && !done[2]));
-  [1, 2, 3, 4, 5].forEach(k => { const el = $('as' + k); if (el) el.className = 'as' + (done[k - 1] ? ' done' : '') + (next === k - 1 ? ' now' : ''); });
-  if ($('as2m')) $('as2m').textContent = $('meta_period').value || '';
+  const pOk = autoPeriodOk();
+  const done = [pOk, AUTO.companies.length > 0, AUTO.companies.some(c => c.sel), R.some(r => r.state), R.length > 0 && R.filter(r => r.state).every(r => r.chk), false];
+  const next = done.findIndex((d, i) => !d && !(i === 4 && !done[3]));
+  [0, 1, 2, 3, 4, 5].forEach(k => { const el = $('as' + k); if (el) el.className = 'as' + (done[k] ? ' done' : '') + (next === k ? ' now' : ''); });
+  if ($('as2m')) $('as2m').textContent = pOk ? AUTO.periodOk : 'the month in step 1';
+  if ($('auto_go') && !pOk) $('auto_go').title = 'Choose the month in step 1 first';
 }
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); } catch (e) {} }, 50));
 async function autoStopLink() {
   try { await linkFetch('/quit', null, 3000); } catch (e) {}
   AUTO.ports = []; AUTO.companies = [];
@@ -6608,6 +6670,7 @@ function autoMonthCheck(sel) {
 async function autoRunSelected() {
   const sel = AUTO.companies.filter(c => c.sel);
   if (!sel.length) return;
+  if (!autoPeriodOk()) { autoStatus('<b>Step 1 first:</b> choose the month and click Use this month. Auto never assumes the month.', 'bad'); autoStepsRender(); return; }
   const { M, bad } = autoMonthCheck(sel);
   if (bad.length) {
     // Switch by itself only when Tally's own dates put every selected company in one and the same year
@@ -6615,12 +6678,14 @@ async function autoRunSelected() {
     const names = bad.slice(0, 4).map(b => `• ${b.c.name}: ${b.why}`).join('\n') + (bad.length > 4 ? `\n• and ${bad.length - 4} more` : '');
     if (fys.length === 1 && fys[0] !== 'x' && bad.length === sel.length) {
       const fy = fys[0], y = M.m >= 3 ? fy : fy + 1, lbl = new Date(y, M.m, 1).toLocaleString('en-GB', { month: 'long' }) + ' ' + y;
-      // One year for every company: switch the month by itself and say so
+      // One year for every company: offer that year's month, but only with the user's yes
+      if (!confirm(`You chose ${M.label}, but Tally's dates show the selected compan${sel.length === 1 ? 'y holds' : 'ies hold'} only FY ${fy}-${String(fy + 1).slice(2)}:\n${names}\n\nOK: work out ${lbl} instead.\nCancel: stop, and choose the month again in step 1.`)) { autoStatus('Stopped. Choose the month in step 1.', 'warn'); return; }
       $('FY').value = String(fy);
       buildPeriodDropdown(lbl); buildMonths(); calcAll(); saveState();
       if ($('auto_month_lbl')) $('auto_month_lbl').value = $('meta_period').value;
       if ($('meta_period').value !== lbl) { autoStatus(`Could not switch to ${lbl}. Set Financial year and Return period at the top, then click Work out selected.`, 'bad'); return; }
-      autoStatus(`Month switched from ${M.label} to <b>${lbl}</b>: the selected companies hold FY ${fy}-${String(fy + 1).slice(2)}.`, 'ok');
+      AUTO.periodOk = lbl; autoPeriodSync(); autoStepsRender();
+      autoStatus(`Month changed from ${M.label} to <b>${lbl}</b>, as you agreed: the selected companies hold FY ${fy}-${String(fy + 1).slice(2)}.`, 'ok');
     } else if (!confirm(`The month is ${M.label}, but:\n${names}\n\nThese will show no vouchers. Run anyway?`)) return;
   }
   if (hasWork() && !confirm('Auto mode replaces the client now on screen. Continue?')) return;

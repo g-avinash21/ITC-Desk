@@ -42,7 +42,7 @@ The **Auto** tab reads straight from TallyPrime and works out every loaded compa
 2. Load the companies (F3, Spacebar to select several). Only loaded companies can be read.
 3. Open ITC Desk by double-clicking `ITC Desk.bat` (keep it in the same folder as the HTML file). It opens the page and starts the Tally link in the background, with no extra window. It uses Windows PowerShell, installs nothing, listens only on this computer, and refuses any request that would change Tally. The Auto tab shows which Tally windows and companies are connected, and a "Stop link" button switches the link off.
    The first time, it offers to start the link whenever Windows starts, so Auto mode always finds it.
-4. In ITC Desk, follow the numbered steps on the Auto tab: 1 Find Tally, 2 tick the companies and Work out selected, 3 review, 4 Check with Tally's GSTR-3B before filing. A progress bar shows each company and each step. Open each result to review it like a normal import.
+4. ITC Desk opens on the Auto tab. Follow its numbered steps: 1 choose the month (asked every time, never assumed), 2 Find Tally, 3 tick the companies, 4 Work out selected, 5 Check with Tally's GSTR-3B before filing, 6 review each company. A progress bar shows each company and each step. Open each result to review it like a normal import.
 
 What Auto does for each company, and how it checks itself:
 
