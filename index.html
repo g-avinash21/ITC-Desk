@@ -5905,7 +5905,7 @@ async function autoVerifyBooks(c, M, V, base, L) {
     }
     // If every stock-line ledger already appears among all ledger entries, Tally counted them there: do not add them twice
     const aL = parts.ITCDeskAggL || {}, aI = parts.ITCDeskAggI || {};
-    const inside = Object.keys(aI).every(n => aL[n] != null && Math.abs(aL[n]) + 0.01 >= Math.abs(aI[n]));
+    const inside = Object.keys(aI).length > 0 && Object.keys(aI).every(n => aL[n] != null); // stock-line ledgers present among all ledger entries = already counted there
     Object.entries(aL).forEach(([n, a]) => { tallyTot[n] = a; });
     if (!inside) Object.entries(aI).forEach(([n, a]) => { tallyTot[n] = (tallyTot[n] || 0) + a; });
   } catch (e) { if (AUTO.stop) throw e; autoLog('verify-totals-failed', { error: e.message }); }
