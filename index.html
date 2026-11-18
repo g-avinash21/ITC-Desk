@@ -6194,11 +6194,16 @@ async function autoLedgers(c) {
     const name = l.getAttribute('NAME') || kid(l, 'NAME'); if (!name) continue;
     const prim = (kid(l, 'PRIMARYGROUP') || kid(l, 'PARENT')).toLowerCase(), duty = kid(l, 'GSTDUTYHEAD').toLowerCase(), tt = kid(l, 'TAXTYPE').toLowerCase();
     let head = null;
-    if (/duties/.test(prim) || tt === 'gst' || duty) {
-      if (/integrated|igst/.test(duty) || (!duty && /\bigst\b|integrated/i.test(name))) head = 'i';
-      else if (/central|cgst/.test(duty) || (!duty && /\bcgst\b|central tax/i.test(name))) head = 'c';
-      else if (/state|ut tax|sgst|utgst/.test(duty) || (!duty && /\b(sgst|utgst)\b|state tax/i.test(name))) head = 's';
-      else if (/cess/.test(duty) || (!duty && /\bcess\b/i.test(name))) head = 'z';
+    // Only a ledger under Duties & Taxes is a tax ledger. A purchase or sales ledger named "IGST Purchase @ 5%" is not,
+    // even when Tally marks it as GST-applicable: reading it as tax made the whole bill look like input tax.
+    const notTax = /purchase|sales|expense|income|fixed assets|stock|sundry|bank|cash|capital|loan|investment/.test(prim);
+    const parent = kid(l, 'PARENT').toLowerCase(), inDuties = /duties/.test(prim) || /duties|\bgst\b|tax/.test(parent);
+    if (!notTax && (inDuties || tt === 'gst' || duty)) {
+      const byName = !duty && inDuties;
+      if (/integrated|igst/.test(duty) || (byName && /\bigst\b|integrated/i.test(name))) head = 'i';
+      else if (/central|cgst/.test(duty) || (byName && /\bcgst\b|central tax/i.test(name))) head = 'c';
+      else if (/state|ut tax|sgst|utgst/.test(duty) || (byName && /\b(sgst|utgst)\b|state tax/i.test(name))) head = 's';
+      else if (/cess/.test(duty) || (byName && /\bcess\b/i.test(name))) head = 'z';
       if (head && tt && tt !== 'gst' && !duty) head = null;
     }
     L[name.toLowerCase()] = { name, prim, head, party: /sundry|bank|cash|loans|branch/.test(prim), asset: /fixed assets/.test(prim) };
