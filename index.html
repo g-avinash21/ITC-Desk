@@ -1158,13 +1158,14 @@ summary:hover { color: var(--acc); }
       <div class="row no-print" style="gap:8px;margin:10px 0;flex-wrap:wrap">
         <button class="sm p" id="auto_go" onclick="autoRunSelected()" disabled>Work out selected</button>
         <button class="sm hide" id="auto_stop" onclick="autoStop()">Stop</button>
+        <button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button>
         <button class="sm" onclick="autoDiagnostic()" title="For setting up: what Tally answered to each request">Download diagnostic</button>
         <button class="sm" onclick="autoSaveBatch()">Save batch</button>
         <span class="hint" id="auto_prog"></span>
       </div>
       <div id="auto_results"></div>
       <div class="anext">
-        <div><b>Before filing</b>Auto works out turnover from the vouchers. Click <b>Check with Tally's GSTR-3B</b> and choose the GSTR-3B exports (Tally: GSTR-3B for the month, Alt+F5 detailed, Alt+E, Excel), one or many at once. ITC Desk then uses Tally's own turnover and reverse charge credit, and compares the credit with Table 4(A).</div>
+        <div><b>Before filing</b>Auto works out turnover from the vouchers. When the batch has finished, click <b>Check with Tally's GSTR-3B</b> (next to Work out selected) and choose the GSTR-3B exports (Tally: GSTR-3B for the month, Alt+F5 detailed, Alt+E, Excel), one or many at once. ITC Desk then uses Tally's own turnover and reverse charge credit, and compares the credit with Table 4(A).</div>
         <div><b>Nothing is posted to Tally</b>Auto stops after the working. Open each company, settle the ledgers marked Check, and only then export, print or import the journal. Buckets you chose before are remembered, as in manual mode.</div>
       </div>
     </div>
@@ -5763,7 +5764,7 @@ const ASTEPS = [
   ['Connect', '<path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0z"/><path d="M12 16v5"/>'],
   ['Ledgers', '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/>'],
   ['Vouchers', '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'],
-  ['GSTR-3B', '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M9 9v11M15 9v11"/>'],
+  ['Turnover', '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M9 9v11M15 9v11"/>'],
   ['Work out', '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/>'],
   ['Review', '<path d="M5 12l5 5L19 7"/>']
 ];
@@ -5878,15 +5879,47 @@ async function autoVerifyBooks(c, M, V, base, L) {
   // one honours the dates differs between releases, so each way is tried: the one under which the ledgers agree is
   // Tally's movement for the month. A wrong way cannot make the ledgers agree to the paisa.
   const num = (l, t) => { const x = kid(l, t); return x === '' ? null : (parseFloat(x) || 0); };
-  const got = {};
-  for (const g of VERIFY_GROUPS) {
-    const doc = await tallyAsk(c.port, tReqCollection('ITCDeskBal', c.name, `<COLLECTION NAME="ITCDeskBal" ISMODIFY="No"><TYPE>Ledger</TYPE><CHILDOF>${xmlEsc(g)}</CHILDOF><BELONGSTO>Yes</BELONGSTO><FETCH>Name, OpeningBalance, ClosingBalance, TBalOpening, TBalClosing, TBalDebits, TBalCredits</FETCH></COLLECTION>`, `<SVFROMDATE>${M.from}</SVFROMDATE><SVTODATE>${M.to}</SVTODATE>`), `verify: ${g}`, 60000);
-    for (const l of Array.from(doc.getElementsByTagName('LEDGER'))) {
-      const n = l.getAttribute('NAME') || kid(l, 'NAME'); if (!n) continue;
-      got[n] = { ob: num(l, 'OPENINGBALANCE'), cb: num(l, 'CLOSINGBALANCE'), to: num(l, 'TBALOPENING'), tc: num(l, 'TBALCLOSING'), td: num(l, 'TBALDEBITS'), tcr: num(l, 'TBALCREDITS') };
+  const fetchBal = async (from, to, label) => {
+    const o = {};
+    for (const g of VERIFY_GROUPS) {
+      const doc = await tallyAsk(c.port, tReqCollection('ITCDeskBal', c.name, `<COLLECTION NAME="ITCDeskBal" ISMODIFY="No"><TYPE>Ledger</TYPE><CHILDOF>${xmlEsc(g)}</CHILDOF><BELONGSTO>Yes</BELONGSTO><FETCH>Name, OpeningBalance, ClosingBalance, TBalOpening, TBalClosing, TBalDebits, TBalCredits</FETCH></COLLECTION>`, `<SVFROMDATE>${from}</SVFROMDATE><SVTODATE>${to}</SVTODATE><SVCURRENTDATE>${to}</SVCURRENTDATE>`), `verify ${label}: ${g}`, 60000);
+      for (const l of Array.from(doc.getElementsByTagName('LEDGER'))) {
+        const n = l.getAttribute('NAME') || kid(l, 'NAME'); if (!n) continue;
+        o[n] = { ob: num(l, 'OPENINGBALANCE'), cb: num(l, 'CLOSINGBALANCE'), to: num(l, 'TBALOPENING'), tc: num(l, 'TBALCLOSING'), td: num(l, 'TBALDEBITS'), tcr: num(l, 'TBALCREDITS') };
+      }
+      await pause(150);
     }
-    await pause(150);
-  }
+    return o;
+  };
+  // Tally's own totals: Tally adds up the month's vouchers by ledger itself and sends back one line per ledger
+  const tallyTot = {};
+  let totOk = false;
+  try {
+    const src = `<COLLECTION NAME="ITCDeskSrc" ISMODIFY="No"><TYPE>Voucher</TYPE><FILTER>ITCDeskInMonthReal</FILTER></COLLECTION><SYSTEM TYPE="Formulae" NAME="ITCDeskInMonthReal">$Date &gt;= $$Date:"${M.tdlFrom}" AND $Date &lt;= $$Date:"${M.tdlTo}" AND NOT $IsOptional</SYSTEM>`;
+    const parts = {};
+    for (const [id, walk] of [['ITCDeskAggL', 'AllLedgerEntries'], ['ITCDeskAggI', 'AllInventoryEntries, AccountingAllocations']]) {
+      const doc = await tallyAsk(c.port, tReqCollection(id, c.name, src + `<COLLECTION NAME="${id}" ISMODIFY="No"><SOURCECOLLECTION>ITCDeskSrc</SOURCECOLLECTION><WALK>${walk}</WALK><BY>ITCLed:$LedgerName</BY><AGGRCOMPUTE>ITCAmt:SUM:$Amount</AGGRCOMPUTE></COLLECTION>`), `verify totals: ${walk}`, 120000);
+      const o = parts[id] = {};
+      Array.from(doc.querySelectorAll('COLLECTION > *')).forEach(r => { const n = kid(r, 'ITCLED'); if (!n) return; o[n] = (o[n] || 0) + (parseFloat(kid(r, 'ITCAMT')) || 0); totOk = true; });
+      await pause(200);
+    }
+    // If every stock-line ledger already appears among all ledger entries, Tally counted them there: do not add them twice
+    const aL = parts.ITCDeskAggL || {}, aI = parts.ITCDeskAggI || {};
+    const inside = Object.keys(aI).every(n => aL[n] != null && Math.abs(aL[n]) + 0.01 >= Math.abs(aI[n]));
+    Object.entries(aL).forEach(([n, a]) => { tallyTot[n] = a; });
+    if (!inside) Object.entries(aI).forEach(([n, a]) => { tallyTot[n] = (tallyTot[n] || 0) + a; });
+  } catch (e) { if (AUTO.stop) throw e; autoLog('verify-totals-failed', { error: e.message }); }
+  autoLog('verify-totals', { ok: totOk, sample: Object.entries(tallyTot).slice(0, 10) });
+  const got = await fetchBal(M.from, M.to, 'month');
+  // A second reading: balances as on the previous month end (Tally may date the closing balance by the current date)
+  const prevEnd = (() => { const d = new Date(M.y, M.m, 0); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; })();
+  const fyStart = `${M.m >= 3 ? M.y : M.y - 1}0401`;
+  let prevB = null;
+  try { prevB = M.m === 3 ? null : await fetchBal(fyStart, prevEnd, 'previous month end'); } catch (e) { if (AUTO.stop) throw e; }
+  let nowB = null;
+  try { nowB = await fetchBal(fyStart, M.to, 'month end'); } catch (e) { if (AUTO.stop) throw e; }
+  Object.keys(got).forEach(n => { got[n].cbNow = nowB && nowB[n] ? nowB[n].cb : null; got[n].cbPrev = M.m === 3 ? (nowB && nowB[n] ? nowB[n].ob : null) : prevB ? (prevB[n] ? prevB[n].cb : 0) : null; got[n].tcNow = nowB && nowB[n] ? nowB[n].tc : null; got[n].tcPrev = prevB && prevB[n] ? prevB[n].tc : null; });
+  autoLog('verify-raw', { sample: Object.entries(got).slice(0, 6) });
   const inScope = n => { const f = L && L[String(n).toLowerCase()]; return f ? /duties|sales accounts|purchase accounts|direct expenses|indirect expenses|expenses \(direct\)|expenses \(indirect\)/.test(f.prim) : false; };
   // Sum of the entries read, by ledger (vouchers that change balances only)
   const read = {}; let nV = 0;
@@ -5897,12 +5930,18 @@ async function autoVerifyBooks(c, M, V, base, L) {
     nV++;
     Object.entries(v.tot || {}).forEach(([n, a]) => { if (inScope(n)) read[n] = (read[n] || 0) + a; });
   });
+  // Ledgers only Tally's totals know of still need a row in the comparison
+  Object.keys(tallyTot).forEach(n => { if (!got[n]) got[n] = {}; got[n].agg = tallyTot[n]; });
+  Object.keys(got).forEach(n => { if (got[n].agg == null) got[n].agg = totOk ? 0 : null; });
   const ways = {
+    "Tally's own totals of the month's vouchers": g => g.agg != null ? g.agg : null,
     'trial balance closing less opening': g => g.tc != null && g.to != null ? g.tc - g.to : null,
     'trial balance credits less debits': g => g.td != null && g.tcr != null ? g.tcr - g.td : null,
     'trial balance debits less credits': g => g.td != null && g.tcr != null ? g.td - g.tcr : null,
     'trial balance debits plus credits': g => g.td != null && g.tcr != null ? g.td + g.tcr : null,
-    'closing less opening': g => g.cb != null && g.ob != null ? g.cb - g.ob : null
+    'closing less opening': g => g.cb != null && g.ob != null ? g.cb - g.ob : null,
+    'closing at month end less closing a month earlier': g => g.cbNow != null && g.cbPrev != null ? g.cbNow - g.cbPrev : null,
+    'trial balance closing at month end less a month earlier': g => g.tcNow != null && g.tcPrev != null ? g.tcNow - g.tcPrev : null
   };
   const names = [...new Set(Object.keys(got).filter(inScope).concat(Object.keys(read)))];
   let best = null;
@@ -6006,9 +6045,10 @@ async function autoVouchers(c, M) {
     const inv = kids(v, 'ALLINVENTORYENTRIES.LIST').concat(kids(v, 'INVENTORYENTRIES.LIST')).map(e => ({ item: kid(e, 'STOCKITEMNAME'), led: kid(kids(e, 'ACCOUNTINGALLOCATIONS.LIST')[0], 'LEDGERNAME'), amt: parseFloat(kid(e, 'AMOUNT')) || 0, tax: kid(e, 'GSTOVRDNTAXABILITY') || kid(e, 'TAXABILITY') })).filter(x => x.amt);
     // Every ledger entry of the voucher, summed by ledger, for the check against Tally's own ledger balances
     const tot = {}; const addE = e => { const n = kid(e, 'LEDGERNAME'); if (!n) return; tot[n] = (tot[n] || 0) + (parseFloat(kid(e, 'AMOUNT')) || 0); };
-    let le = kids(v, 'ALLLEDGERENTRIES.LIST'); if (!le.length) le = kids(v, 'LEDGERENTRIES.LIST');
-    le.forEach(addE);
-    kids(v, 'ALLINVENTORYENTRIES.LIST').concat(kids(v, 'INVENTORYENTRIES.LIST')).forEach(ie => kids(ie, 'ACCOUNTINGALLOCATIONS.LIST').forEach(addE));
+    // ALLLEDGERENTRIES already holds the stock lines' ledgers (Sales, Purchase); LEDGERENTRIES does not
+    const all = kids(v, 'ALLLEDGERENTRIES.LIST');
+    if (all.length) all.forEach(addE);
+    else { kids(v, 'LEDGERENTRIES.LIST').forEach(addE); kids(v, 'ALLINVENTORYENTRIES.LIST').concat(kids(v, 'INVENTORYENTRIES.LIST')).forEach(ie => kids(ie, 'ACCOUNTINGALLOCATIONS.LIST').forEach(addE)); }
     const optional = /yes/i.test(kid(v, 'ISOPTIONAL')), cancelledOnly = /yes/i.test(kid(v, 'ISCANCELLED'));
     const rcmAny = /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')) || Array.from(v.getElementsByTagName('GSTOVRDNISREVCHARGEAPPL')).some(e => /^\s*(yes|applicable)\s*$/i.test(e.textContent));
     return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), party: kid(v, 'PARTYLEDGERNAME'),
@@ -6255,7 +6295,7 @@ async function autoRunSelected() {
     $('auto_prog').textContent = `Working on ${i + 1} of ${sel.length}: ${c.name}…`;
     aliveShow(true); aliveCompany(c, i, sel.length); autoRowState(c, 'work', 'Reading…');
     if ($('auto_dot')) $('auto_dot').className = 'tdot busy';
-    try { const r = await autoRunOne(c); autoRowState(c, r.vch === 0 || r.rcmPending ? 'bad' : r.blocked ? 'bad' : r.checks || r.gap ? 'warn' : 'ok', r.vch === 0 ? 'No vouchers' : r.rcmPending ? 'RCM: check with GSTR-3B' : r.blocked ? 'bad' : r.checks || r.gap ? 'warn' : 'ok', r.blocked ? 'Not worked out' : r.checks ? `${r.checks} to check` : r.gap ? 'ITC differs' : 'Done'); AUTO.results = AUTO.results.filter(x => !(x.name === r.name && x.port === r.port)).concat([r]); }
+    try { const r = await autoRunOne(c); { const bk = r.books && r.books.nBad; autoRowState(c, r.vch === 0 || r.rcmPending || bk || r.blocked ? 'bad' : r.checks || r.gap ? 'warn' : 'ok', r.vch === 0 ? 'No vouchers' : bk ? 'Differs from Tally' : r.rcmPending ? 'RCM: check with GSTR-3B' : r.blocked ? 'Not worked out' : r.checks ? `${r.checks} to check` : r.gap ? 'ITC differs' : 'Done'); } AUTO.results = AUTO.results.filter(x => !(x.name === r.name && x.port === r.port)).concat([r]); }
     catch (e) { AUTO.results = AUTO.results.filter(x => !(x.name === c.name && x.port === c.port)).concat([{ name: c.name, port: c.port, gstin: c.gstin, error: e.message, at: fmtStamp(new Date()) }]); autoLog('company-failed', { company: c.name, error: e.message }); autoRowState(c, AUTO.stop ? 'warn' : 'bad', AUTO.stop ? 'Stopped' : 'Failed'); if (AUTO.stop) { AUTO.results = AUTO.results.filter(x => !(x.name === c.name && x.port === c.port && x.error)); } const k2 = [...document.querySelectorAll('.astep-c.now')][0]; astepSet(k2 ? +k2.id.split('_')[1] : 0, true); aliveLog(`<b style="color:var(--bad)">Failed:</b> ${escA(e.message)}`); }
     autoRenderResults();
   }
@@ -6272,11 +6312,12 @@ function autoStop() {
 }
 function autoRenderResults() {
   const R = AUTO.results;
+  if ($('auto_chk_btn')) { const on = R.some(r => r.state); $('auto_chk_btn').disabled = !on; $('auto_chk_btn').title = on ? 'Choose one or more GSTR-3B Excel exports from Tally; each file finds its company by its GSTIN' : 'Available once a company has been worked out'; }
   if (!R.length) { $('auto_results').innerHTML = ''; return; }
   const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.books && r.books.nBad ? ['bad', `Read differs from Tally's books (${r.books.nBad} ledger${r.books.nBad === 1 ? '' : 's'})`] : r.maths && !r.maths.ok ? ['bad', 'Arithmetic check failed'] : r.vch === 0 ? ['bad', `No vouchers in ${r.month || 'this month'}: check the month`] : r.rcmPending && !r.chk ? ['bad', `Reverse charge credit missing: check with GSTR-3B`] : r.turnDiff && !r.chk ? ['warn', 'Turnover differs from sales vouchers'] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `To check: ${(r.checkNames || []).slice(0, 3).join(', ') || r.checks + ' ledger(s)'}${(r.checkNames || []).length > 3 ? ` +${r.checkNames.length - 3}` : ''}`] : ['ok', 'Ready to review'];
   const order = r => r.error ? 0 : r.rcmPending && !r.chk ? 1 : r.blocked ? 1 : r.gap ? 2 : r.checks ? 3 : 4;
   const sorted = R.map((r, i) => ({ r, i })).sort((a, b) => order(a.r) - order(b.r));
-  $('auto_results').innerHTML = `<div class="card-title" style="margin-top:6px"><span>Batch: ${R.length} compan${R.length === 1 ? 'y' : 'ies'}, ${$('meta_period').value}</span><button class="sm p" onclick="autoChkAllPick()" title="Choose one or more GSTR-3B Excel exports from Tally; each file finds its company by its GSTIN">Check with Tally's GSTR-3B</button></div><div class="scroll"><table><thead><tr><th>Company</th><th>GSTIN</th><th style="text-align:right">ITC (T)</th><th style="text-align:right">Reversal 4(B)(1)</th><th>Status</th><th>Second opinion</th><th>Turnover from</th><th>Tally's GSTR-3B</th><th></th></tr></thead><tbody>
+  $('auto_results').innerHTML = `<div class="card-title" style="margin-top:6px"><span>Batch: ${R.length} compan${R.length === 1 ? 'y' : 'ies'}, ${$('meta_period').value}</span></div><div class="scroll"><table><thead><tr><th>Company</th><th>GSTIN</th><th style="text-align:right">ITC (T)</th><th style="text-align:right">Reversal 4(B)(1)</th><th>Status</th><th>Second opinion</th><th>Turnover from</th><th>Tally's GSTR-3B</th><th></th></tr></thead><tbody>
     ${sorted.map(({ r, i }) => { const [cls, t] = st(r); return `<tr><td><b>${escA(r.name)}</b></td><td>${r.gstin || ''}</td><td style="text-align:right">${r.error ? '' : fmt(r.T)}</td><td style="text-align:right"><b>${r.error || r.blocked ? '—' : fmt(r.rev)}</b></td><td><span class="pill" style="background:var(--${cls === 'ok' ? 'ok' : cls === 'warn' ? 'warn' : 'bad'});color:#fff">${t}</span></td><td>${r.error || !r.books ? '' : `<button class="sm" onclick="autoBooksShow(${i})" title="Tally's own ledger balances compared with every voucher read, and the arithmetic worked out a second time">${r.books.error ? '<span class="hint">Not available</span>' : r.books.ok && (!r.maths || r.maths.ok) ? '<span style="color:var(--ok);font-weight:700">✓ Agrees</span>' : '<span style="color:var(--bad);font-weight:700">✗ Differs</span>'}</button>`}</td><td class="hint">${r.error ? '' : r.chk ? 'Tally GSTR-3B (checked)' : r.from3b ? 'Tally GSTR-3B' : 'sales vouchers'}</td><td>${r.error || !r.state ? '' : r.chk ? `<button class="sm" onclick="autoChkShow(${i})" title="See the comparison">${r.chk.ok ? '<span style="color:var(--ok);font-weight:700">Matches</span>' : r.chk.explained && r.chk.headGap <= 1 ? '<span style="color:var(--warn);font-weight:700">Explained</span>' : '<span style="color:var(--bad);font-weight:700">Differs</span>'}</button>` : '<span class="hint">Not checked</span>'}</td><td>${r.state ? `<button class="sm p" onclick="autoOpen(${i})">Open</button>` : ''}</td></tr>`; }).join('')}
   </tbody></table></div><div id="auto_chk" class="hide"></div>`;
 }
@@ -6404,7 +6445,7 @@ function autoBooksShow(i) {
   const ok = !b.error && b.ok && (!m || m.ok);
   box.className = 'alert ' + (b.error ? 'warn' : ok ? 'ok' : 'bad'); box.style.marginTop = '12px';
   box.innerHTML = `<b>${escA(r.name)}: second opinion</b>
-    <div style="margin-top:6px"><b>1. Tally's own books.</b> ${b.error ? `Could not be read (${escA(b.error)}).` : b.ok ? `For all ${b.ledgers} GST, sales, purchase and expense ledgers that moved this month, the month's movement in Tally's own ledger totals equals the total of the ${b.vouchers} vouchers ITC Desk read, to the paisa. Nothing is missing, extra or misread.` : `${b.nBad} ledger(s) moved by a different amount in Tally's books than in the vouchers read. Do not rely on this working until it is explained.`}</div>
+    <div style="margin-top:6px"><b>1. Tally's own books.</b> ${b.error ? `Could not be read (${escA(b.error)}).` : b.ok ? `For all ${b.ledgers} GST, sales, purchase and expense ledgers that moved this month, Tally's own total for the month (${escA(b.way || '')}) equals the total of the ${b.vouchers} vouchers ITC Desk read, to the paisa. Nothing is missing, extra or misread.` : `${b.nBad} ledger(s) moved by a different amount in Tally's books than in the vouchers read. Do not rely on this working until it is explained.`}</div>
     ${b.bad && b.bad.length ? `<div class="scroll"><table style="margin-top:6px"><thead><tr><th>Ledger</th><th style="text-align:right">Tally's books</th><th style="text-align:right">Vouchers read</th><th style="text-align:right">Difference</th></tr></thead><tbody>${b.bad.map(x => `<tr><td>${escA(x.n)}</td><td style="text-align:right">${x.tally == null ? 'not found' : fmt(x.tally)}</td><td style="text-align:right">${fmt(x.read)}</td><td style="text-align:right;color:var(--bad)">${fmt((x.tally || 0) - x.read)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     <div style="margin-top:6px"><b>2. The arithmetic.</b> ${!m || m.skipped ? 'Not repeated (E and F come from an earlier month).' : m.ok ? `Worked out a second time from the bills by a separate routine: T ₹ ${fmt(m.T)}, reversal before capital goods ₹ ${fmt(m.mine)}. Same as the working.` : `The second routine gives T ₹ ${fmt(m.T)} and ₹ ${fmt(m.mine)}, the working ₹ ${fmt(m.kT)} and ₹ ${fmt(m.theirs)}. Report this.`}</div>
     <div class="hint" style="margin-top:6px">Signs as in Tally's XML: debits negative, credits positive.</div>`;
