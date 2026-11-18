@@ -1867,8 +1867,10 @@ function pushImportToCalculator(switchTab) {
   }
   if (fd > 0) $('FD').value = fd.toFixed(2);
 
-  // Keep manually added capital goods; replace only the ones that came from an import
-  const manualCgAssets = cgAssets.filter(a => !a.fromImport);
+  // Keep manually added capital goods, and imported ones from other periods; replace only those this import covers
+  const span = importedRows.map(r => r.date).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d || '')).sort();
+  const inSpan = d => span.length && d >= span[0].slice(0, 8) + '01' && d <= span[span.length - 1];
+  const manualCgAssets = cgAssets.filter(a => !a.fromImport || (hasRows && span.length && !inSpan(a.invDate || '')));
   cgAssets = [...manualCgAssets, ...newCgAssets];
   renderCG();
 
@@ -4178,9 +4180,20 @@ function renderCG() {
   calcCGMetrics();
 }
 
+// The months a return period covers: one month, a quarter, or the whole financial year
+function periodMonths() {
+  const p = $('meta_period').value || '', fy = parseInt($('FY').value) || 2026;
+  if (/^Full Year/.test(p)) return [...Array(12).keys()].map(k => new Date(fy, 3 + k, 1));
+  const q = p.match(/^Q([1-4])/);
+  if (q) { const s0 = 3 + (+q[1] - 1) * 3; return [0, 1, 2].map(k => new Date(fy, s0 + k, 1)); }
+  return [parsePeriodDate()];
+}
 function calcCGMetrics() {
   const refDate = parsePeriodDate();
   let sumTc = 0, sumUp = 0, sumTm = 0;
+  // Tm over the whole period: the sum of each month's Tm, so a quarter or a full year counts every month
+  const PM = periodMonths(); let sumTmPeriod = 0;
+  cgAssets.forEach(a => PM.forEach(m => { const r2 = computeSingleCG(a, m); const sw = new Date(a.switchDate || a.invDate || m); if (a.mode !== 'common' && m < new Date(sw.getFullYear(), sw.getMonth(), 1)) return; sumTmPeriod += r2.tm; }));
   cgAssets.forEach((a, i) => {
     const r = computeSingleCG(a, refDate);
     if ($('cg_el_' + i)) {
@@ -4210,7 +4223,7 @@ function calcCGMetrics() {
     </div>
   `;
   renderCGCatchup();
-  return { sumTc, sumUp, sumTm, Te_reg };
+  return { sumTc, sumUp, sumTm, Te_reg, sumTmPeriod, nMonths: PM.length };
 }
 
 function loadCGExample() {
@@ -4339,7 +4352,8 @@ function calc1() {
   const cgReg = calcCGMetrics();
   const Tc_manual = num('Tc');
   const Tm_manual = Tc_manual / 60;
-  const Tm_total = Tm_manual + cgReg.sumTm;
+  // A quarter or a full year: Tm of every month in it (Rule 43 works month by month)
+  const Tm_total = Tm_manual * cgReg.nMonths + cgReg.sumTmPeriod;
   const Tc_total = Tc_manual + cgReg.sumTc;
   // Section 17(4) / Rule 38 Banking 50% option already covers inputs, input services AND capital goods; do not add Te on top of 50%
   const Te = isBank ? 0 : (Tm_total * ratio);
@@ -4485,7 +4499,7 @@ function calc1() {
       <div class="tile"><div class="l">Common credit (C2)</div><div class="v">₹ ${fmt(C2)}</div><div class="s">C1 (₹ ${fmt(C1)}) − T4 (₹ ${fmt(T4)})</div></div>
       <div class="tile"><div class="l">Exempt ratio (E ÷ F)</div><div class="v">${pct(ratio)}</div><div class="s">₹ ${fmt(E)} ÷ ₹ ${fmt(F)}</div></div>
       <div class="tile"><div class="l">Rule 42 reversal (D1 + D2)</div><div class="v">₹ ${fmt(D1 + D2)}</div><div class="s">D1: ₹ ${fmt(D1)} | D2: ₹ ${fmt(D2)}</div></div>
-      <div class="tile"><div class="l">Rule 43 reversal (Te)</div><div class="v">₹ ${fmt(Te)}</div><div class="s">Tm (₹ ${fmt(Tm_total)}) × ${pct(ratio)}</div></div>
+      <div class="tile"><div class="l">Rule 43 reversal (Te)</div><div class="v">₹ ${fmt(Te)}</div><div class="s">Tm${cgReg.nMonths > 1 ? ' for ' + cgReg.nMonths + ' months' : ''} (₹ ${fmt(Tm_total)}) × ${pct(ratio)}</div></div>
       <div class="tile"><div class="l">Net ITC, Table 4(C)</div><div class="v" style="color:var(--ok)">₹ ${fmt(net4C)}</div><div class="s">Stays in the credit ledger</div></div>
     </div>
 
