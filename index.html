@@ -6145,7 +6145,18 @@ async function autoCheckLink() {
   autoStepsRender();
   if (AUTO.companies.length) return;
   let ok = false;
-  try { const r = await linkFetch('/ping', null, 2500); ok = !!(r && (r.ok || /ITC Tally link/.test(JSON.stringify(r)))); } catch (e) {}
+  const ping = async () => { try { const r = await linkFetch('/ping', null, 2500); return !!(r && (r.ok || /ITC Tally link/.test(JSON.stringify(r)))); } catch (e) { return false; } };
+  // ITC Desk.bat opens this page and starts the link a moment later: keep looking for a few seconds before saying it is not running
+  for (let k = 0; k < 6 && !ok; k++) {
+    ok = await ping();
+    if (!ok && k < 5) { if (!AUTO.linkOk) $('auto_conn').innerHTML = `<div class="achip"><div><b>Looking for the Tally link…</b><small>A few seconds after ITC Desk opens</small></div></div>`; await pause(1500); }
+  }
+  AUTO.linkOk = ok;
+  // Keep watching while Auto is open: the moment the link starts, the setup steps go away by themselves
+  if (!ok && !AUTO.linkWatch) AUTO.linkWatch = setInterval(async () => {
+    if (AUTO.linkOk || AUTO.companies.length || !$('p6') || $('p6').classList.contains('hide')) return;
+    if (await ping()) { clearInterval(AUTO.linkWatch); AUTO.linkWatch = null; autoCheckLink(); }
+  }, 4000);
   if (ok) { try { localStorage.setItem('itc_link_seen', '1'); } catch (e) {} $('auto_conn').innerHTML = `<div class="achip link"><div><b>Tally link running</b><small>Read-only · this computer only. Click Find Tally.</small></div></div>`; if ($('auto_dot')) { $('auto_dot').className = 'tdot'; $('auto_dot').title = 'Link running, not yet connected to Tally'; } }
   else autoConnRender(false);
 }
@@ -6668,7 +6679,7 @@ function autoRcmRows(V, L, base, myGstin) {
 // Turnover from the sales vouchers, used only when Tally's GSTR-3B report cannot be read
 function autoSalesSummary(V, L, base) {
   const info = n => L[String(n).toLowerCase()] || { head: null, party: false };
-  let a = 0, c = 0, e = 0, byItem = 0, byInvoice = 0, exGst = 0; const items = {};
+  let a = 0, c = 0, e = 0, byItem = 0, byInvoice = 0, exGst = 0; const items = {}, exLed = {};
   V.forEach(v => {
     if (v.cancelled) return;
     const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
@@ -6685,12 +6696,20 @@ function autoSalesSummary(V, L, base) {
     }
     byInvoice++;
     const taxed = v.lines.some(l => info(l.led).head && (isCN ? l.amt < 0 : l.amt > 0));
-    const sales = v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && (isCN ? l.amt < 0 : l.amt > 0); }).reduce((s2, l) => s2 + Math.abs(l.amt), 0);
-    if (taxed) a += sign * sales; else c += sign * sales;
+    const sl = v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && (isCN ? l.amt < 0 : l.amt > 0) && !/round(ing)?\s*-?\s*off|rounding/i.test(l.led); });
+    if (!taxed) { c += sign * sl.reduce((s2, l) => s2 + Math.abs(l.amt), 0); return; }
+    // A bill without stock items that charges GST can still carry an exempt sales ledger ("Sales Exempt", "Nil rated",
+    // "Non-GST"): that line is exempt turnover, as Rule 42 requires, though Tally's GSTR-3B puts the whole bill in 3.1(a)
+    sl.forEach(l => {
+      const amt = sign * Math.abs(l.amt), n = String(l.led);
+      if (/non[\s-]*gst|without\s*gst/i.test(n)) { e += amt; exLed[n] = (exLed[n] || 0) + amt; }
+      else if (/exempt|nil[\s-]*rated|\bnil\b/i.test(n)) { c += amt; exGst += amt; exLed[n] = (exLed[n] || 0) + amt; }
+      else a += amt;
+    });
   });
   // For the diagnostic: sales by item and taxability, so a difference from Tally's GSTR-3B can be traced
   try { autoLog('sales-by-item', { a, c, e, byItem, byInvoice, items: Object.entries(items).sort((x, y) => Math.abs(y[1].amt) - Math.abs(x[1].amt)).slice(0, 80).map(([k, o]) => [k, +o.amt.toFixed(2), o.n]) }); } catch (er) {}
-  return { a, c, e, byItem, byInvoice, exGst };
+  return { a, c, e, byItem, byInvoice, exGst, exLed };
 }
 
 async function autoRunOne(c) {
@@ -6735,6 +6754,7 @@ async function autoRunOne(c) {
     const t = autoSalesSummary(V, L, base);
     rows3b = top.concat([['Table', 'Nature of Supplies', 'Taxable Value'], ['3.1(a)', 'Outward taxable supplies', t.a.toFixed(2)], ['3.1(c)', 'Other outward supplies (Nil rated, exempted)', t.c.toFixed(2)]].concat(t.e ? [['3.1(e)', 'Non-GST outward supplies', t.e.toFixed(2)]] : []));
     notes.push(`<b>Turnover worked out from the sales vouchers</b>, as Tally does not hand its GSTR-3B report to other programs. ${t.byItem ? `${t.byItem} invoice(s) split by the taxability Tally stored on each stock item (Taxable, Exempt, Nil Rated)` : ''}${t.byItem && t.byInvoice ? '; ' : ''}${t.byInvoice ? `${t.byInvoice} invoice(s) without stock items judged as a whole (with GST: taxable; without: exempt)` : ''}. Check 3.1(a) and 3.1(c) against Tally's GSTR-3B before filing.`);
+    { const el = Object.entries(t.exLed || {}).filter(([, v]) => Math.abs(v) >= 1); if (el.length) notes.push(`<b>Exempt sales on bills that also charge GST</b>, entered without stock items: ${el.map(([n, v]) => `${escA(n)} ₹ ${fmt(v)}`).join(', ')}. These are counted as exempt (3.1(c), or 3.1(e) for non-GST), as Rule 42 requires, because the sales ledger's name says so. Tally's own GSTR-3B puts the whole bill in 3.1(a); correct 3.1(c) in the return as well.`); }
   }
   const toCsv = rr => rr.map(r => r.map(x => { const v = String(x == null ? '' : x); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\n');
   const csv = rows3b ? toCsv(rows3b) : (top.map(r => r.join(',')).join('\n') + '\n' + g3b.text);
