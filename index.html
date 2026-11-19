@@ -1777,7 +1777,7 @@ function renderLedgerSummary() {
   const g = {};
   importedRows.forEach(r => {
     if (r.in2B === false) return;
-    const key = String(r.ledger || '').trim().toLowerCase();
+    const key = String(r.ledger || '').trim().toLowerCase() + (r.inelig ? '\u0001inelig' : '');
     const o = g[key] || (g[key] = { name: r.ledger, n: 0, tax: 0, buckets: {}, why: r.why || '', check: false, rcm: !!r.rcm, differs: !!r.differs, how: r.how || 'auto' });
     o.n++;
     const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
@@ -1811,6 +1811,7 @@ function renderLedgerSummary() {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
         // Bills on which no GST was charged: shown for completeness, with nothing to decide
 const heldWhy = o => `<b>Not counted: ${o.heldN} reverse charge payment${o.heldN > 1 ? 's' : ''}, tax ₹ ${fmt(o.heldTax)}</b> (${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}). Tally's GSTR-3B leaves ${o.heldN > 1 ? 'them' : 'it'} out, so no credit. In Tally: if it is reverse charge, fill the party details on the payment; if not, remove the reverse charge mark.`;
+        if (/\u0001inelig$/.test(k)) return `<tr class="notax"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">fixed</span></td><td class="why">Marked "Ineligible ITC" on the bill in Tally. Tally reverses it itself in GSTR-3B 4(B)(1), so it stays T3 and is left out of ITC Desk's journal. Nothing to do.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax && o.heldN === o.n) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="pill T3">Check</span> <span class="hint">Not counted</span></td><td class="why">${heldWhy(o)}</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed (see why)</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${!cur && o.bt ? `<div class="dnwhy">${(() => { const tl = Object.values(o.bt).reduce((x, v) => x + v.tally, 0), tlT = (o.bt.T3 || { t: 0 }).t, other = Object.entries(o.bt).filter(([b]) => b !== 'T3' || !tl);
