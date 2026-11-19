@@ -6336,11 +6336,14 @@ function autoConnRender(linkOk) {
         <ol>
           <li><b>Download the launcher:</b> <button class="sm p" onclick="autoDownloadLink()">Download launcher</button> Your browser saves <code>ITC Desk.bat</code>.</li>
           <li><b>Keep it.</b> Edge or Chrome may say <i>"ITC Desk.bat could harm your device"</i>. In the Downloads box click <b>Keep</b> (in Edge, point at the file and click <b>⋯ &gt; Keep</b> if the button is hidden). It is safe: it only reads Tally, on this computer, and changes nothing.</li>
-          <li><b>Move it</b> into the same folder as ITC_Desk.html (Downloads box &gt; folder icon shows where it was saved).</li>
+          <li><b>Keep it in the same folder as ITC Desk</b> (usually Downloads). It opens the newest ITC Desk file there, or the online copy if there is none.</li>
           <li><b>Double-click ITC Desk.bat.</b> If Windows says <i>"Windows protected your PC"</i>, click <b>More info &gt; Run anyway</b>. When it asks to start with Windows, press <b>Y</b>: then this setup is never needed again on this computer.</li>
           <li>ITC Desk opens. Choose the month and click <b>Find Tally</b>.</li>
         </ol>
         <div class="hint">In Tally, once: F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>.</div>
+        <div class="hint" style="margin-top:6px"><b>Already ran ITC Desk.bat and still see this?</b> Open <code>http://127.0.0.1:9800/ping</code> in this browser.
+          If it shows <code>"ok":true</code>, the browser is blocking this page: click the icon left of the address bar &gt; <b>Site settings</b> &gt; <b>Local network access</b> (or "Apps on this device") &gt; <b>Allow</b>, then reload. Or open ITC Desk from the file instead.
+          If the page can't be reached, the link is not running: double-click ITC Desk.bat again and read its window (antivirus may block it).</div>
       </div>`;
     if (dot) { dot.className = 'tdot'; dot.title = 'Not connected to Tally'; } return;
   }
