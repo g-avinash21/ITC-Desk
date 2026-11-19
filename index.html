@@ -6569,7 +6569,7 @@ const RCM_CASES = [
     qs: [{ id: 'ag', t: 'Is the seller the agriculturist (or the maker of silk yarn from raw silk) and the buyer registered?', o: YN }],
     decide: a => a.ag === 'y' ? { v: 'rcm', h: 'Reverse charge: the buyer pays', w: 'Notified goods: reverse charge.' } : a.ag === 'n' ? { v: 'fcm', h: 'Forward charge: the seller pays, if registered', w: '' } : null },
   { id: 'other', label: 'Anything else (CA / audit fees, repairs, stationery, other expenses)', src: 'Section 9(1) CGST Act',
-    qs: [], decide: () => ({ v: 'fcm', h: 'Forward charge: the supplier pays, if registered', w: 'Reverse charge applies only to the notified cases in this tab. Audit and CA fees are normal bills. If the supplier is not registered, no GST is paid on the bill.' }) }
+    qs: [], decide: () => ({ v: 'fcm', h: 'Forward charge: the supplier pays, if registered', w: 'Reverse charge applies only to the notified cases in this tab. <b>Audit fees, accounting, bookkeeping, tax return filing and consultancy are all the same: forward charge, never reverse charge.</b> A registered CA, accountant or consultant charges 18% GST on his bill and you take it as normal credit (GSTR-3B Table 4(A)(5)). If he is not registered, no GST is charged at all, and there is still no reverse charge: reverse charge on purchases from unregistered persons (section 9(4)) has applied since 1-2-2019 only to real estate promoters. The only professional fee under reverse charge is the legal fee of an advocate or firm of advocates (see the advocate case).' }) }
 ];
 
 // Typed questions: the words point to a case, and clear words answer its questions ("unregistered landlord", "company")
@@ -6587,7 +6587,7 @@ const RCM_KEYS = {
   imp: 'import foreign abroad outside india google facebook aws software subscription overseas usa',
   scrap: 'scrap waste tyre plastic e-waste ewaste cooking oil metal iron',
   agri: 'cashew tobacco tendu cotton kapas mint silk',
-  other: 'audit auditor ca chartered accountant consultant consultancy repairs stationery professional accounting'
+  other: 'audit auditor ca chartered accountant accountants consultant consultancy repairs stationery professional accounting bookkeeping book-keeping bookkeeper itr gst-filing filing return tax-consultant'
 };
 const RCM_CUES = [
   [/\bun[\s-]?registered landlord|landlord (is )?(not|un)[\s-]?registered/i, 'lreg', 'n'], [/\bregistered landlord|landlord (is )?registered/i, 'lreg', 'y'],
