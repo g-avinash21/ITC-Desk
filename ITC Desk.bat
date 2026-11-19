@@ -13,9 +13,11 @@ echo  ITC Desk launcher
 echo  Folder: %~dp0
 echo.
 
-rem 1. Find ITC Desk in this folder (a browser may have saved it as "ITC_Desk (1).html")
+rem 1. Find ITC Desk in this folder: the newest of ITC_Desk.html, ITC_Desk (1).html, ITC-Desk.html (GitHub), ITC Desk.html, index.html
 set "PAGE="
-for %%F in ("ITC_Desk.html" "ITC_Desk*.html" "ITC Desk*.html" "ITCDesk*.html" "itc_desk*.html" "index.html") do if not defined PAGE if exist "%%~F" set "PAGE=%%~F"
+set "LDIR=%~dp0"
+for /f "usebackq delims=" %%F in (`powershell -NoProfile -Command "Get-ChildItem -LiteralPath $env:LDIR -File | Where-Object { $_.Name -match '^(itc[ _-]?desk.*|index)\.html?$' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty Name"`) do if not defined PAGE set "PAGE=%%F"
+set "ONLINE=https://g-avinash21.github.io/ITC-Desk/"
 
 rem 2. Start the Tally link, unless it is already running
 set "BATFILE=%~f0"
@@ -66,18 +68,20 @@ if exist "%LINKLOG%" type "%LINKLOG%"
 echo  Running it in this window instead. KEEP THIS WINDOW OPEN while you use Auto mode.
 echo.
 if defined PAGE start "" "%~dp0%PAGE%"
-if not defined PAGE echo  ITC_Desk.html was not found in this folder: open it yourself.
+if not defined PAGE echo  No ITC Desk file in this folder: opening the online copy.
+if not defined PAGE start "" "%ONLINE%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%LINKPS%"
 pause
 exit /b
 
 :nopage
 echo.
-echo  ITC_Desk.html was not found in this folder.
-echo  Put this file in the same folder as ITC_Desk.html and double-click it again.
-echo  (The Tally link is running, so you can also open ITC_Desk.html yourself.)
-echo.
-pause
+echo  No ITC Desk file in this folder, so the online copy is opening:
+echo  %ONLINE%
+echo  The Tally link is running, so Auto mode works there too.
+echo  (To work offline, keep ITC_Desk.html in this folder.)
+start "" "%ONLINE%"
+timeout /t 8 >nul
 exit /b
 
 #PS-START
