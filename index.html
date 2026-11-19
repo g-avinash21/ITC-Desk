@@ -4133,6 +4133,17 @@ function finalizeUpload(count) {
           }
         }
       }
+      // Rule 88D: ITC claimed in GSTR-3B Table 4(A)(5) against ITC in GSTR-2B. DRC-01C is issued when the excess is over
+      // Rs 25 lakh and over 20%. Checked when a GSTR-2B was imported with the GSTR-3B.
+      if (imp3B.a5) {
+        const g2b = importedRows.filter(r => r.src === '2B' && r.in2B !== false && !r.rcm).reduce((a, r) => a + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
+        const a5 = (imp3B.a5.i || 0) + (imp3B.a5.c || 0) + (imp3B.a5.s || 0);
+        if (g2b > 0) {
+          const ex = a5 - g2b, pc = ex / g2b * 100;
+          if (ex > 25e5 && pc > 20) impNotes.push(`<b>Rule 88D risk (DRC-01C): GSTR-3B 4(A)(5) ₹ ${fmt(a5)} is above GSTR-2B ₹ ${fmt(g2b)} by ₹ ${fmt(ex)} (${pc.toFixed(1)}%).</b> The portal sends DRC-01C when the excess is over ₹ 25 lakh and over 20%. Claim only what is in GSTR-2B, or keep the reasons ready.`);
+          else if (ex > 1) impNotes.push(`GSTR-3B 4(A)(5) ₹ ${fmt(a5)} is above GSTR-2B ₹ ${fmt(g2b)} by ₹ ${fmt(ex)} (${pc.toFixed(1)}%). Below the Rule 88D limit (₹ 25 lakh and 20%), but credit not in GSTR-2B should not be claimed.`);
+        }
+      }
       if (imp3B.a3) {
         const rc = { i: 0, c: 0, s: 0 }, all = { i: 0, c: 0, s: 0 };
         importedRows.forEach(r => { if (r.in2B === false) return; const h = { i: r.igst || 0, c: r.cgst || 0, s: r.sgst || 0 }; ['i', 'c', 's'].forEach(k => { all[k] += h[k]; if (r.rcm) rc[k] += h[k]; }); });
@@ -6817,29 +6828,27 @@ const RCM_HOW = {
   fcm: { t: 'Forward charge: the supplier charges GST, you take the credit',
     tally: ['Purchase voucher (F9): the supplier\'s ledger (with his GSTIN), the purchase or expense ledger, and the GST shown on his bill: CGST + SGST if he is in your state, IGST if he is in another state.',
       'Do not mark reverse charge anywhere: not on the ledger, not on the bill.'],
-    portal: ['Nothing to report in 3.1. The supplier files the bill in his GSTR-1; it shows in your GSTR-2B (B2B).',
-      '<b>4(A)(5) All other ITC</b>: claim the GST shown in GSTR-2B (JSON: <code>itc_avl</code>, type <code>OTH</code>).'] },
+    portal: ['The supplier reports the bill in his GSTR-1. It then appears in your GSTR-2B, under B2B invoices.',
+      'GSTR-3B: claim the GST in Table 4(A)(5) "All other ITC". You pay nothing extra.',
+      'Claim only what is in GSTR-2B, and only once the goods or services are received.'] },
   rcm: { t: 'Reverse charge: you pay the GST yourself, then take it back as credit',
     tally: ['Purchase voucher (F9) for the supplier\'s bill. His bill has no GST on it.',
       'In the expense or purchase ledger (or stock item), GST details: set <b>Reverse charge applicable</b> and the rate. For an unregistered supplier, his party ledger has Registration type <b>Unregistered</b>.',
       'TallyPrime then works out the tax by itself and shows it in GSTR-3B Table 3.1 (reverse charge inward supplies).',
       'To take the credit in a later month (for example, when the tax is paid late), use a journal in that month: <b>Alt+J</b> (Stat Adjustment) &gt; GST &gt; <b>Increase in Input Tax Credit</b>. (TallyPrime 2.1 or older: a journal with Alt+J &gt; Increase in Tax Liability &amp; Input Tax Credit &gt; Purchase Under Reverse Charge.)',
       'Pay the tax: Payment voucher, <b>Alt+J</b> (Stat Payment) &gt; GST. Reverse charge tax is paid in cash only; it cannot be paid from your input tax credit.'],
-    portal: ['<b>3.1(d) Inward supplies (liable to reverse charge)</b>: the value and the tax (JSON: <code>isup_rev</code>). Pay it in cash.',
-      '<b>4(A)(3) Inward supplies liable to reverse charge</b>: the same tax as credit (JSON: <code>itc_avl</code>, type <code>ISRC</code>). Import of services: <b>4(A)(2)</b>, IGST (type <code>IMPS</code>).',
-      'Pay it in the month you pay the supplier, or by the 31st day (goods) / 61st day (services) from his bill, if earlier.',
-      'Unregistered supplier: the bill is not in GSTR-2B. Issue a self-invoice and a payment voucher (section 31(3)(f), (g)).'] },
+    portal: ['GSTR-3B Table 3.1(d) "Inward supplies liable to reverse charge": the value and the tax.',
+      'Pay it in cash, in the month you pay the supplier, or by the 31st day (goods) / 61st day (services) from his bill, if earlier.',
+      'Claim the same tax as credit in Table 4(A)(3) (import of services: Table 4(A)(2), as IGST). Rule 42 then applies to it like any other credit.',
+      'Registered supplier: the bill also shows in your GSTR-2B as reverse charge. Unregistered supplier: it does not; issue a self-invoice and a payment voucher (section 31(3)(f), (g)).'] },
   ex: { t: 'No GST: exempt, nil-rated or outside GST',
     tally: ['Purchase voucher (F9) without any GST ledger.',
       'In the purchase or expense ledger, GST details: Taxability <b>Exempt</b>, <b>Nil rated</b> or <b>Non-GST</b>, as the case may be. Do not mark reverse charge.'],
-    portal: ['<b>Table 5</b> (JSON: <code>inward_sup</code>), in the <b>intra-State</b> column if the supplier is in your state, else <b>inter-State</b>:',
-      'Exempt or nil-rated (or from a composition supplier): row <b>"From a supplier under composition scheme, Exempt and Nil rated supply"</b> (type <code>GST</code>).',
-      'Outside GST (petrol, diesel, liquor): row <b>"Non GST supply"</b> (type <code>NONGST</code>).',
-      'No tax to pay, no credit to claim.'] }
+    portal: ['GSTR-3B Table 5: "Values of exempt, nil-rated and non-GST inward supplies".', 'No tax to pay and no credit to claim.'] }
 };
 function rcmHowHtml(v, open) {
   const h = RCM_HOW[v === 'none' ? 'ex' : v]; if (!h) return '';
-  return `<details class="rcmhow"${open ? ' open' : ''}><summary>How to do it in Tally and on the GST portal</summary><div class="cols"><div><b>In TallyPrime</b><ol>${h.tally.map(x => `<li>${x}</li>`).join('')}</ol></div><div><b>On the GST portal (GSTR-3B)</b><ol>${h.portal.map(x => `<li>${x}</li>`).join('')}</ol></div></div><div class="src">Tally steps as in TallyPrime Help (3.0 and later). Portal rows and JSON names as in the GSTN GSTR-3B format.</div></details>`;
+  return `<details class="rcmhow"${open ? ' open' : ''}><summary>How to do it in Tally and on the GST portal</summary><div class="cols"><div><b>In TallyPrime</b><ol>${h.tally.map(x => `<li>${x}</li>`).join('')}</ol></div><div><b>On the GST portal (GSTR-3B)</b><ol>${h.portal.map(x => `<li>${x}</li>`).join('')}</ol></div></div><div class="src">Tally steps as in TallyPrime Help (version 3.0 and later, including 6.x).</div></details>`;
 }
 function rcmRender(reset) {
   if ($('rcm_allN') && !$('rcm_allN').textContent) $('rcm_allN').textContent = '(' + document.querySelectorAll('.rcmref tbody tr').length + ', click to show)';
