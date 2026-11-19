@@ -1782,6 +1782,7 @@ function judgeBuckets() {
     const auto = rs.every(r => (r.how || 'auto') === 'auto');
     if (!auto && rs[0].how === 't4a3') { rs.forEach(r => { r.why = 'Reverse charge credit from GSTR-3B Table 4(A)(3), not in the purchase data. Treated as common credit; change the bucket if it serves only taxable or only exempt supplies.'; r.check = true; }); return; }
     if (!auto && rs[0].how === 't4a') { rs.forEach(r => { r.why = 'Table 4(A) as a total, not split by ledger, so all of it is treated as common credit (the ceiling). Drop the purchase register to split it.'; r.check = true; }); return; }
+    if (rs.every(r => r.how === 'tally')) { rs.forEach(r => { r.bucket = 'T3'; r.why = INELIG_WHY; r.check = false; }); return; }
     // The automatic judgement is always worked out, so a remembered or manual choice can be compared with it
     const res = (() => {
     const set = (b, why, check) => ({ b, why, check: !!check });
@@ -5160,6 +5161,16 @@ function tallyVouchers(d) {
   } else if (headSplitOk(d)) {
     d.headRows.forEach((hr, k) => { const h = HEADS[k]; add('r42', h, null, hr.t1h + hr.t2h + hr.d1h + hr.d2h); add('blk', h, null, hr.t3h); add('r43', h, null, hr.teh); });
   } else return null;
+  // Already reversed in Tally's own books for the month (bills marked Ineligible ITC, or a reversal journal already posted):
+  // the journal carries only the rest, so Table 4(B)(1) ends at the required figure and nothing is reversed twice
+  d.already = tallyAlready();
+  if (d.already.tot >= 0.01) {
+    const left = { i: d.already.i, c: d.already.c, s: d.already.s, z: d.already.z || 0 };
+    ['blk', 'r42', 'r43'].forEach(c => Object.values(comps[c]).sort((a, b) => b.amt - a.amt).forEach(l => { const take = Math.min(l.amt, left[l.head] || 0); if (take > 0) { l.amt -= take; left[l.head] -= take; } }));
+    d.already.unused = Object.values(left).reduce((a, x) => a + Math.max(0, x), 0);
+  }
+  // Tally already reverses more than required: no journal, the excess has to be found in Tally first
+  if (d.already.tot > (d.rev4B1 || 0) + 0.5) return [];
   const order = { i: 0, c: 1, s: 2, z: 3 };
   const V = Object.keys(comps).map(c => {
     const lines = Object.values(comps[c]).map(l => {
@@ -5189,6 +5200,19 @@ function tallyVouchers(d) {
   }
   V.forEach(v => { v.total = Math.round(v.lines.reduce((a, l) => a + l.amt, 0) * 100) / 100; v.lines.forEach(l => { l.taxable = l.roundoff ? null : l.ledRate ? Math.round(l.amt / (l.ledRate / 100) * 100) / 100 : null; }); });
   return V;
+}
+// What Tally itself already shows in GSTR-3B Table 4(B)(1) this month, by tax: from Tally's GSTR-3B when it was read
+// (Check with GSTR-3B, or the imported return), else from the bills marked Ineligible ITC
+function tallyAlready() {
+  const z = { i: 0, c: 0, s: 0, z: 0, tot: 0, src: '' };
+  if (imp3B && imp3B.b1 && !impTurnoverAnnual) {
+    const b = imp3B.b1; Object.assign(z, { i: b.i || 0, c: b.c || 0, s: b.s || 0, z: b.z || 0, src: "Tally's GSTR-3B" });
+  } else {
+    importedRows.filter(r => r.inelig && r.in2B !== false).forEach(r => { z.i += r.igst || 0; z.c += r.cgst || 0; z.s += r.sgst || 0; });
+    z.src = 'bills marked Ineligible ITC in Tally';
+  }
+  z.tot = Math.round((z.i + z.c + z.s + z.z) * 100) / 100;
+  return z;
 }
 function tlRegName() {
   const g = ($('meta_gstin').value || '').trim().toUpperCase();
@@ -5235,14 +5259,17 @@ function renderTallyVoucher(d) {
     </div>
     <p class="hint" style="margin:0 0 10px">Type each ledger and the registration exactly as in Tally; ITC Desk remembers them for this client. The XML carries the Stat Adjustment, rate and taxable value of every line, so it lands in GSTR-3B Table 4(B)(1) with nothing to fix in Tally.</p>`;
   // Nothing to reverse: say why in plain words instead of showing "0 voucher"
-  const noRev = V && !V.length ? `<div class="alert ok"><b>No Stat Adjustment journal is needed for ${period}: Table 4(B)(1) is ₹ 0.</b>
+  const al = d.already || { tot: 0 }, need = Math.round((d.rev4B1 || 0) * 100) / 100;
+  const alHtml = al.tot >= 0.01 ? `<div class="alert ${al.tot > need + 0.5 ? 'bad' : 'warn'}" style="margin:0 0 10px"><b>Tally already shows ₹ ${fmt(al.tot)} in GSTR-3B Table 4(B)(1) for ${period}</b> (from ${escA(al.src)}${al.c || al.s ? `: CGST ₹ ${fmt(al.c)}, SGST ₹ ${fmt(al.s)}` : ''}${al.i ? `, IGST ₹ ${fmt(al.i)}` : ''}).
+      <div style="margin-top:4px">Required in 4(B)(1) by this working: <b>₹ ${fmt(need)}</b>. ${al.tot > need + 0.5 ? `Tally already reverses <b>₹ ${fmt(al.tot - need)} more</b> than required, so no journal is written. Find in Tally what is reversed (bills marked Ineligible ITC, or a reversal journal posted earlier) before filing.` : `The journal below posts only the rest, <b>₹ ${fmt(Math.max(0, need - al.tot))}</b>, so 4(B)(1) ends at ₹ ${fmt(need)} and nothing is reversed twice.`}${al.unused >= 0.5 && al.tot <= need + 0.5 ? ` Part of it (₹ ${fmt(al.unused)}) is in a tax head this working does not reverse: check the split in Tally.` : ''}${/GSTR-3B/.test(al.src) && !importedRows.some(r => r.inelig) ? `<div style="margin-top:4px">Find what it is in Tally (GSTR-3B &gt; 4(B)(1) &gt; Enter). If it is credit Tally treats as ineligible (a ledger or bill set to <i>Ineligible ITC</i>), set that ledger to <b>T3 Blocked</b> in the ledger-wise summary, so this working reverses it in full too and the figures agree.</div>` : ''}</div></div>` : '';
+  const noRev = V && !V.length && al.tot >= 0.01 ? alHtml : V && !V.length ? `<div class="alert ok"><b>No Stat Adjustment journal is needed for ${period}: Table 4(B)(1) is ₹ 0.</b>
       <ul style="margin:6px 0 0 18px;padding:0">
         <li>Exempt and non-GST turnover (E) is ₹ ${fmt(d.E || 0)}${(d.E || 0) < 0.5 ? ', so no common credit is reversed under Rule 42 (D1 and D2 are nil). All sales of the month are taxable.' : '.'}</li>
         <li>Credit used only for exempt supplies or blocked under section 17(5) (T1, T2, T3): ₹ ${fmt(blocked_exp)}.</li>
         <li>Capital goods share under Rule 43 (Te): ₹ ${fmt(d.Te || 0)}.</li>
       </ul>
       <div class="hint" style="margin-top:6px">If a month with exempt sales was expected, check 3.1(c) and 3.1(e) on the Single period tab. Any Rule 37 or GSTR-2B reversal is shown below as its own voucher.</div></div>` : '';
-  const vHtml = noRev ? noRev : V ? V.map((v, n) => `
+  const vHtml = noRev ? noRev : V ? alHtml + V.map((v, n) => `
     <div class="tally-screen" style="margin-top:${n ? 14 : 0}px">
       <div class="tally-hdr"><span>Voucher ${n + 1}: ${v.title}</span><span>Journal (F7), Alt+J</span></div>
       <div class="tally-meta">
@@ -5265,7 +5292,7 @@ function renderTallyVoucher(d) {
         </tbody>
         <tfoot><tr class="tot"><td colspan="4">Voucher total</td><td>₹ ${fmt(v.total)}</td><td>₹ ${fmt(v.total)}</td></tr></tfoot>
       </table></div>
-    </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}, equal to Table 4(B)(1).${(() => { const m = [...new Set(V.flatMap(v => [v.drName].concat(v.lines.map(l => l.name))).filter(notIn))]; return m.length ? ` <b style="color:var(--bad)">Not in Tally: ${m.map(escA).join(', ')}. Create ${m.length > 1 ? 'these ledgers' : 'this ledger'} in Tally, or type the name Tally uses, before importing.</b>` : ''; })()}${V.some(v => v.lines.some(l => l.taxable === null && !l.roundoff)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
+    </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}${al.tot >= 0.01 ? `, plus ₹ ${fmt(al.tot)} already in Tally, equal to the required Table 4(B)(1) of ₹ ${fmt(need)}` : ', equal to Table 4(B)(1)'}.${(() => { const m = [...new Set(V.flatMap(v => [v.drName].concat(v.lines.map(l => l.name))).filter(notIn))]; return m.length ? ` <b style="color:var(--bad)">Not in Tally: ${m.map(escA).join(', ')}. Create ${m.length > 1 ? 'these ledgers' : 'this ledger'} in Tally, or type the name Tally uses, before importing.</b>` : ''; })()}${V.some(v => v.lines.some(l => l.taxable === null && !l.roundoff)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
     : `<div class="alert warn">${d.isBank ? 'Rule 38 (banks): pass the journal by hand with Alt+J and the nature your Tally lists for it; ITC Desk does not write this voucher.' : 'The tax-wise split is not known, so the Tally voucher cannot be written. Import the bills, or tick "Enter IGST, CGST and SGST separately" under Single period.'} Reversal for Table 4(B)(1): <b>₹ ${fmt(d.rev4B1)}</b>.</div>`;
   const dl = Array.isArray(known) && known.length ? `<datalist id="tlKnownList">${known.map(n => `<option value="${escA(n)}">`).join('')}</datalist>` : '';
   $('tallyVoucherText').innerHTML = dl + tlBar + vHtml + `
@@ -5387,6 +5414,12 @@ function exportTallyXMLVoucher() {
       </ALLLEDGERENTRIES.LIST>`).join('')}
      </VOUCHER>
     </TALLYMESSAGE>`;
+  // The reversal expense ledger, when this client's Tally does not have it (as read in Auto): created by the same import,
+  // ahead of the journal. Only that expense ledger; tax ledgers must already exist.
+  const known = tlGet().known, has = n => Array.isArray(known) && known.some(k => k.toLowerCase() === String(n).trim().toLowerCase());
+  const newLed = Array.isArray(known) && known.length ? [...new Set(V.map(v => v.drName).filter(n => n && !has(n)))] : [];
+  const missTax = Array.isArray(known) && known.length ? [...new Set(V.flatMap(v => v.lines.map(l => l.name)).filter(n => n && !has(n)))] : [];
+  if (missTax.length && !confirm(`These ledgers are not in this client's Tally: ${missTax.join(', ')}.\n\nThe import will fail for them. Fix the names on the Vouchers tab first (choose from the list).\n\nOK: download anyway. Cancel: go back and fix.`)) return;
   const xml = `<ENVELOPE>
  <HEADER>
   <TALLYREQUEST>Import Data</TALLYREQUEST>
@@ -5396,7 +5429,15 @@ function exportTallyXMLVoucher() {
    <REQUESTDESC>
     <REPORTNAME>Vouchers</REPORTNAME>
    </REQUESTDESC>
-   <REQUESTDATA>${V.map(vch).join('')}
+   <REQUESTDATA>${newLed.map(n => `
+    <TALLYMESSAGE xmlns:UDF="TallyUDF">
+     <LEDGER NAME="${escX(n)}" ACTION="Create">
+      <NAME.LIST><NAME>${escX(n)}</NAME></NAME.LIST>
+      <PARENT>Indirect Expenses</PARENT>
+      <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+      <AFFECTSSTOCK>No</AFFECTSSTOCK>
+     </LEDGER>
+    </TALLYMESSAGE>`).join('')}${V.map(vch).join('')}
    </REQUESTDATA>
   </IMPORTDATA>
  </BODY>
@@ -5406,7 +5447,7 @@ function exportTallyXMLVoucher() {
   a.href = URL.createObjectURL(blob);
   a.download = `Tally_ITC_Reversal_${(($('meta_name').value || 'Client').replace(/[^\w]+/g, '_'))}_${period.replace(/\s+/g, '_')}.xml`;
   a.click();
-  notify(`Tally XML downloaded: ${V.length} journal${V.length > 1 ? 's' : ''} with the Stat Adjustment. Import through Alt+O > Import > Transactions, then check GSTR-3B Table 4(B)(1).`);
+  notify(`Tally XML downloaded: ${newLed.length ? `it first creates the ledger "${newLed.join('", "')}" under Indirect Expenses, then ` : ''}${V.length} journal${V.length > 1 ? 's' : ''} with the Stat Adjustment. Import through Alt+O > Import > Transactions, then check GSTR-3B Table 4(B)(1).`);
 }
 
 /* ---------- BULK RULE 37 (180-DAY NON-PAYMENT TRACKER) ---------- */
@@ -6523,7 +6564,7 @@ async function autoVouchers(c, M) {
 function autoParseVch(v) {
   {
     const rates = e => { const o = {}; kids(e, 'RATEDETAILS.LIST').forEach(rd => { const h = kid(rd, 'GSTRATEDUTYHEAD').toLowerCase(), r = parseFloat(kid(rd, 'GSTRATE')); if (r > 0) o[/igst|integrated/.test(h) ? 'i' : /cgst|central/.test(h) ? 'c' : /sgst|utgst|state tax/.test(h) && !/cess/.test(h) ? 's' : 'x'] = r; }); return o; };
-    const ent = tag => Array.from(v.getElementsByTagName(tag)).map(e => ({ led: kid(e, 'LEDGERNAME'), amt: parseFloat(kid(e, 'AMOUNT')) || 0, rcm: /^\s*(yes|applicable)\s*$/i.test(kid(e, 'GSTOVRDNISREVCHARGEAPPL')), rate: rates(e) })).filter(x => x.led);
+    const ent = tag => Array.from(v.getElementsByTagName(tag)).map(e => ({ led: kid(e, 'LEDGERNAME'), amt: parseFloat(kid(e, 'AMOUNT')) || 0, rcm: /^\s*(yes|applicable)\s*$/i.test(kid(e, 'GSTOVRDNISREVCHARGEAPPL')), inelig: /^\s*(yes|applicable)\s*$/i.test(kid(e, 'GSTOVRDNINELIGIBLEITC')), rate: rates(e) })).filter(x => x.led);
     let lines = ent('ALLLEDGERENTRIES.LIST'); if (!lines.length) lines = ent('LEDGERENTRIES.LIST');
     const have = new Set(lines.map(l => l.led.toLowerCase()));
     ent('ACCOUNTINGALLOCATIONS.LIST').forEach(l => { if (!have.has(l.led.toLowerCase())) lines.push(l); });
@@ -6539,7 +6580,7 @@ function autoParseVch(v) {
     const optional = /yes/i.test(kid(v, 'ISOPTIONAL')), cancelledOnly = /yes/i.test(kid(v, 'ISCANCELLED'));
     const rcmAny = /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')) || Array.from(v.getElementsByTagName('GSTOVRDNISREVCHARGEAPPL')).some(e => /^\s*(yes|applicable)\s*$/i.test(e.textContent));
     return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), party: kid(v, 'PARTYLEDGERNAME'),
-      rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines,
+      rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), pgstin: kid(v, 'PARTYGSTIN').trim().toUpperCase(), pstate: kid(v, 'STATENAME').trim(), pos: kid(v, 'PLACEOFSUPPLY').trim(), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines,
       bills: Array.from(v.getElementsByTagName('BILLALLOCATIONS.LIST')).map(b => ({ name: kid(b, 'NAME'), type: kid(b, 'BILLTYPE'), amt: parseFloat(kid(b, 'AMOUNT')) || 0 })) };
   }
 }
@@ -6638,10 +6679,10 @@ function autoPurchaseRows(V, L, base) {
     exp.forEach((l, k) => {
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ taxLed, dn: isDN || undefined, vno: v.no || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, inelig: l.inelig || undefined, dn: isDN || undefined, vno: v.no || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
-  rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); if (r.noTax) r.check = false; });
+  rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); if (r.noTax) r.check = false; if (r.inelig) { r.bucket = 'T3'; r.check = false; r.how = 'tally'; r.why = INELIG_WHY; } });
   if (skippedJ) notes.push(`${skippedJ} journal(s) touching input tax ledgers were left out because they carry no GST Stat Adjustment for input tax credit. Check them in Tally.`);
   const dnRows = rows.filter(r => r.dn);
   if (dnRows.length) {
@@ -6655,6 +6696,17 @@ function autoPurchaseRows(V, L, base) {
 }
 // Reverse charge credit worked out from the vouchers: Tally computes the tax itself and posts no GST ledger line,
 // so the tax is the value on each reverse-charge line at the GST rate stored on it
+const INELIG_WHY = 'Marked "Ineligible ITC" on the bill in Tally, so Tally itself shows this credit as reversed in GSTR-3B Table 4(B)(1). ITC Desk counts it as fully reversed (T3) and leaves it out of the reversal journal, so it is not reversed twice.';
+// Reverse charge: inter-state (IGST) or within the state (CGST + SGST)
+function rcmInterstate(v, l, myGstin) {
+  const me = String(myGstin || ($('meta_gstin') || {}).value || '').toUpperCase(), myState = GST_STATES[me.slice(0, 2)] || '';
+  if (/^\d{2}[A-Z0-9]{13}$/.test(v.pgstin || '') && /^\d{2}/.test(me)) return { v: v.pgstin.slice(0, 2) !== me.slice(0, 2), how: 'supplier GSTIN' };
+  if (v.pos && v.pstate) return { v: v.pos.toLowerCase() !== v.pstate.toLowerCase(), how: 'place of supply' };
+  if (v.pstate && myState) return { v: v.pstate.toLowerCase() !== myState.toLowerCase(), how: "supplier's state" };
+  if (/\bigst\b|inter[\s-]*state|outside\s+state/i.test(l.led)) return { v: true, how: 'ledger name' };
+  if (/\b(cgst|sgst|utgst)\b|intra[\s-]*state|local/i.test(l.led)) return { v: false, how: 'ledger name' };
+  return { v: false, how: 'assumed within the state', guess: true };
+}
 function autoRcmRows(V, L, base, myGstin) {
   const info = n => L[String(n).toLowerCase()] || { head: null, party: false };
   const rows = []; let skipped = 0;
@@ -6667,11 +6719,12 @@ function autoRcmRows(V, L, base, myGstin) {
     v.lines.filter(l => !info(l.led).head && !info(l.led).party && l.led !== v.party && l.amt < 0 && (l.rcm || v.rcm)).forEach(l => {
       const t = Math.abs(l.amt), R = l.rate || {};
       const r2 = x => Math.round(x * 100 + 1e-7) / 100;
-      let ig = 0, cg = 0, sg = 0;
-      if (R.c && R.s) { cg = r2(t * R.c / 100); sg = r2(t * R.s / 100); }
-      else if (R.i) { cg = r2(t * R.i / 200); sg = r2(t * R.i / 200); }
-      else { skipped++; return; }
-      rows.push({ date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: 'C2', how: 'auto', rcm: true, src: 'tally', rcmCalc: true });
+      const rate = R.i || ((R.c || 0) + (R.s || 0));
+      if (!(rate > 0)) { skipped++; return; }
+      // Tally stores all three rates on the line, so IGST or CGST + SGST is decided from where the supplier is
+      const inter = rcmInterstate(v, l, myGstin);
+      const ig = inter.v ? r2(t * rate / 100) : 0, cg = inter.v ? 0 : r2(t * rate / 200), sg = cg;
+      rows.push({ date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
     });
   });
   return { rows, skipped };
@@ -6732,9 +6785,9 @@ async function autoRunOne(c) {
     pr.rows.forEach(r => { if (r.itemNames) { r.items = r.itemNames.map(n => ({ n, ex: exS.has(n) ? true : txS.has(n) ? false : null })); delete r.itemNames; } }); }
   const rcmV = V.filter(v => !v.cancelled && v.rcmAny).length;
   // Worked out only when no journal already claims the reverse charge credit through GST ledgers (no double count)
-  const rc = pr.rows.some(r => r.rcm) ? { rows: [], skipped: 0 } : autoRcmRows(V, L, base);
+  const rc = pr.rows.some(r => r.rcm) ? { rows: [], skipped: 0 } : autoRcmRows(V, L, base, c.gstin);
   if (rc.rows.length) {
-    rc.rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
+    rc.rows.forEach(r => { if (!r.inelig) r.bucket = autoClassifyLedger(r.ledger); });
     pr.rows.push(...rc.rows);
     const tt = rc.rows.reduce((a, r) => a + r.cgst + r.sgst + r.igst, 0);
     pr.notes.push(`Reverse charge credit of ₹ ${fmt(tt)} worked out from ${rc.rows.length} reverse-charge line(s), at the GST rate Tally stores on each (Tally posts no GST ledger line for it).${rc.skipped ? ` ${rc.skipped} line(s) had no rate and were left out.` : ''} Check compares it with GSTR-3B Table 4(A)(3).`);
@@ -6816,7 +6869,7 @@ async function autoRunOne(c) {
     // Remember which ledgers exist in Tally (GST, expenses, incomes), so the journal can warn about a name Tally lacks
     { const t = tlGet(); t.known = all.filter(x => x.head || /expenses|incomes|duties/.test(x.prim)).map(x => x.name).slice(0, 1500); tlSave(t); }
     const need = [tlName('dr42', DR_DEF.dr42)], miss = need.filter(n => !all.some(x => x.name.toLowerCase() === n.toLowerCase()));
-    if (miss.length) { impNotes.push(`<b>Ledger not in Tally: "${escA(miss[0])}".</b> Create it in Tally under Indirect Expenses before importing the reversal journal, or type the name of your existing reversal expense ledger on the Vouchers tab. Otherwise Tally will refuse the journal.`); window._autoMissLed = miss; } else window._autoMissLed = [];
+    if (miss.length) { impNotes.push(`<b>Ledger not in Tally: "${escA(miss[0])}".</b> The Tally XML on the Vouchers tab creates it under Indirect Expenses, ahead of the journal, when imported. If the client already has a reversal expense ledger under another name, choose it on the Vouchers tab instead.`); window._autoMissLed = miss; } else window._autoMissLed = [];
     if (mapped.length) impNotes.push(`Ledger names for the reversal journal taken from Tally: ${[...new Set(mapped)].join(', ')}.${dr ? '' : ' No expense ledger for the reversal was found; the journal suggests one, rename it on the Vouchers tab or create it in Tally.'}`); }
   // Earlier periods: capital goods (Rule 43) and supplier bills unpaid beyond 180 days (Rule 37)
   let cgInfo = null, r37Info = null;
@@ -6945,7 +6998,7 @@ function autoRenderResults() {
   const R = AUTO.results;
   if ($('auto_chk_btn')) { const on = R.some(r => r.state); $('auto_chk_btn').disabled = !on; $('auto_chk_btn').title = on ? 'Choose one or more GSTR-3B Excel exports from Tally; each file finds its company by its GSTIN' : 'Available once a company has been worked out'; }
   if (!R.length) { $('auto_results').innerHTML = ''; return; }
-  const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.books && r.books.nBad ? ['bad', `Read differs from Tally's books (${r.books.nBad} ledger${r.books.nBad === 1 ? '' : 's'})`] : r.maths && !r.maths.ok ? ['bad', 'Arithmetic check failed'] : r.vch === 0 ? ['bad', `No vouchers in ${r.month || 'this month'}: check the month`] : r.rcmPending && !r.chk ? ['bad', `Reverse charge credit missing: check with GSTR-3B`] : r.turnDiff && !r.chk ? ['warn', 'Turnover differs from sales vouchers'] : r.missLed && r.missLed.length ? ['warn', `Create ledger in Tally: ${r.missLed[0]}`] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `To check: ${(r.checkNames || []).slice(0, 3).join(', ') || r.checks + ' ledger(s)'}${(r.checkNames || []).length > 3 ? ` +${r.checkNames.length - 3}` : ''}`] : ['ok', 'Ready to review'];
+  const st = r => r.error ? ['bad', 'Failed: ' + r.error] : r.books && r.books.nBad ? ['bad', `Read differs from Tally's books (${r.books.nBad} ledger${r.books.nBad === 1 ? '' : 's'})`] : r.maths && !r.maths.ok ? ['bad', 'Arithmetic check failed'] : r.vch === 0 ? ['bad', `No vouchers in ${r.month || 'this month'}: check the month`] : r.rcmPending && !r.chk ? ['bad', `Reverse charge credit missing: check with GSTR-3B`] : r.turnDiff && !r.chk ? ['warn', 'Turnover differs from sales vouchers'] : r.missLed && r.missLed.length ? ['warn', `XML will create ledger: ${r.missLed[0]}`] : r.blocked ? ['bad', 'Not worked out (turnover missing or no sales)'] : r.gap ? ['warn', 'ITC differs from GSTR-3B Table 4(A)'] : r.checks ? ['warn', `To check: ${(r.checkNames || []).slice(0, 3).join(', ') || r.checks + ' ledger(s)'}${(r.checkNames || []).length > 3 ? ` +${r.checkNames.length - 3}` : ''}`] : ['ok', 'Ready to review'];
   const order = r => r.error ? 0 : r.rcmPending && !r.chk ? 1 : r.blocked ? 1 : r.gap ? 2 : r.checks ? 3 : 4;
   const sorted = R.map((r, i) => ({ r, i })).sort((a, b) => order(a.r) - order(b.r));
   $('auto_results').innerHTML = `<div class="card-title" style="margin-top:6px"><span>Batch: ${R.length} compan${R.length === 1 ? 'y' : 'ies'}, ${$('meta_period').value}</span></div><div class="scroll"><table><thead><tr><th>Company</th><th>GSTIN</th><th style="text-align:right">ITC (T)</th><th style="text-align:right">Reversal 4(B)(1)</th><th>Status</th><th>Second opinion</th><th>Turnover from</th><th>Tally's GSTR-3B</th><th></th></tr></thead><tbody>
