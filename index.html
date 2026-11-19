@@ -1798,7 +1798,7 @@ function renderLedgerSummary() {
   const aiHas = keys.some(k => aiSug[k]);
   const aiDiff = keys.filter((k) => aiSug[k] && !(Object.keys(g[k].buckets).length === 1 && g[k].buckets[aiSug[k].bucket])).length;
   box.innerHTML = `
-    <div class="card-title" style="margin-top:6px"><span>Ledger-wise summary</span><span class="row">${memKeysOfClient().length ? '<button class="sm" onclick="resetAllLedgers()">Forget remembered choices</button>' : ''}${aiDiff ? `<button class="sm" onclick="aiUseAll()">Use all ${aiDiff} assistant suggestion(s)</button>` : ''}</span></div>
+    <div class="card-title" style="margin-top:6px"><span>Ledger-wise summary</span><span class="row">${flowLedgersToCheck() ? `<button class="sm p" onclick="confirmAllChecks()" title="Confirms every ledger marked Check in the bucket it shows now. Ledgers with bills in different buckets are left for you.">Confirm all Check (${flowLedgersToCheck()})</button>` : ''}${memKeysOfClient().length ? '<button class="sm" onclick="resetAllLedgers()">Forget remembered choices</button>' : ''}${aiDiff ? `<button class="sm" onclick="aiUseAll()">Use all ${aiDiff} assistant suggestion(s)</button>` : ''}</span></div>
     ${(() => {
       // Goods bought without GST, but no exempt sales this month: if they were sold, the exempt sales are missing from 3.1(c)
       const ntv = importedRows.filter(r => r.noTax && !r.rcmHeld && r.in2B !== false).reduce((a, r) => a + (r.taxable || 0), 0);
@@ -1817,7 +1817,7 @@ const heldWhy = o => `<b>Not counted: ${o.heldN} reverse charge payment${o.heldN
         return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed (see why)</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${!cur && o.bt ? `<div class="dnwhy">${(() => { const tl = Object.values(o.bt).reduce((x, v) => x + v.tally, 0), tlT = (o.bt.T3 || { t: 0 }).t, other = Object.entries(o.bt).filter(([b]) => b !== 'T3' || !tl);
   return tl && Object.keys(o.bt).length === 2 && o.bt.T3 && o.bt.T3.tally === o.bt.T3.n
     ? `<b>Mixed is correct here. Nothing to do.</b> ${o.bt.T3.n} bill${o.bt.T3.n > 1 ? 's are' : ' is'} marked "Ineligible ITC" in Tally (₹ ${fmt(tlT)}): Tally reverses ${o.bt.T3.n > 1 ? 'them' : 'it'} itself, so ${o.bt.T3.n > 1 ? 'they stay' : 'it stays'} in T3. The other ${other.map(([b, v]) => `${v.n} bill${v.n > 1 ? 's' : ''} (₹ ${fmt(v.t)}) ${v.n > 1 ? 'are' : 'is'} in ${b}`).join(', ')}. Changing the bucket here moves only those.`
-    : `<b>Mixed: this ledger's bills are in more than one bucket.</b> ${Object.entries(o.bt).map(([b, v]) => `${b} ₹ ${fmt(v.t)} on ${v.n} bill${v.n > 1 ? 's' : ''}${v.tally ? (v.tally === v.n ? ' (marked Ineligible ITC in Tally, stays T3)' : ` (${v.tally} marked Ineligible ITC in Tally, stay T3)`) : ''}`).join(' · ')}. Choosing a bucket here moves all the other bills.`; })()}</div>` : ''}${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
+    : `<b>Mixed: this ledger's bills are in more than one bucket.</b> ${Object.entries(o.bt).map(([b, v]) => `${b} ₹ ${fmt(v.t)} on ${v.n} bill${v.n > 1 ? 's' : ''}${v.tally ? (v.tally === v.n ? ' (marked Ineligible ITC in Tally, stays T3)' : ` (${v.tally} marked Ineligible ITC in Tally, stay T3)`) : ''}`).join(' · ')}. Choosing a bucket here moves all the other bills.`; })()}</div>` : ''}${o.check ? `<span class="pill T3" style="margin-right:6px">Check</span>${cur ? `<button class="sm" style="margin-right:6px;padding:1px 8px;box-shadow:none" onclick="setLedgerBucket(${i}, '${cur}')">Confirm ${cur}</button>` : ''}` : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }
@@ -1845,6 +1845,21 @@ function setLedgerBucketByKey(key, newBucket, onlyRow) {
   pushImportToCalculator(false);
 }
 
+// Confirm every ledger marked Check in the bucket it shows now (one bucket only; Ineligible-in-Tally bills stay T3)
+function confirmAllChecks() {
+  const keys = [...new Set(importedRows.filter(flowRowNeedsCheck).map(r => String(r.ledger || '').trim().toLowerCase()))];
+  let done = 0, left = 0;
+  keys.forEach(key => {
+    const bs = [...new Set(importedRows.filter(r => String(r.ledger || '').trim().toLowerCase() === key && !r.inelig).map(r => r.bucket))];
+    if (bs.length !== 1) { left++; return; }
+    const rs = importedRows.filter(r => String(r.ledger || '').trim().toLowerCase() === key && !r.inelig);
+    customLedgerMemory[memKeyOf(key)] = bs[0];
+    rs.forEach(r => { r.how = 'user'; }); applyOverrideWhy(rs); done++;
+  });
+  try { localStorage.setItem('r42_ledger_memory', JSON.stringify(customLedgerMemory)); } catch (e) {}
+  renderImporterTable(); pushImportToCalculator(false); flowRender();
+  notify(`${done} ledger(s) confirmed${left ? `; ${left} with bills in different buckets: choose a bucket for each` : ''}.`);
+}
 function setLedgerBucket(k, newBucket) {
   const key = (window._ledgerKeys || [])[k];
   if (key === undefined) return;
