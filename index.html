@@ -5479,6 +5479,7 @@ function renderTallyVoucher(d) {
         </tbody>
         <tfoot><tr class="tot"><td colspan="4">Voucher total</td><td>₹ ${fmt(v.total)}</td><td>₹ ${fmt(v.total)}</td></tr></tfoot>
       </table></div>
+      <div class="tally-narration"><b>Narration:</b> ${escA(({ r42: 'ITC reversed, Rule 42. ', r43: 'ITC reversed, Rule 43. ', blk: 'ITC reversed, section 17(5). ' })[v.comp] || '')}${escA((revBasis()[v.comp]) || '')}</div>
     </div>`).join('') + `<p class="hint" style="margin-top:8px">${V.length} voucher${V.length > 1 ? 's' : ''}, together ₹ ${fmt(V.reduce((a, v) => a + v.total, 0))}${al.tot >= 0.01 ? `, plus ₹ ${fmt(al.tot)} already in Tally, equal to the required Table 4(B)(1) of ₹ ${fmt(need)}` : ', equal to Table 4(B)(1)'}.${(() => { const m = [...new Set(V.flatMap(v => [v.drName].concat(v.lines.map(l => l.name))).filter(notIn))]; return m.length ? ` <b style="color:var(--bad)">Not in Tally: ${m.map(escA).join(', ')}. Create ${m.length > 1 ? 'these ledgers' : 'this ledger'} in Tally, or type the name Tally uses, before importing.</b>` : ''; })()}${V.some(v => v.lines.some(l => l.taxable === null && !l.roundoff)) ? ' <b style="color:var(--bad)">Type the missing rates: without them Tally lists the voucher under Uncertain Transactions.</b>' : ''}${gst ? '' : ' <b style="color:var(--bad)">Type the client\'s GSTIN above: the voucher needs it.</b>'}</p>`
     : `<div class="alert warn">${d.isBank ? 'Rule 38 (banks): pass the journal by hand with Alt+J and the nature your Tally lists for it; ITC Desk does not write this voucher.' : 'The tax-wise split is not known, so the Tally voucher cannot be written. Import the bills, or tick "Enter IGST, CGST and SGST separately" under Single period.'} Reversal for Table 4(B)(1): <b>₹ ${fmt(d.rev4B1)}</b>.</div>`;
   const dl = Array.isArray(known) && known.length ? `<datalist id="tlKnownList">${known.map(n => `<option value="${escA(n)}">`).join('')}</datalist>` : '';
@@ -5549,6 +5550,30 @@ function copyTallyVoucherPlain() {
   try { navigator.clipboard.writeText(out.join('\n')); notify('Vouchers copied.'); } catch (e) {}
 }
 
+// The basis of each reversal, for the journal narration: what a GST officer asks for. Rule 42 is a share of common
+// credit, not of particular bills, so it states the formula and the ledgers; credit reversed in full lists its bills.
+function revBasis() {
+  const d = window._calc1 || {}, R = importedRows.filter(r => r.in2B !== false && !r.noTax);
+  const tx = r => (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
+  const bill = r => [r.vno || r.docNo || '', r.date || ''].filter(Boolean).join(' dt ');
+  const byLed = b => { const g = {}; R.filter(r => r.bucket === b).forEach(r => { const o = g[r.ledger] = g[r.ledger] || { t: 0, n: 0 }; o.t += tx(r); o.n++; }); return Object.entries(g).sort((x, y) => y[1].t - x[1].t); };
+  const ledTxt = b => { const L = byLed(b); return L.slice(0, 6).map(([n, o]) => `${n} Rs ${fmt(o.t)} (${o.n} bill${o.n > 1 ? 's' : ''})`).join(', ') + (L.length > 6 ? ` + ${L.length - 6} more` : ''); };
+  const bills = rs => rs.slice(0, 25).map(bill).filter(Boolean).join(', ') + (rs.length > 25 ? ` and ${rs.length - 25} more` : '');
+  const pct = d.F ? (d.E / d.F * 100).toFixed(2) : '0.00';
+  const parts = [`Common credit Rs ${fmt(d.C2 || 0)} x ${pct}% exempt share = Rs ${fmt(d.D1 || 0)}`];
+  if ((d.D2 || 0) > 0.004) parts.push(`Non-business 5% Rs ${fmt(d.D2)}`);
+  if ((d.C2 || 0) > 0.004) parts.push(`From ${ledTxt('C2')}`);
+  const t1 = R.filter(r => r.bucket === 'T1'), t2 = R.filter(r => r.bucket === 'T2');
+  if (t1.length) parts.push(`Personal use Rs ${fmt(t1.reduce((a, r) => a + tx(r), 0))}: bills ${bills(t1)}`);
+  if (t2.length) parts.push(`Exempt-only Rs ${fmt(t2.reduce((a, r) => a + tx(r), 0))}: bills ${bills(t2)}`);
+  const t3 = R.filter(r => r.bucket === 'T3' && !r.inelig);
+  const tail = ' Bill list: ITC Desk Excel working.';
+  return {
+    r42: parts.join('. ') + '.' + tail,
+    r43: `Capital goods credit Rs ${fmt(d.Tm || 0)} x ${pct}% = Rs ${fmt(d.Te || 0)}. Assets: ITC Desk Capital goods register.`,
+    blk: t3.length ? `Blocked Rs ${fmt(t3.reduce((a, r) => a + tx(r), 0))}: bills ${bills(t3)}.${tail}` : tail
+  };
+}
 function exportTallyXMLVoucher() {
   FLOW.posted = true;
   if (!lastTallyData) return;
@@ -5561,9 +5586,10 @@ function exportTallyXMLVoucher() {
   const ymd = `${last.getFullYear()}${String(last.getMonth() + 1).padStart(2, '0')}${String(last.getDate()).padStart(2, '0')}`;
   const state = GST_STATES[gstin.slice(0, 2)] || '';
   const reg = tlRegName(), period = $('meta_period').value || '';
-  const narr = { r42: `Being ITC reversal for ${period} under Rule 42 of the CGST Rules: T1 + T2 + D1 + D2 (common credit attributable to exempt and non-business use), GSTR-3B Table 4(B)(1).`,
-    r43: `Being ITC reversal for ${period} under Rule 43 of the CGST Rules on common capital goods (Te), GSTR-3B Table 4(B)(1).`,
-    blk: `Being reversal for ${period} of credit blocked under section 17(5) of the CGST Act (T3), GSTR-3B Table 4(B)(1).` };
+  const nb = revBasis();
+  const narr = { r42: `ITC reversed for ${period}, Rule 42, GSTR-3B 4(B)(1). ${nb.r42}`,
+    r43: `ITC reversed for ${period}, Rule 43, GSTR-3B 4(B)(1). ${nb.r43}`,
+    blk: `ITC reversed for ${period}, section 17(5) blocked credit, GSTR-3B 4(B)(1). ${nb.blk}` };
   const vch = v => `
     <TALLYMESSAGE xmlns:UDF="TallyUDF">
      <VOUCHER VCHTYPE="Journal" ACTION="Create" OBJVIEW="Accounting Voucher View">
