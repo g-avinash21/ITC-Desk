@@ -1474,7 +1474,7 @@ summary:hover { color: var(--acc); }
   </main>
 </div>
 
-<footer class="sitefoot"><span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span> · Concept by Avinash G · ITC Desk v1.0.2 · Last updated 19 Nov 2026</footer>
+<footer class="sitefoot"><span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span> · Concept by Avinash G · ITC Desk v1.0.3 · Last updated 19 Nov 2026</footer>
 <div id="toastBox" class="toast"></div>
 <div id="guru" class="guru no-print">
   <div class="guru-pane" id="guru_pane" role="dialog" aria-label="Guru, the ITC Desk helper" hidden>
@@ -1779,6 +1779,7 @@ function renderLedgerSummary() {
     o.tax += t;
     // Debit notes (purchase returns) lower the credit: kept apart so the reason for a difference from Tally's Purchase Register is shown here
     o.allNoTax = (o.allNoTax === undefined ? true : o.allNoTax) && Math.abs(t) < 0.005; o.val = (o.val || 0) + (r.taxable || 0);
+    if (r.nodetail) { o.ndN = (o.ndN || 0) + 1; o.ndTax = (o.ndTax || 0) + t; (o.ndDates = o.ndDates || []).push(r.date); }
     if (r.rcmHeld) { o.heldN = (o.heldN || 0) + 1; o.heldTax = (o.heldTax || 0) + (r.rcmHeldTax || 0); o.heldVal = (o.heldVal || 0) + (r.taxable || 0); (o.heldDates = o.heldDates || []).push(r.date); }
     if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
     o.buckets[r.bucket] = 1;
@@ -1803,7 +1804,7 @@ function renderLedgerSummary() {
       <tbody>${keys.slice(0, 80).map((k, i) => {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
         // Bills on which no GST was charged: shown for completeness, with nothing to decide
-const heldWhy = o => `<b>Reverse charge marked on ${o.heldN} payment${o.heldN > 1 ? 's' : ''} without party GST details (₹ ${fmt(o.heldVal)}, dated ${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}): tax ₹ ${fmt(o.heldTax)} not counted as credit.</b> The payment has no party GST details (registration type, state, place of supply), so Tally's GSTR-3B leaves it out: the tax is not raised in 3.1(d), and unpaid reverse charge tax gives no credit. In Tally: if it is reverse charge (freight to a transporter who issued a lorry receipt), open the payment and fill the party details (Registration type, State, Place of supply) as on the other reverse charge payments; ITC Desk will then count it as common credit (C2). If it is not (lorry hire without a lorry receipt, hamali, porter), remove the reverse charge mark from the payment.`;
+const heldWhy = o => `<b>Reverse charge marked on ${o.heldN} payment${o.heldN > 1 ? 's' : ''} without party GST details (₹ ${fmt(o.heldVal)}, dated ${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}): tax ₹ ${fmt(o.heldTax)} not counted as credit.</b> Tally's GSTR-3B (checked) leaves ${o.heldN > 1 ? 'them' : 'it'} out: the tax is not raised in 3.1(d), and unpaid reverse charge tax gives no credit. In Tally: if it is reverse charge (freight to a transporter who issued a lorry receipt), open the payment and fill the party details (Registration type, State, Place of supply) as on the other reverse charge payments; ITC Desk will then count it as common credit (C2). If it is not (lorry hire without a lorry receipt, hamali, porter), remove the reverse charge mark from the payment.`;
         if (o.allNoTax && o.heldN === o.n) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="pill T3">Check</span> <span class="hint">Not counted</span></td><td class="why">${heldWhy(o)}</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
@@ -4109,6 +4110,24 @@ function finalizeUpload(count) {
     } else {
       // Reverse charge credit: Tally works the tax out on RCM payment and journal vouchers without GST ledger lines,
       // so it is missing from a purchase register or from Auto. Take the missing part from Table 4(A)(3).
+      // Reverse charge payments without party GST details: keep them if Tally's 4(A)(3) counts them, drop them if
+      // Tally's 4(A)(3) is short by exactly their tax (Tally left them out). Anything else is left as it is and the
+      // difference is reported below.
+      if (imp3B.a3) {
+        const nd = importedRows.filter(r => r.nodetail && r.in2B !== false);
+        if (nd.length) {
+          const rcT = importedRows.filter(r => r.rcm && r.in2B !== false).reduce((a, r) => a + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
+          const a3T = (imp3B.a3.i || 0) + (imp3B.a3.c || 0) + (imp3B.a3.s || 0), ndT = nd.reduce((a, r) => a + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0);
+          const tol = Math.max(1, 0.002 * rcT);
+          if (Math.abs(rcT - ndT - a3T) <= tol && ndT > tol) {
+            nd.forEach(r => { r.rcmHeld = true; r.rcmHeldTax = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0); r.igst = r.cgst = r.sgst = 0; r.noTax = true; r.rcm = false; r.rcmCalc = false; r.nodetail = false; r.check = false; });
+            impNotes.push(`<b>Tally's GSTR-3B leaves out ${nd.length} reverse charge payment line(s) without party GST details (tax ₹ ${fmt(ndT)}).</b> Its Table 4(A)(3) (₹ ${fmt(a3T)}) equals the rest, so ITC Desk drops them too and lists them in the ledger summary as not counted. Fill the party details on those payments in Tally if they are reverse charge.`);
+          } else if (Math.abs(rcT - a3T) <= tol) {
+            nd.forEach(r => { r.nodetail = false; });
+            impNotes.push(`Reverse charge payments without party GST details (tax ₹ ${fmt(ndT)}) are counted in Tally's GSTR-3B Table 4(A)(3) too, so they stay as credit.`);
+          }
+        }
+      }
       if (imp3B.a3) {
         const rc = { i: 0, c: 0, s: 0 }, all = { i: 0, c: 0, s: 0 };
         importedRows.forEach(r => { if (r.in2B === false) return; const h = { i: r.igst || 0, c: r.cgst || 0, s: r.sgst || 0 }; ['i', 'c', 's'].forEach(k => { all[k] += h[k]; if (r.rcm) rc[k] += h[k]; }); });
@@ -7259,17 +7278,11 @@ function autoRcmRows(V, L, base, myGstin) {
     if (v.cancelled || !v.rcmAny) return;
     const b = (base[v.type.toLowerCase()] || v.type).toLowerCase();
     if (!/purchase|payment|journal/.test(b)) return;
-    // A Payment voucher marked reverse charge counts in Tally's GSTR-3B only when it carries the party's GST details
-    // (registration type, state, place of supply). One without them is left out of 3.1(d) and 4(A)(3) by Tally
-    // (a client's freight payment: Tally 4(A)(3) Rs 11,517.16 = 26 payments with party details; the one without was
-    // left out). Tax never raised is never paid, so that one is not counted here and is named for correction in Tally.
-    if (/payment/.test(b) && !v.pgstin && !v.regtype && !v.pstate && !v.pos) {
-      v.lines.filter(l => !info(l.led).head && !info(l.led).party && l.led !== v.party && l.amt < 0 && (l.rcm || v.rcm)).forEach(l => {
-        const R = l.rate || {}, rate = R.i || ((R.c || 0) + (R.s || 0));
-        held.push({ date: v.date, no: v.no, ledger: l.led, value: Math.abs(l.amt), tax: Math.round(Math.abs(l.amt) * rate) / 100 });
-      });
-      return;
-    }
+    // A Payment voucher marked reverse charge without the party's GST details (registration type, state, place of
+    // supply): Tally usually counts it (a client's September return: 47 such payments, all in 4(A)(3)) but once left one out (October). Counted here,
+    // because leaving out credit that Tally claims would make the reversal too low; marked so the GSTR-3B check
+    // (step 5) can confirm it, or drop it when Tally's Table 4(A)(3) shows Tally left it out.
+    const noDetail = /payment/.test(b) && !v.pgstin && !v.regtype && !v.pstate && !v.pos;
     if (/reversal of input tax/i.test(v.adj)) return;
     if (v.lines.some(l => info(l.led).head && l.amt < 0)) return; // GST ledgers already carry the tax: read as a normal purchase
     v.lines.filter(l => !info(l.led).head && !info(l.led).party && l.led !== v.party && l.amt < 0 && (l.rcm || v.rcm)).forEach(l => {
@@ -7280,7 +7293,8 @@ function autoRcmRows(V, L, base, myGstin) {
       // Tally stores all three rates on the line, so IGST or CGST + SGST is decided from where the supplier is
       const inter = rcmInterstate(v, l, myGstin);
       const ig = inter.v ? r2(t * rate / 100) : 0, cg = inter.v ? 0 : r2(t * rate / 200), sg = cg;
-      rows.push({ date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
+      if (noDetail) held.push({ date: v.date, no: v.no, ledger: l.led, value: t, tax: r2(t * rate / 100) });
+      rows.push({ nodetail: noDetail || undefined, vno: v.no || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
     });
   });
   return { rows, skipped, held };
@@ -7349,9 +7363,8 @@ async function autoRunOne(c) {
     pr.notes.push(`Reverse charge credit of ₹ ${fmt(tt)} worked out from ${rc.rows.length} reverse-charge line(s), at the GST rate Tally stores on each (Tally posts no GST ledger line for it).${rc.skipped ? ` ${rc.skipped} line(s) had no rate and were left out.` : ''} Check compares it with GSTR-3B Table 4(A)(3).`);
   }
   if (rc.held && rc.held.length) {
-    rc.held.forEach(h => pr.rows.push({ noTax: true, rcmHeld: true, rcmHeldTax: h.tax, vno: h.no || undefined, date: h.date, party: '', ledger: h.ledger, taxable: h.value, igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'C2', how: 'auto', src: 'tally' }));
     const ht = rc.held.reduce((a, h) => a + h.tax, 0);
-    pr.notes.push(`<b>Reverse charge marked on ${rc.held.length} payment line(s) without party GST details, not counted as credit${ht ? ` (tax ₹ ${fmt(ht)})` : ''}:</b> ${rc.held.slice(0, 6).map(h => `${h.date}${h.no ? ' no. ' + h.no : ''}, ${h.ledger} ₹ ${fmt(h.value)}`).join('; ')}${rc.held.length > 6 ? '…' : ''}. These payments have no party GST details (registration type, state, place of supply), so Tally's GSTR-3B leaves them out of 3.1(d) and 4(A)(3), and tax not paid gives no credit. In Tally: if it really is reverse charge (for example freight to a transporter who issued a lorry receipt), fill the party details on the payment as on the other reverse charge payments; if not (lorry hire without a lorry receipt, hamali, small amounts), open the payment and remove the reverse charge mark from the line's GST details.`);
+    pr.notes.push(`${rc.held.length} reverse charge payment line(s) without party GST details (tax ₹ ${fmt(ht)}) are counted as credit, as Tally usually counts them. <b>Check with Tally's GSTR-3B</b> (step 5) confirms it: if Tally's Table 4(A)(3) is short by exactly some of them, ITC Desk drops those to match Tally and names them in the ledger summary.`);
   }
   const rcmRows = pr.rows.filter(r => r.rcm).length;
   if (rcmV && !rcmRows) pr.notes.push(`<b>${rcmV} reverse charge voucher(s) found, but their input tax credit is not in the vouchers</b> (Tally works the tax out itself). Click <b>Check with Tally's GSTR-3B</b> above the Auto results and choose this company's GSTR-3B export: ITC Desk then adds the reverse charge credit from Table 4(A)(3).`);
