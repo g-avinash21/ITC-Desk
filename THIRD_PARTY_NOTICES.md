@@ -29,6 +29,7 @@ The type-to-answer box on the RCM guide tab is adapted from a search input desig
 These projects shaped how parts of ITC Desk look or behave; none of their code is included:
 - Butler by CherrysButler (https://github.com/CherrysButler/Butler, Apache 2.0): the release page with download checks (SHA-256 fingerprints and install notes).
 - wallie-V2 by Alradyin (https://github.com/Alradyin/wallie-V2, MIT): a helper with a personality that reacts live to what is on screen, which became Guru.
+- gstr-wala by quantavil (https://github.com/quantavil/gstr-wala, GPL v3): the Rule 88D (DRC-01C) check against GSTR-2B and random-input invariant tests.
 - personality by PigeonPosse (https://github.com/pigeonposse/personality): defining an assistant's tone and manner, used for Guru's voice (simple, warm English).
 
 ## TallyPrime Help

@@ -92,7 +92,7 @@ ITC Desk is a computation and working-paper aid, not a legal opinion or a statut
 
 ## Credits
 
-Concept, GST logic and testing by Avinash G. Code written with Claude (Anthropic). Excel reading by SheetJS Community Edition and the styled Excel export by xlsx-js-style (both Apache License 2.0); see `THIRD_PARTY_NOTICES.md`. The RCM search box is adapted from a Uiverse.io design (MIT). Ideas, not code, came from Butler (CherrysButler), wallie-V2 (Alradyin) and personality (PigeonPosse); Tally steps follow TallyPrime Help.
+Concept, GST logic and testing by Avinash G. Code written with Claude (Anthropic). Excel reading by SheetJS Community Edition and the styled Excel export by xlsx-js-style (both Apache License 2.0); see `THIRD_PARTY_NOTICES.md`. The RCM search box is adapted from a Uiverse.io design (MIT). Ideas, not code, came from Butler (CherrysButler), wallie-V2 (Alradyin), personality (PigeonPosse) and gstr-wala (quantavil); Tally steps follow TallyPrime Help.
 
 ## Manual
 
