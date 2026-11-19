@@ -1207,7 +1207,7 @@ summary:hover { color: var(--acc); }
         <div>
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
             <div><label>Tally ports to look at</label><input type="text" id="auto_ports" value="9000-9005"></div>
-            <div><label>Month</label><input type="text" id="auto_month_lbl" readonly title="Change it with Return period at the top"></div>
+            <input type="hidden" id="auto_month_lbl">
           </div>
         </div>
       </div>
@@ -6111,7 +6111,7 @@ function autoConnRender(linkOk) {
     // First time on a computer: a short setup, opened only on request; once the link has run here, only a reminder
     let seen = false; try { seen = localStorage.getItem('itc_link_seen') === '1'; } catch (e) {}
     box.innerHTML = `<div class="achip bad"><div><b>Tally link not running</b><small>Double-click ITC Desk.bat, then Find Tally</small></div></div>
-      <div id="link_setup" class="linksetup hide">
+      <div id="link_setup" class="linksetup${seen ? ' hide' : ''}">
         <b>The Tally link is not running on this computer.</b> ${seen ? 'Double-click <code>ITC Desk.bat</code> in the ITC Desk folder, then click Find Tally again. If it is missing, set it up once more:' : 'It is set up once on each computer, in about 2 minutes:'}
         <ol>
           <li><b>Download the launcher:</b> <button class="sm p" onclick="autoDownloadLink()">Download launcher</button> Your browser saves <code>ITC Desk.bat</code>.</li>
