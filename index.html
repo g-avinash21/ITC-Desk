@@ -1778,10 +1778,11 @@ function renderLedgerSummary() {
   importedRows.forEach(r => {
     if (r.in2B === false) return;
     const key = String(r.ledger || '').trim().toLowerCase();
-    const o = g[key] || (g[key] = { name: r.ledger, n: 0, tax: 0, buckets: {}, why: r.why || '', check: !!r.check, rcm: !!r.rcm, differs: !!r.differs, how: r.how || 'auto' });
+    const o = g[key] || (g[key] = { name: r.ledger, n: 0, tax: 0, buckets: {}, why: r.why || '', check: false, rcm: !!r.rcm, differs: !!r.differs, how: r.how || 'auto' });
     o.n++;
     const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
     o.tax += t;
+    if (flowRowNeedsCheck(r)) o.check = true;
     // Debit notes (purchase returns) lower the credit: kept apart so the reason for a difference from Tally's Purchase Register is shown here
     o.allNoTax = (o.allNoTax === undefined ? true : o.allNoTax) && Math.abs(t) < 0.005; o.val = (o.val || 0) + (r.taxable || 0);
     if (r.nodetail) { o.ndN = (o.ndN || 0) + 1; o.ndTax = (o.ndTax || 0) + t; (o.ndDates = o.ndDates || []).push(r.date); }
@@ -1829,7 +1830,8 @@ function setLedgerBucketByKey(key, newBucket, onlyRow) {
   if (key) {
     customLedgerMemory[memKeyOf(key)] = newBucket;
     try { localStorage.setItem('r42_ledger_memory', JSON.stringify(customLedgerMemory)); } catch (e) {}
-    const rs = importedRows.filter(r => String(r.ledger || '').trim().toLowerCase() === key);
+    // Bills marked Ineligible ITC in Tally stay T3: Tally reverses them itself (4(B)(1)), so moving them would count them twice
+    const rs = importedRows.filter(r => String(r.ledger || '').trim().toLowerCase() === key && !r.inelig);
     rs.forEach(r => { r.bucket = newBucket; r.how = 'user'; });
     applyOverrideWhy(rs);
   } else if (onlyRow) {
@@ -6432,10 +6434,21 @@ function flowSetMode(m) {
   else if (FLOW.mode === 'auto' && onTab === 0 && !importedRows.length) showTab(6);
   flowRender();
 }
-function flowLedgersToCheck() {
-  const k = new Set();
-  importedRows.forEach(r => { if (r.in2B !== false && r.check && !r.noTax && Math.abs((r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)) >= 0.005 && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
-  return k.size;
+// One rule for "this bill still needs checking", used by the ledger summary and by the next-step button
+function flowRowNeedsCheck(r) { return r.in2B !== false && !!r.check && !r.noTax && !r.inelig && Math.abs((r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)) >= 0.005 && r.how !== 'user' && r.how !== 'memory'; }
+function flowLedgersToCheckNames() {
+  const k = new Map();
+  importedRows.forEach(r => { if (flowRowNeedsCheck(r)) k.set(String(r.ledger || '').trim().toLowerCase(), String(r.ledger || '').trim()); });
+  return [...k.values()];
+}
+function flowLedgersToCheck() { return flowLedgersToCheckNames().length; }
+// Blocked next step: name the ledgers and take the user to the first one
+function flowShowCheck() {
+  const names = flowLedgersToCheckNames();
+  notify(`Choose a bucket first for: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` and ${names.length - 3} more` : ''} (marked Check).`);
+  const row = [...document.querySelectorAll('#impLedgerSummary tr')].find(t => t.cells[0] && names.some(n => t.cells[0].textContent.trim() === n));
+  const tgt = row || $('impLedgerSummary');
+  if (tgt) { tgt.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (row) { row.style.outline = '2px solid var(--acc)'; setTimeout(() => { row.style.outline = ''; }, 4000); } }
 }
 function flowSteps() {
   const auto = FLOW.mode === 'auto', have = importedRows.length > 0;
@@ -6479,7 +6492,7 @@ function flowRender() {
     nb.disabled = false;
     nb.textContent = x.tab === tab ? (x.id === 'review' ? 'Reviewed: next step' : x.id === 'single' || x.id === 'cg' ? 'Checked: next step' : x.id === 'post' ? 'Download Tally XML' : 'Finish this step first') : `Go to: ${x.label}`;
     if (x.id === 'get' && x.tab === tab) nb.disabled = true;
-    nb.onclick = () => { if (x.id === 'post' && x.tab === tab) { exportTallyXMLVoucher(); flowRender(); return; } if (x.tab === tab && (x.id === 'review' || x.id === 'single' || x.id === 'cg')) { if (x.id === 'review' && flowLedgersToCheck()) { notify('Settle the ledgers marked Check first: choose a bucket for each in the ledger-wise summary.'); const e = $('impLedgerSummary'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } FLOW.seen[x.id] = true; flowRender(); flowNext(); } else flowGo(nowI); };
+    nb.onclick = () => { if (x.id === 'post' && x.tab === tab) { exportTallyXMLVoucher(); flowRender(); return; } if (x.tab === tab && (x.id === 'review' || x.id === 'single' || x.id === 'cg')) { if (x.id === 'review' && flowLedgersToCheck()) { flowShowCheck(); return; } FLOW.seen[x.id] = true; flowRender(); flowNext(); } else flowGo(nowI); };
     $('fsay').innerHTML = x.say;
     try { guruOnStep(x); } catch (e) {}
   }
