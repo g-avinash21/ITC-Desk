@@ -1659,7 +1659,7 @@ function renderLedgerSummary() {
     const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
     o.tax += t;
     // Debit notes (purchase returns) lower the credit: kept apart so the reason for a difference from Tally's Purchase Register is shown here
-    o.allNoTax = (o.allNoTax === undefined ? true : o.allNoTax) && !!r.noTax; o.val = (o.val || 0) + (r.taxable || 0);
+    o.allNoTax = (o.allNoTax === undefined ? true : o.allNoTax) && Math.abs(t) < 0.005; o.val = (o.val || 0) + (r.taxable || 0);
     if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
     o.buckets[r.bucket] = 1;
   });
@@ -1782,6 +1782,7 @@ function judgeBuckets() {
     const auto = rs.every(r => (r.how || 'auto') === 'auto');
     if (!auto && rs[0].how === 't4a3') { rs.forEach(r => { r.why = 'Reverse charge credit from GSTR-3B Table 4(A)(3), not in the purchase data. Treated as common credit; change the bucket if it serves only taxable or only exempt supplies.'; r.check = true; }); return; }
     if (!auto && rs[0].how === 't4a') { rs.forEach(r => { r.why = 'Table 4(A) as a total, not split by ledger, so all of it is treated as common credit (the ceiling). Drop the purchase register to split it.'; r.check = true; }); return; }
+    if (rs.every(r => Math.abs((r.igst || 0) + (r.cgst || 0) + (r.sgst || 0) + (r.cess || 0)) < 0.005)) { rs.forEach(r => { r.check = false; r.why = 'No GST on these bills, so no credit and nothing to reverse.'; if (r.how === 'memory') r.how = 'auto'; }); return; }
     if (rs.every(r => r.how === 'tally')) { rs.forEach(r => { r.bucket = 'T3'; r.why = INELIG_WHY; r.check = false; }); return; }
     // The automatic judgement is always worked out, so a remembered or manual choice can be compared with it
     const res = (() => {
@@ -6262,7 +6263,7 @@ function flowSetMode(m) {
 }
 function flowLedgersToCheck() {
   const k = new Set();
-  importedRows.forEach(r => { if (r.in2B !== false && r.check && !r.noTax && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
+  importedRows.forEach(r => { if (r.in2B !== false && r.check && !r.noTax && Math.abs((r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)) >= 0.005 && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
   return k.size;
 }
 function flowSteps() {
