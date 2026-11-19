@@ -1,6 +1,6 @@
 # ITC Desk
 
-**Version 1.0.0 · Last updated 19 November 2026**
+**Version 1.0.1 · Last updated 19 November 2026**
 
 An offline working tool for GST input tax credit reversal under **Rules 42, 43 and 37 of the CGST Rules, 2017**. It reads TallyPrime exports, or GSTR-2B from the GST portal for clients on other software, puts each purchase ledger in a Rule 42 bucket with a reason, and works out the reversal for GSTR-3B Table 4(B)(1).
 
@@ -24,6 +24,7 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
 - **The rule in simple words**: beside each bucket's reason, a plain explanation for office staff (what the rule says, an example, and what ITC Desk does), with the ICAI study material or GST handbook named as the source.
 - **RCM guide tab, with Guru**: type a bill in plain words ("rent paid to unregistered landlord for godown", "audit fees", "lorry freight with LR") and Guru, the built-in helper, picks the reverse charge case, asks only the questions that matter and answers in two steps: is GST payable at all, then who pays it, with what to mark in Tally and the notification. Guru works offline from the rules built into ITC Desk; when a bill is not covered, it says so instead of guessing. The full list of reverse charge cases (26, searchable) opens with one click.
 - **Guru, on every tab (hidden until you call it)**: click **Ask Guru** at the top right, or press **Alt+G**. Guru keeps track of the month's working while hidden and, when opened, tells you the next step, explains the reversal figure line by line, lists the ledgers to check, suggests reasons for a difference from Tally (debit notes, other months, credit already reversed), and answers "is this bill reverse charge?". Every reverse charge answer shows how to enter it in TallyPrime and report it in GSTR-3B (forward charge: Table 4(A)(5); reverse charge: 3.1(d) paid in cash and 4(A)(3); exempt: Table 5). Text only. Guru answers from ITC Desk's own figures and built-in rules; if ITC assistant.bat is running, the small model on your PC can answer other questions too, marked as such. Nothing goes online.
+- **Reverse charge on a cash or bank payment is not counted as credit**: Tally's GSTR-3B does not raise reverse charge tax from a Payment voucher, so ITC Desk names such entries (date, ledger, amount, tax) and says what to correct in Tally, instead of claiming credit on tax never paid. Purchase and journal entries are counted as before.
 - **Flags likely reverse charge mistakes**: a ledger such as "Accounting Charges RCM" marked reverse charge in Tally is shown with a Check note (accounting, audit and consultancy fees are forward charge; only an advocate's legal fees are reverse charge). The working itself is not changed.
 - **Optional assistant**: a small AI model running on your own computer (llama.cpp with a Hugging Face model) can suggest buckets for ledgers marked Check. It only suggests; nothing changes until you accept. See `ITC assistant.bat`.
 
