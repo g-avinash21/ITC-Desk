@@ -390,6 +390,46 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 body.on-auto .metabar { display: none; }
 body.mode-auto .manual-only, body.mode-manual .auto-only { display: none !important; }
 tr.notax td { color: var(--mut); }
+.rcmask { display: flex; align-items: center; position: relative; margin: 0 0 8px; }
+.rcmask-in { width: 100%; height: 46px; padding-left: 2.6rem; border: 0; border-radius: 12px; background: var(--card); color: var(--ink); font-size: 14px; box-shadow: 0 0 0 1.5px var(--line), 0 0 25px -17px #000; outline: none; transition: box-shadow .25s cubic-bezier(.19, 1, .22, 1), transform .25s cubic-bezier(.19, 1, .22, 1); }
+.rcmask-in::placeholder { color: var(--mut); }
+.rcmask-in:hover { box-shadow: 0 0 0 2px var(--acc), 0 0 25px -15px #000; }
+.rcmask-in:focus { box-shadow: 0 0 0 2.5px var(--acc); }
+.rcmask-in:active { transform: scale(.995); }
+.rcmask-ic { position: absolute; left: 1rem; width: 1rem; height: 1rem; fill: var(--acc); pointer-events: none; }
+.rcmsugg { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; min-height: 4px; }
+.rcmsugg button { font-size: 12.5px; padding: 4px 10px; box-shadow: none; border-radius: 14px; }
+.rcmsugg button.top { background: var(--acc); border-color: var(--acc); color: #fff; }
+.rcmchat:empty { display: none; }
+.rcmchat { margin: 0 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.rcmchat .me { align-self: flex-end; max-width: 75%; background: var(--acc); color: #fff; padding: 7px 12px; border-radius: 14px 14px 3px 14px; font-size: 13.5px; }
+.rcmchat .mu { display: flex; gap: 9px; align-items: flex-start; max-width: 88%; }
+.rcmchat .av { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--acc); color: #fff; font: 600 13px/30px Georgia, serif; text-align: center; }
+.rcmchat .bub { background: var(--card); box-shadow: 0 0 0 1.5px var(--line); padding: 9px 12px; border-radius: 3px 14px 14px 14px; font-size: 13.5px; line-height: 1.5; }
+.rcmchat .bub .nm { font-size: 11.5px; color: var(--acc); font-weight: 600; display: block; margin-bottom: 2px; }
+.rcmchat .bub .opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.rcmchat .bub .opts button { font-size: 12.5px; padding: 4px 10px; box-shadow: none; border-radius: 14px; }
+.rcmchat .bub .tl { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+.rcmchat .ft { font-size: 11.5px; color: var(--mut); margin-left: 39px; }
+.rcmchk { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.2fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .rcmchk { grid-template-columns: 1fr; } }
+.rcmq select { width: 100%; margin: 4px 0 12px; }
+.rcmq .rq { margin: 0 0 12px; }
+.rcmq .rq > b { display: block; font-size: 13px; margin-bottom: 5px; }
+.rcmq .rq .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.rcmq .rq .opts button { font-size: 12.5px; padding: 5px 10px; box-shadow: none; }
+.rcmq .rq .opts button.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+.rcmout { border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; background: var(--bg); min-height: 120px; font-size: 13.5px; line-height: 1.55; }
+.rcmout .verdict { font-size: 17px; font-weight: 700; margin: 2px 0 8px; }
+.rcmout .v-rcm { color: var(--acc); } .rcmout .v-fcm { color: #1f5fa8; } .rcmout .v-ex { color: #1f8a4c; }
+.rcmout .stp { display: flex; gap: 8px; margin: 0 0 6px; } .rcmout .stp b { white-space: nowrap; }
+.rcmout .src { margin-top: 10px; font-size: 11.5px; color: var(--mut); }
+.rcmall:not(.open) > :not(.card-title), .rcmall:not(.open) .card-title .row { display: none !important; }
+.rcmall:not(.open) .card-title { margin-bottom: 0; }
+.rcmall-t { all: unset; cursor: pointer; font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.rcmall-t:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 4px; }
+.rcmall-t .chev { color: var(--acc); display: inline-block; transition: transform .2s; }
+.rcmall.open .rcmall-t .chev { transform: rotate(90deg); }
 .rcmref th, .rcmref td { text-align: left !important; }
 .rcmref td { vertical-align: top; font-size: 12.5px; line-height: 1.45; }
 .rcmref td:first-child { white-space: nowrap; color: var(--mut); }
@@ -509,6 +549,7 @@ summary:hover { color: var(--acc); }
       <button class="tab" id="t2" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
       <button class="tab" id="t4" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
       <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
+      <button class="tab" id="t7" onclick="showTab(7)"><span>RCM guide</span><small>who pays GST</small></button>
       <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
     </nav>
     <div class="side-foot">
@@ -1243,6 +1284,40 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 5: MASTERCLASS GUIDE & CHECKLIST ==================== -->
+  <div id="p7" class="hide">
+    <div class="card">
+      <div class="card-title"><span>Check a bill: is GST payable, and who pays it?</span></div>
+      <div class="rcmask">
+        <svg class="rcmask-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path></svg>
+        <input class="rcmask-in" id="rcm_ask" type="search" autocomplete="off" placeholder="Type the bill in plain words: rent paid to unregistered landlord for godown · audit fees · lorry freight · watchman agency…" oninput="rcmAsk(this.value)">
+      </div>
+      <div id="rcm_sugg" class="rcmsugg"></div>
+      <div id="rcm_chat" class="rcmchat" aria-live="polite"></div>
+      <p class="hint" style="margin:0 0 10px">Or choose what the bill is for and answer the questions. The answer follows the order of the law: first whether GST is payable at all (step 1), then who pays it (step 2). Use it when entering the bill in Tally; ITC Desk itself takes what is marked in Tally.</p>
+      <div class="rcmchk">
+        <div class="rcmq">
+          <label><b>What is the bill for?</b></label>
+          <select id="rcm_case" onchange="rcmRender(true)"></select>
+          <div id="rcm_qs"></div>
+        </div>
+        <div id="rcm_out" class="rcmout"></div>
+      </div>
+    </div>
+
+    <div class="card rcmall" id="rcm_all">
+      <div class="card-title"><button class="rcmall-t" aria-expanded="false" onclick="rcmAllToggle()"><span class="chev">▸</span> All reverse charge cases <span class="hint" id="rcm_allN"></span></button><div class="row no-print" style="gap:6px"><input type="search" id="rcm_q" placeholder="Search: rent, advocate, scrap…" oninput="rcmFilter()" style="width:220px"><span class="seg" id="rcm_grp"><button class="sm on" onclick="rcmGroup(this,'')">All</button><button class="sm" onclick="rcmGroup(this,'Services')">Services</button><button class="sm" onclick="rcmGroup(this,'Goods')">Goods</button><button class="sm" onclick="rcmGroup(this,'Real estate')">Real estate</button></span></div></div>
+      <div class="alert" style="margin:0 0 10px"><b>Think in order.</b> <b>Step 1: is GST payable at all?</b> If the supply is exempt or not a supply (for example an exempt service, or rent of a house used as a residence by an unregistered person), stop: there is no GST, so no forward or reverse charge. <b>Step 2: only if GST is payable, who pays it?</b> The supplier (forward charge, the normal rule) or the recipient (reverse charge, only for the cases below). Getting the order wrong gives the wrong answer.</div>
+      <p class="hint" style="margin:0 0 8px">ITC Desk does not decide whether reverse charge applies: it takes what is marked in Tally. Use this table when entering the bill. Under reverse charge the <b>buyer</b> pays the GST in cash (GSTR-3B Table 3.1(d)) and takes the same amount as credit in Table 4(A)(3) of the same month, if used for business; Rule 42 then applies to it like any other credit. Anything not in this table is a normal bill: the supplier charges GST, if registered. A recipient liable to pay under reverse charge must register under GST, whatever its turnover (section 24).</p>
+      <div class="hint" style="margin:0 0 8px"><b>Common mix-ups:</b> audit fees to a CA → normal bill, not RCM · legal fees to an advocate → RCM even if the advocate is registered · rent from a registered landlord → normal bill · rent from an unregistered landlord for a shop or godown → RCM · freight to a GTA charging GST on its bill → normal bill · watchmen from a security company (Pvt Ltd) → normal bill · cab, hotel, restaurant, housekeeping or local delivery booked through an app → the app (e-commerce operator) pays the GST, not you.</div>
+      <div class="scroll"><table class="rcmref">
+        <thead><tr><th>Type</th><th>What</th><th>From → to</th><th>Reverse charge when</th><th>Not reverse charge / notes</th></tr></thead>
+        <tbody><tr><td>Services</td><td><b>Freight by a goods transport agency (GTA): transporter who issues a lorry receipt / consignment note</b></td><td>GTA → factory, society, co-operative, registered person, company, firm or LLP, casual taxable person</td><td>GTA has not opted to charge GST itself. Rate 5%, credit allowed to you.</td><td>GTA charges GST on its bill (18% with ITC from 22-09-2025, or 5% forward charge) → not RCM. Truck hire without a consignment note is not GTA. Exempt (step 1): recipient an unregistered individual or HUF (not in the list); farm produce, milk, salt; freight up to ₹750 per consignee or ₹1,500 per vehicle. Local delivery through an e-commerce operator is not a GTA service.</td></tr><tr><td>Services</td><td><b>Legal fees: advocate, senior advocate or firm of advocates</b></td><td>Advocate → any business</td><td>Always RCM, even if the advocate is registered. 18%.</td><td>Not RCM for a person not in business. Fees to a CA, auditor, consultant or company secretary are normal (forward charge) bills.</td></tr><tr><td>Services</td><td><b>Arbitral tribunal</b></td><td>Tribunal → any business</td><td>Always RCM.</td><td></td></tr><tr><td>Services</td><td><b>Sponsorship</b></td><td>Sponsor-seeker (not a company) → company or partnership firm</td><td>RCM only when the supplier is not a body corporate.</td><td>From 16-01-2025 a company (body corporate) supplier charges GST itself (forward charge).</td></tr><tr><td>Services</td><td><b>Services of the Central or State Government, a Union Territory or local authority (licence and permission fees, etc.)</b></td><td>Government → any business</td><td>RCM.</td><td>Not RCM: renting of property by government (see next row), postal services, railways, transport of goods or passengers, services for aircraft or vessels.</td></tr><tr><td>Services</td><td><b>Rent of property from the Central or State Government or local authority</b></td><td>Government → registered person</td><td>RCM.</td><td>To an unregistered person → the government charges GST (forward charge). Indian Railways excluded.</td></tr><tr><td>Services</td><td><b>Rent of a residential house / dwelling</b></td><td>Any person → registered person</td><td>RCM from 18-07-2022, whoever the landlord is. 18%.</td><td>Step 1 first. Used as a residence and rented by an unregistered person → exempt. Rented by a proprietor for his own residence in his personal capacity → exempt. Hostels and PGs: exempt up to ₹20,000 per person per month for at least 90 continuous days (from 15-07-2024). A house used for business (office, godown) is not exempt: RCM if the tenant is registered; if the tenant is not registered, a registered landlord charges GST.</td></tr><tr><td>Services</td><td><b>Rent of a shop, godown, office or other non-residential property</b></td><td>Unregistered landlord → registered tenant</td><td>RCM from 10-10-2024. 18%.</td><td>Landlord registered → he charges GST (forward charge). Tenant under composition scheme → no RCM, from 16-01-2025.</td></tr><tr><td>Services</td><td><b>Director's sitting fees and commission</b></td><td>Director → his company</td><td>Always RCM.</td><td>Salary of a whole-time director under employment is not GST.</td></tr><tr><td>Services</td><td><b>Insurance agent's commission</b></td><td>Insurance agent → insurance company</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Recovery agent</b></td><td>Recovery agent → bank, financial institution, NBFC</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Direct selling agent (individual), business facilitator, agent of a business correspondent</b></td><td>DSA → bank or NBFC; business facilitator → banking company; agent → business correspondent</td><td>RCM.</td><td>A DSA that is a company, firm or LLP charges GST itself. A business facilitator serving an insurance company or anyone other than a bank → forward charge.</td></tr><tr><td>Services</td><td><b>Copyright: music composer, photographer, artist; author</b></td><td>Owner → music company, producer, publisher</td><td>RCM.</td><td>A registered author who opts to charge GST (declaration on the bill) → forward charge.</td></tr><tr><td>Services</td><td><b>Security guards / watchmen</b></td><td>Agency that is not a company → registered person</td><td>RCM. 18%.</td><td>Agency is a company → it charges GST. Recipient under composition or a government office registered only for TDS → no RCM.</td></tr><tr><td>Services</td><td><b>Hire of a passenger vehicle with fuel (cab, bus)</b></td><td>Non-company owner → company (body corporate)</td><td>RCM when the supplier does not charge GST at the higher rate on the bill (CGST 9% from 01-11-2026; 6% before).</td><td>Credit on passenger vehicles may still be blocked by section 17(5).</td></tr><tr><td>Services</td><td><b>Lending of securities (SEBI scheme)</b></td><td>Lender → borrower</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Members of RBI's overseeing committee</b></td><td>Member → RBI</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Import of services: software, consultancy, online advertising from outside India</b></td><td>Supplier outside India → person in India</td><td>IGST under RCM. Credit in Table 4(A)(2), not 4(A)(3).</td><td></td></tr><tr><td>Real estate</td><td><b>Transfer of development rights / FSI; long lease of land (30 years or more) for a project</b></td><td>Any person → promoter (builder)</td><td>RCM.</td><td>Promoters also pay RCM (section 9(4)) on goods and services bought from unregistered suppliers beyond the 80% rule, and on cement from unregistered suppliers.</td></tr><tr><td>Goods</td><td><b>Cashew nuts (not shelled), bidi wrapper / tendu leaves, tobacco leaves, raw cotton, specified mint oils</b></td><td>Agriculturist → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Silk yarn</b></td><td>Maker of silk yarn from raw silk → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Lottery</b></td><td>State Government → lottery distributor</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Used vehicles, seized and confiscated goods, old and used goods, waste and scrap</b></td><td>Central or State Government, UT, local authority → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Priority sector lending certificate</b></td><td>Registered person → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Metal scrap (chapters 72 to 81)</b></td><td>Unregistered seller → registered person</td><td>RCM from 10-10-2024.</td><td>Seller registered → he charges GST.</td></tr><tr><td>Goods</td><td><b>Tyre waste, e-waste, plastic waste and scrap, used cooking oil</b></td><td>Unregistered seller → registered person</td><td>RCM from 01-11-2026 (Notification 04/2026, as reported).</td><td>Seller registered → he charges GST.</td></tr></tbody>
+      </table></div>
+      <p class="hint" style="margin:8px 0 0">Sources: Notification 13/2017-Central Tax (Rate) for services and 4/2017-Central Tax (Rate) for goods, with their amendments up to 08/2026; section 9(3), 9(4) and 9(5) of the CGST Act; ICAI Handbook on Reverse Charge Mechanism. Dates matter: check the bill date against the dates shown. When in doubt, read the current notification on the CBIC site before filing.</p>
+    </div>
+
+  </div>
+
   <div id="p5" class="hide">
     <div class="card" id="manual">
       <div class="card-title">
@@ -1352,18 +1427,6 @@ summary:hover { color: var(--acc); }
           <li><b>Section 17(4) / Rule 38 (Banking &amp; NBFC 50% Option):</b> Covers inputs, input services, <i>and capital goods</i> in a single flat 50% availment (100% for distinct persons with the same PAN); separate Rule 43 reversal does not apply on top of the 50% option.</li>
         </ul>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span>Reverse charge: who pays the GST</span></div>
-      <div class="alert" style="margin:0 0 10px"><b>Think in order.</b> <b>Step 1: is GST payable at all?</b> If the supply is exempt or not a supply (for example an exempt service, or rent of a house used as a residence by an unregistered person), stop: there is no GST, so no forward or reverse charge. <b>Step 2: only if GST is payable, who pays it?</b> The supplier (forward charge, the normal rule) or the recipient (reverse charge, only for the cases below). Getting the order wrong gives the wrong answer.</div>
-      <p class="hint" style="margin:0 0 8px">ITC Desk does not decide whether reverse charge applies: it takes what is marked in Tally. Use this table when entering the bill. Under reverse charge the <b>buyer</b> pays the GST in cash (GSTR-3B Table 3.1(d)) and takes the same amount as credit in Table 4(A)(3) of the same month, if used for business; Rule 42 then applies to it like any other credit. Anything not in this table is a normal bill: the supplier charges GST, if registered. A recipient liable to pay under reverse charge must register under GST, whatever its turnover (section 24).</p>
-      <div class="hint" style="margin:0 0 8px"><b>Common mix-ups:</b> audit fees to a CA → normal bill, not RCM · legal fees to an advocate → RCM even if the advocate is registered · rent from a registered landlord → normal bill · rent from an unregistered landlord for a shop or godown → RCM · freight to a GTA charging GST on its bill → normal bill · watchmen from a security company (Pvt Ltd) → normal bill · cab, hotel, restaurant, housekeeping or local delivery booked through an app → the app (e-commerce operator) pays the GST, not you.</div>
-      <div class="scroll"><table class="rcmref">
-        <thead><tr><th>Type</th><th>What</th><th>From → to</th><th>Reverse charge when</th><th>Not reverse charge / notes</th></tr></thead>
-        <tbody><tr><td>Services</td><td><b>Freight by a goods transport agency (GTA): transporter who issues a lorry receipt / consignment note</b></td><td>GTA → factory, society, co-operative, registered person, company, firm or LLP, casual taxable person</td><td>GTA has not opted to charge GST itself. Rate 5%, credit allowed to you.</td><td>GTA charges GST on its bill (18% with ITC from 22-09-2025, or 5% forward charge) → not RCM. Truck hire without a consignment note is not GTA. Exempt (step 1): recipient an unregistered individual or HUF (not in the list); farm produce, milk, salt; freight up to ₹750 per consignee or ₹1,500 per vehicle. Local delivery through an e-commerce operator is not a GTA service.</td></tr><tr><td>Services</td><td><b>Legal fees: advocate, senior advocate or firm of advocates</b></td><td>Advocate → any business</td><td>Always RCM, even if the advocate is registered. 18%.</td><td>Not RCM for a person not in business. Fees to a CA, auditor, consultant or company secretary are normal (forward charge) bills.</td></tr><tr><td>Services</td><td><b>Arbitral tribunal</b></td><td>Tribunal → any business</td><td>Always RCM.</td><td></td></tr><tr><td>Services</td><td><b>Sponsorship</b></td><td>Sponsor-seeker (not a company) → company or partnership firm</td><td>RCM only when the supplier is not a body corporate.</td><td>From 16-01-2025 a company (body corporate) supplier charges GST itself (forward charge).</td></tr><tr><td>Services</td><td><b>Services of the Central or State Government, a Union Territory or local authority (licence and permission fees, etc.)</b></td><td>Government → any business</td><td>RCM.</td><td>Not RCM: renting of property by government (see next row), postal services, railways, transport of goods or passengers, services for aircraft or vessels.</td></tr><tr><td>Services</td><td><b>Rent of property from the Central or State Government or local authority</b></td><td>Government → registered person</td><td>RCM.</td><td>To an unregistered person → the government charges GST (forward charge). Indian Railways excluded.</td></tr><tr><td>Services</td><td><b>Rent of a residential house / dwelling</b></td><td>Any person → registered person</td><td>RCM from 18-07-2022, whoever the landlord is. 18%.</td><td>Step 1 first. Used as a residence and rented by an unregistered person → exempt. Rented by a proprietor for his own residence in his personal capacity → exempt. Hostels and PGs: exempt up to ₹20,000 per person per month for at least 90 continuous days (from 15-07-2024). A house used for business (office, godown) is not exempt: RCM if the tenant is registered; if the tenant is not registered, a registered landlord charges GST.</td></tr><tr><td>Services</td><td><b>Rent of a shop, godown, office or other non-residential property</b></td><td>Unregistered landlord → registered tenant</td><td>RCM from 10-10-2024. 18%.</td><td>Landlord registered → he charges GST (forward charge). Tenant under composition scheme → no RCM, from 16-01-2025.</td></tr><tr><td>Services</td><td><b>Director's sitting fees and commission</b></td><td>Director → his company</td><td>Always RCM.</td><td>Salary of a whole-time director under employment is not GST.</td></tr><tr><td>Services</td><td><b>Insurance agent's commission</b></td><td>Insurance agent → insurance company</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Recovery agent</b></td><td>Recovery agent → bank, financial institution, NBFC</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Direct selling agent (individual), business facilitator, agent of a business correspondent</b></td><td>DSA → bank or NBFC; business facilitator → banking company; agent → business correspondent</td><td>RCM.</td><td>A DSA that is a company, firm or LLP charges GST itself. A business facilitator serving an insurance company or anyone other than a bank → forward charge.</td></tr><tr><td>Services</td><td><b>Copyright: music composer, photographer, artist; author</b></td><td>Owner → music company, producer, publisher</td><td>RCM.</td><td>A registered author who opts to charge GST (declaration on the bill) → forward charge.</td></tr><tr><td>Services</td><td><b>Security guards / watchmen</b></td><td>Agency that is not a company → registered person</td><td>RCM. 18%.</td><td>Agency is a company → it charges GST. Recipient under composition or a government office registered only for TDS → no RCM.</td></tr><tr><td>Services</td><td><b>Hire of a passenger vehicle with fuel (cab, bus)</b></td><td>Non-company owner → company (body corporate)</td><td>RCM when the supplier does not charge GST at the higher rate on the bill (CGST 9% from 01-11-2026; 6% before).</td><td>Credit on passenger vehicles may still be blocked by section 17(5).</td></tr><tr><td>Services</td><td><b>Lending of securities (SEBI scheme)</b></td><td>Lender → borrower</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Members of RBI's overseeing committee</b></td><td>Member → RBI</td><td>RCM.</td><td></td></tr><tr><td>Services</td><td><b>Import of services: software, consultancy, online advertising from outside India</b></td><td>Supplier outside India → person in India</td><td>IGST under RCM. Credit in Table 4(A)(2), not 4(A)(3).</td><td></td></tr><tr><td>Real estate</td><td><b>Transfer of development rights / FSI; long lease of land (30 years or more) for a project</b></td><td>Any person → promoter (builder)</td><td>RCM.</td><td>Promoters also pay RCM (section 9(4)) on goods and services bought from unregistered suppliers beyond the 80% rule, and on cement from unregistered suppliers.</td></tr><tr><td>Goods</td><td><b>Cashew nuts (not shelled), bidi wrapper / tendu leaves, tobacco leaves, raw cotton, specified mint oils</b></td><td>Agriculturist → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Silk yarn</b></td><td>Maker of silk yarn from raw silk → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Lottery</b></td><td>State Government → lottery distributor</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Used vehicles, seized and confiscated goods, old and used goods, waste and scrap</b></td><td>Central or State Government, UT, local authority → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Priority sector lending certificate</b></td><td>Registered person → registered person</td><td>RCM.</td><td></td></tr><tr><td>Goods</td><td><b>Metal scrap (chapters 72 to 81)</b></td><td>Unregistered seller → registered person</td><td>RCM from 10-10-2024.</td><td>Seller registered → he charges GST.</td></tr><tr><td>Goods</td><td><b>Tyre waste, e-waste, plastic waste and scrap, used cooking oil</b></td><td>Unregistered seller → registered person</td><td>RCM from 01-11-2026 (Notification 04/2026, as reported).</td><td>Seller registered → he charges GST.</td></tr></tbody>
-      </table></div>
-      <p class="hint" style="margin:8px 0 0">Sources: Notification 13/2017-Central Tax (Rate) for services and 4/2017-Central Tax (Rate) for goods, with their amendments up to 08/2026; section 9(3), 9(4) and 9(5) of the CGST Act; ICAI Handbook on Reverse Charge Mechanism. Dates matter: check the bill date against the dates shown. When in doubt, read the current notification on the CBIC site before filing.</p>
     </div>
 
     <div class="card">
@@ -1512,7 +1575,7 @@ function printManual() {
   window.print();
 }
 function showTab(k) {
-  [0, 1, 2, 3, 4, 5, 6].forEach(i => {
+  [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => {
     if ($('p' + i)) $('p' + i).classList.toggle('hide', i !== k);
     if ($('t' + i)) $('t' + i).classList.toggle('on', i === k);
   });
@@ -1699,7 +1762,7 @@ function renderLedgerSummary() {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
         // Bills on which no GST was charged: shown for completeness, with nothing to decide
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
-        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
+        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }
@@ -2669,6 +2732,13 @@ function kbPenaltyRefs() {
   const box = $('penRefs'); if (!box) return;
   const refs = kbResolve(KB_PEN_Q.map(([q, ch], i) => ({ key: 'PEN:' + i, q, ch })));
   box.innerHTML = refs.length ? 'References: <span class="kbref" style="display:inline">' + refs.map(r => kbRefLinkHtml(r, false)).join('') + '</span>' : '';
+}
+// Survey of the office's companies: accounting / audit / consultancy fees were being booked as reverse charge.
+// They are not on the reverse charge list (only an advocate's legal fees are); a registered CA charges GST on his bill.
+// Shown as a check only: the working does not change.
+function rcmDoubt(o) {
+  if (!o.rcm || !/account|audit|chartered|\bca\b|consult|book ?keep|tax (filing|return)|professional/i.test(o.name) || /advocate|legal|lawyer|law firm/i.test(o.name)) return '';
+  return '<div class="dnwhy"><b>Check this entry:</b> accounting, audit and consultancy fees are <b>not</b> under reverse charge. Only legal fees of an advocate are. A registered CA or consultant charges GST on his own bill (forward charge); an unregistered one charges none. If this ledger is marked reverse charge in Tally, the RCM tax paid on it is not payable and its credit is doubtful. See the RCM guide tab.</div>';
 }
 function kbRefHtml(name, bucket, rcm) {
   const refs = kbRefsFor(name, bucket, rcm);
@@ -3833,7 +3903,7 @@ function parseGSTJson(rawText, fileName) {
 function parseTallyXML(xmlText, fileName) {
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlText, 'text/xml');
+    const doc = parser.parseFromString(xmlSafe(xmlText), 'text/xml');
     const vchs = Array.from(doc.getElementsByTagName('VOUCHER'));
     if (!vchs.length) return;
     vchs.forEach(v => {
@@ -5973,13 +6043,16 @@ async function linkFetch(path, body, ms) {
   finally { clearTimeout(tm); if (typeof AUTO !== 'undefined' && AUTO.aborts) AUTO.aborts.delete(onStop); }
 }
 // Tally answers in UTF-8 or UTF-16 and may include control characters that XML does not allow
+// Some companies carry TDL add-on fields such as <UDF:XYZ.LIST> without declaring the UDF namespace. A browser's XML
+// reader then rejects the whole reply ("undeclared prefix"), and the month could not be read. Prefixes are made plain names.
+function xmlSafe(t) { return String(t).replace(/<(\/?)([A-Za-z_][\w.-]*):(?=[A-Za-z_])/g, '<$1$2_').replace(/(\s)(?!xmlns:|xml:)([A-Za-z_][\w.-]*):([A-Za-z_][\w.-]*=)/g, '$1$2_$3'); }
 function tallyText(buf) {
   let t;
   if (buf[0] === 0xFF && buf[1] === 0xFE) t = new TextDecoder('utf-16le').decode(buf.subarray(2));
   else if (buf[0] === 0xFE && buf[1] === 0xFF) t = new TextDecoder('utf-16be').decode(buf.subarray(2));
   else if (buf.length > 3 && buf[1] === 0 && buf[3] === 0) t = new TextDecoder('utf-16le').decode(buf);
   else t = new TextDecoder('utf-8').decode(buf);
-  return t.replace(/&#(x0*[0-8bcef]|x0*1[0-9a-f]|0*[0-8]|0*1[1-2]|0*1[4-9]|0*2[0-9]|0*3[01]);/gi, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  return xmlSafe(t).replace(/&#(x0*[0-8bcef]|x0*1[0-9a-f]|0*[0-8]|0*1[1-2]|0*1[4-9]|0*2[0-9]|0*3[01]);/gi, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
 }
 async function tallyAsk(port, xml, label, ms) {
   const t0 = Date.now();
@@ -6271,7 +6344,7 @@ function flowSetMode(m) {
   document.body.classList.toggle('mode-auto', FLOW.mode === 'auto');
   document.body.classList.toggle('mode-manual', FLOW.mode === 'manual');
   if ($('t0lab')) { $('t0lab').textContent = FLOW.mode === 'auto' ? 'Review' : 'Import'; $('t0sub').textContent = FLOW.mode === 'auto' ? 'ledgers and buckets' : 'files, then review'; }
-  const onTab = [0, 1, 2, 3, 4, 5, 6].find(i => $('p' + i) && !$('p' + i).classList.contains('hide'));
+  const onTab = [0, 1, 2, 3, 4, 5, 6, 7].find(i => $('p' + i) && !$('p' + i).classList.contains('hide'));
   if (FLOW.mode === 'manual' && onTab === 6) showTab(0);
   else if (FLOW.mode === 'auto' && onTab === 0 && !importedRows.length) showTab(6);
   flowRender();
@@ -6302,7 +6375,7 @@ function flowSteps() {
       say: '<b>Step 5, Post in Tally:</b> on the Vouchers tab, check that every ledger shows <b>✓ from Tally</b>, click <b>Download Tally XML</b> and import it in Tally (Alt+O &gt; Import &gt; Transactions). Then open GSTR-3B in Tally and see the amount in Table 4(B)(1). Click <b>Save backup</b> to keep this client\'s work.' }
   ];
 }
-function flowCurrentTab() { return [0, 1, 2, 3, 4, 5, 6].find(i => $('p' + i) && !$('p' + i).classList.contains('hide')); }
+function flowCurrentTab() { return [0, 1, 2, 3, 4, 5, 6, 7].find(i => $('p' + i) && !$('p' + i).classList.contains('hide')); }
 function flowRender() {
   const ol = $('fsteps'); if (!ol) return;
   // A new client or month starts the path again
@@ -6338,6 +6411,254 @@ function flowNext() {
   if (i === -1) { flowRender(); return; }
   flowGo(i);
 }
+
+/* ---------- RCM guide: is GST payable (step 1), and who pays it (step 2) ---------- */
+const YN = [['y', 'Yes'], ['n', 'No']];
+const RCM_CASES = [
+  { id: 'gta', label: 'Freight / transport of goods by road', src: 'Notification 13/2017-CT(R) entry 1; 12/2017-CT(R) entries 18, 21, 21A; 56th GST Council (rates from 22-09-2025)',
+    qs: [
+      { id: 'cn', t: 'Did the transporter issue a consignment note / lorry receipt?', o: YN },
+      { id: 'rec', t: 'Who is paying the freight (the recipient)?', o: [['biz', 'Factory, company, firm, LLP, society, co-operative, registered person or casual taxable person'], ['ind', 'Unregistered individual or HUF']], show: a => a.cn === 'y' },
+      { id: 'ex', t: 'Are the goods farm produce, milk or salt, or is the freight up to ₹1,500 for the vehicle (or ₹750 per consignee)?', o: YN, show: a => a.rec === 'biz' },
+      { id: 'fcm', t: 'Does the transporter charge GST on its own bill (opted for forward charge, with the declaration)?', o: YN, show: a => a.ex === 'n' }
+    ],
+    decide: a => a.cn === 'n' ? { v: 'ex', h: 'Exempt: not a GTA service', w: 'Without a consignment note it is plain transport of goods by road, which is exempt. No GST, no reverse charge.' }
+      : a.rec === 'ind' ? { v: 'ex', h: 'Exempt', w: 'GTA service to an unregistered individual or HUF is exempt.' }
+      : a.ex === 'y' ? { v: 'ex', h: 'Exempt', w: 'GTA freight for farm produce, milk or salt, or within the small-value limits, is exempt.' }
+      : a.fcm === 'y' ? { v: 'fcm', h: 'Forward charge: the transporter pays', w: 'The GTA has opted to pay GST itself: 5% (no credit to the GTA) or 18% (with credit). You take the GST on its bill as credit, as for any purchase.' }
+      : a.fcm === 'n' ? { v: 'rcm', h: 'Reverse charge: you pay 5%', w: 'Pay 5% GST yourself (Table 3.1(d)) and take it as credit in Table 4(A)(3). Mark the bill or ledger as reverse charge in Tally.' } : null },
+  { id: 'adv', label: 'Legal fees: advocate or firm of advocates', src: 'Notification 13/2017-CT(R) entry 2; 12/2017-CT(R) entry 45',
+    qs: [
+      { id: 'biz', t: 'Is the client a business (not an individual in a personal matter)?', o: YN },
+      { id: 'to', t: "Was the client's turnover in the previous year above ₹20 lakh (₹10 lakh in special category states)?", o: YN, show: a => a.biz === 'y' }
+    ],
+    decide: a => a.biz === 'n' ? { v: 'ex', h: 'Exempt', w: 'Legal services to a person not in business are exempt.' }
+      : a.to === 'n' ? { v: 'ex', h: 'Exempt', w: 'Legal services to a business whose previous-year turnover was within the threshold are exempt.' }
+      : a.to === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: "Always reverse charge, even if the advocate is registered and puts GST on the bill. Note: fees to a CA, auditor or consultant are not legal services by an advocate; they are normal forward-charge bills." } : null },
+  { id: 'resi', label: 'Rent of a residential house / flat', src: 'Notification 13/2017-CT(R) entry 5AA; 12/2017-CT(R) entries 12, 12A',
+    qs: [
+      { id: 'use', t: 'What is it used for?', o: [['res', 'As a residence (staff quarters, owner, director)'], ['biz', 'For business (office, godown, shop)'], ['pg', 'Hostel / PG accommodation']] },
+      { id: 'treg', t: 'Is the tenant registered under GST?', o: YN, show: a => a.use === 'res' || a.use === 'biz' },
+      { id: 'prop', t: 'Is the tenant a proprietor renting it in his personal capacity for his own residence?', o: YN, show: a => a.use === 'res' && a.treg === 'y' },
+      { id: 'lreg', t: 'Is the landlord registered under GST?', o: YN, show: a => a.use === 'biz' && a.treg === 'n' },
+      { id: 'pgv', t: 'Up to ₹20,000 per person per month, stay of at least 90 continuous days?', o: YN, show: a => a.use === 'pg' },
+      { id: 'pgr', t: 'Is the person paying registered under GST?', o: YN, show: a => a.use === 'pg' && a.pgv === 'n' }
+    ],
+    decide: a => a.use === 'res' && a.treg === 'n' ? { v: 'ex', h: 'Exempt', w: 'A residential dwelling used as a residence, rented by an unregistered person, is exempt.' }
+      : a.use === 'res' && a.prop === 'y' ? { v: 'ex', h: 'Exempt', w: 'A proprietor renting in his personal capacity for his own residence is exempt.' }
+      : a.use === 'res' && a.prop === 'n' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'A registered tenant pays GST on residential rent under reverse charge (from 18-07-2022), whoever the landlord is.' }
+      : a.use === 'biz' && a.treg === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'Used for business, the exemption does not apply; a registered tenant pays under reverse charge.' }
+      : a.use === 'biz' && a.lreg === 'y' ? { v: 'fcm', h: 'Forward charge: the landlord pays', w: 'Tenant not registered: the registered landlord charges GST on his bill.' }
+      : a.use === 'biz' && a.lreg === 'n' ? { v: 'none', h: 'No GST collected', w: 'Neither is registered: no one pays GST on it.' }
+      : a.use === 'pg' && a.pgv === 'y' ? { v: 'ex', h: 'Exempt', w: 'Hostel / PG accommodation within ₹20,000 per person per month for 90+ days is exempt (from 15-07-2024).' }
+      : a.use === 'pg' && a.pgr === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay', w: 'A registered person paying for such accommodation pays under reverse charge.' }
+      : a.use === 'pg' && a.pgr === 'n' ? { v: 'fcm', h: 'Forward charge: the hostel pays', w: 'Students and other unregistered persons: the hostel or PG, if registered, charges GST.' } : null },
+  { id: 'comm', label: 'Rent of a shop, godown, office or other non-residential property', src: 'Notification 13/2017-CT(R) entry 5AB (from 10-10-2024), amended by 07/2025-CT(R)',
+    qs: [
+      { id: 'lreg', t: 'Is the landlord registered under GST?', o: YN },
+      { id: 'treg', t: 'Is the tenant registered under GST?', o: YN, show: a => a.lreg === 'n' },
+      { id: 'comp', t: 'Is the tenant under the composition scheme?', o: YN, show: a => a.lreg === 'n' && a.treg === 'y' },
+      { id: 'dt', t: 'Is the bill dated on or after 10-10-2024?', o: YN, show: a => a.comp === 'n' }
+    ],
+    decide: a => a.lreg === 'y' ? { v: 'fcm', h: 'Forward charge: the landlord pays', w: 'A registered landlord charges 18% GST on his bill; a registered tenant takes it as credit.' }
+      : a.treg === 'n' ? { v: 'none', h: 'No GST collected', w: 'Neither is registered.' }
+      : a.comp === 'y' ? { v: 'none', h: 'No reverse charge', w: 'Composition tenants are excluded from this reverse charge (from 16-01-2025).' }
+      : a.dt === 'n' ? { v: 'none', h: 'No reverse charge then', w: 'Reverse charge on commercial rent started on 10-10-2024.' }
+      : a.dt === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'Unregistered landlord, registered tenant: the tenant pays under reverse charge and takes the credit.' } : null },
+  { id: 'gov', label: 'Government or local authority: fees, licences, rent, other services', src: 'Notification 13/2017-CT(R) entries 5, 5A; 12/2017-CT(R) (exemptions for government services)',
+    qs: [
+      { id: 'what', t: 'What is it?', o: [['rent', 'Rent of property'], ['post', 'Postal, railway, transport of goods or passengers, aircraft or vessel services'], ['other', 'Other services: licences, permissions, fees']] },
+      { id: 'treg', t: 'Is the tenant registered under GST?', o: YN, show: a => a.what === 'rent' },
+      { id: 'exm', t: 'Is it exempt? (for example a business with previous-year turnover up to ₹20 lakh, a service of up to ₹5,000, or a fee specifically exempted)', o: YN, show: a => a.what === 'other' }
+    ],
+    decide: a => a.what === 'post' ? { v: 'fcm', h: 'Forward charge: the government body pays', w: 'These government services are excluded from reverse charge.' }
+      : a.what === 'rent' && a.treg === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'Rent of property from the government to a registered person: reverse charge (Indian Railways excluded).' }
+      : a.what === 'rent' && a.treg === 'n' ? { v: 'fcm', h: 'Forward charge: the government body pays', w: 'To an unregistered person, the government charges GST itself.' }
+      : a.exm === 'y' ? { v: 'ex', h: 'Exempt', w: 'Step 1 ends here: no GST.' }
+      : a.exm === 'n' ? { v: 'rcm', h: 'Reverse charge: you pay', w: 'Services of a government or local authority to a business: reverse charge.' } : null },
+  { id: 'sec', label: 'Security guards / watchmen', src: 'Notification 13/2017-CT(R) entry 14',
+    qs: [
+      { id: 'bc', t: 'Is the security agency a company (body corporate)?', o: YN },
+      { id: 'treg', t: 'Is the recipient registered under GST (and not under composition, and not a government office registered only for TDS)?', o: YN, show: a => a.bc === 'n' }
+    ],
+    decide: a => a.bc === 'y' ? { v: 'fcm', h: 'Forward charge: the agency pays', w: 'A company supplying security charges 18% on its bill.' }
+      : a.treg === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'Agency not a company, recipient registered: reverse charge.' }
+      : a.treg === 'n' ? { v: 'fcm', h: 'Forward charge: the agency pays, if registered', w: 'No reverse charge for this recipient.' } : null },
+  { id: 'spon', label: 'Sponsorship (your business sponsors an event or team)', src: 'Notification 13/2017-CT(R) entry 4, amended by 07/2025-CT(R)',
+    qs: [
+      { id: 'rec', t: 'Is your business (the sponsor) a company or partnership firm / LLP?', o: YN },
+      { id: 'bc', t: 'Is the organiser (who receives the money) a company (body corporate)?', o: YN, show: a => a.rec === 'y' }
+    ],
+    decide: a => a.rec === 'n' ? { v: 'fcm', h: 'Forward charge: the organiser pays, if registered', w: 'Reverse charge applies only when the sponsor is a company or firm.' }
+      : a.bc === 'y' ? { v: 'fcm', h: 'Forward charge: the organiser pays', w: 'From 16-01-2025 a company organiser charges GST itself.' }
+      : a.bc === 'n' ? { v: 'rcm', h: 'Reverse charge: you pay 18%', w: 'Sponsor a company or firm, organiser not a company: reverse charge.' } : null },
+  { id: 'dir', label: "Director's fees or commission", src: 'Notification 13/2017-CT(R) entry 6',
+    qs: [{ id: 'emp', t: 'Is it salary to a whole-time director under employment (with TDS as salary)?', o: YN }],
+    decide: a => a.emp === 'y' ? { v: 'none', h: 'Not GST', w: 'Salary under employment is not a supply.' } : a.emp === 'n' ? { v: 'rcm', h: 'Reverse charge: the company pays 18%', w: 'Sitting fees and commission to directors: reverse charge.' } : null },
+  { id: 'cab', label: 'Hire of a car / bus with driver and fuel', src: 'Notification 13/2017-CT(R) entry 15, amended by 08/2026-CT(R)',
+    qs: [
+      { id: 'sbc', t: 'Is the owner (supplier) a company (body corporate)?', o: YN },
+      { id: 'rbc', t: 'Is the one hiring (recipient) a company (body corporate)?', o: YN, show: a => a.sbc === 'n' },
+      { id: 'hi', t: 'Does the owner charge GST at the higher rate on his bill (18%, i.e. CGST 9%, from 01-11-2026; 12% before)?', o: YN, show: a => a.rbc === 'y' }
+    ],
+    decide: a => a.sbc === 'y' ? { v: 'fcm', h: 'Forward charge: the owner pays', w: 'Credit on hiring passenger vehicles may still be blocked by section 17(5).' }
+      : a.rbc === 'n' ? { v: 'fcm', h: 'Forward charge: the owner pays, if registered', w: 'Reverse charge applies only when a company hires.' }
+      : a.hi === 'y' ? { v: 'fcm', h: 'Forward charge: the owner pays', w: 'He charges the higher rate himself. Credit may be blocked by section 17(5).' }
+      : a.hi === 'n' ? { v: 'rcm', h: 'Reverse charge: the company pays', w: 'Usually 5% without credit. Credit on passenger vehicles may be blocked by section 17(5).' } : null },
+  { id: 'agent', label: 'Agents: insurance agent, recovery agent, DSA, business facilitator, BC agent', src: 'Notification 13/2017-CT(R) entries 7, 8, 11, 12, 13',
+    qs: [{ id: 'k', t: 'Which one?', o: [['ins', 'Insurance agent → insurance company'], ['rec', 'Recovery agent → bank / NBFC'], ['dsai', 'DSA (an individual) → bank / NBFC'], ['dsaf', 'DSA that is a company, firm or LLP'], ['bfb', 'Business facilitator → bank'], ['bfo', 'Business facilitator → insurance company or other'], ['bca', 'Agent of a business correspondent → BC']] }],
+    decide: a => !a.k ? null : ['dsaf', 'bfo'].includes(a.k) ? { v: 'fcm', h: 'Forward charge: the agent pays, if registered', w: 'Not among the reverse charge cases.' } : { v: 'rcm', h: 'Reverse charge: the recipient pays 18%', w: 'Notified for reverse charge.' } },
+  { id: 'imp', label: 'Import of services (supplier outside India)', src: 'Notification 10/2017-IT(R) entry 1; section 5(3) IGST Act',
+    qs: [{ id: 'biz', t: 'Is it for business?', o: YN }],
+    decide: a => a.biz === 'n' ? { v: 'ex', h: 'Exempt (except online services from abroad)', w: 'Import of services for personal use is exempt; online services (OIDAR) are taxed on the foreign supplier.' } : a.biz === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay IGST', w: 'Pay IGST in Table 3.1(d); take credit in Table 4(A)(2), not 4(A)(3).' } : null },
+  { id: 'scrap', label: 'Metal scrap, tyre / plastic / e-waste, used cooking oil', src: 'Notification 4/2017-CT(R), amended by 09/2024-CT(R) and 04/2026-CT(R)',
+    qs: [
+      { id: 'what', t: 'What?', o: [['metal', 'Metal scrap (chapters 72-81)'], ['new', 'Tyre, plastic or e-waste, used cooking oil']] },
+      { id: 'sreg', t: 'Is the seller registered under GST?', o: YN, show: a => !!a.what },
+      { id: 'dt', t: (a) => a.what === 'new' ? 'Is the bill dated on or after 01-11-2026?' : 'Is the bill dated on or after 10-10-2024?', o: YN, show: a => a.sreg === 'n' }
+    ],
+    decide: a => a.sreg === 'y' ? { v: 'fcm', h: 'Forward charge: the seller pays', w: 'A registered seller charges GST on his bill.' }
+      : a.dt === 'n' ? { v: 'none', h: 'No reverse charge then', w: 'This reverse charge had not started on that date.' }
+      : a.dt === 'y' ? { v: 'rcm', h: 'Reverse charge: you pay', w: 'Unregistered seller, registered buyer: reverse charge.' + (a.what === 'new' ? ' (Entries from 01-11-2026, as reported: check the notification.)' : '') } : null },
+  { id: 'agri', label: 'Cashew nuts, tendu leaves, tobacco leaves, raw cotton, mint oils, silk yarn', src: 'Notification 4/2017-CT(R)',
+    qs: [{ id: 'ag', t: 'Is the seller the agriculturist (or the maker of silk yarn from raw silk) and the buyer registered?', o: YN }],
+    decide: a => a.ag === 'y' ? { v: 'rcm', h: 'Reverse charge: the buyer pays', w: 'Notified goods: reverse charge.' } : a.ag === 'n' ? { v: 'fcm', h: 'Forward charge: the seller pays, if registered', w: '' } : null },
+  { id: 'other', label: 'Anything else (CA / audit fees, repairs, stationery, other expenses)', src: 'Section 9(1) CGST Act',
+    qs: [], decide: () => ({ v: 'fcm', h: 'Forward charge: the supplier pays, if registered', w: 'Reverse charge applies only to the notified cases in this tab. Audit and CA fees are normal bills. If the supplier is not registered, no GST is paid on the bill.' }) }
+];
+
+// Typed questions: the words point to a case, and clear words answer its questions ("unregistered landlord", "company")
+const RCM_KEYS = {
+  gta: 'freight lorry truck transport transporter gta goods carriage cartage consignment lr cargo logistics',
+  adv: 'advocate lawyer legal law firm court case litigation counsel solicitor notary',
+  resi: 'house flat residential residence apartment dwelling quarters home hostel pg paying guest',
+  comm: 'shop godown warehouse office commercial premises building store showroom factory shed land',
+  gov: 'government municipal corporation bbmp panchayat licence license permission govt authority trade-license',
+  sec: 'security watchman guard guards watchmen manpower agency',
+  spon: 'sponsorship sponsor event team banner',
+  dir: 'director sitting directors commission board',
+  cab: 'cab taxi car hire bus vehicle rent-a-cab travels driver',
+  agent: 'agent insurance recovery dsa direct selling business facilitator correspondent bc',
+  imp: 'import foreign abroad outside india google facebook aws software subscription overseas usa',
+  scrap: 'scrap waste tyre plastic e-waste ewaste cooking oil metal iron',
+  agri: 'cashew tobacco tendu cotton kapas mint silk',
+  other: 'audit auditor ca chartered accountant consultant consultancy repairs stationery professional accounting'
+};
+const RCM_CUES = [
+  [/\bun[\s-]?registered landlord|landlord (is )?(not|un)[\s-]?registered/i, 'lreg', 'n'], [/\bregistered landlord|landlord (is )?registered/i, 'lreg', 'y'],
+  [/\bun[\s-]?registered tenant|tenant (is )?(not|un)[\s-]?registered/i, 'treg', 'n'], [/\bregistered tenant|tenant (is )?registered|we are registered|i am registered/i, 'treg', 'y'],
+  [/no (consignment|lr|lorry receipt)|without (consignment|lr)/i, 'cn', 'n'], [/consignment note|\blr\b|lorry receipt|bilty/i, 'cn', 'y'],
+  [/(pvt|private) ltd|limited|company/i, 'bc', 'y'], [/proprietor|partnership|individual/i, 'bc', 'n'],
+  [/godown|office|shop|business use|commercial/i, 'use', 'biz'], [/hostel|\bpg\b|paying guest/i, 'use', 'pg'], [/staff quarters|residence|stay of/i, 'use', 'res'],
+  [/salary|whole[\s-]?time|employee/i, 'emp', 'y'], [/sitting fee|commission/i, 'emp', 'n']
+];
+function rcmAsk(text) {
+  const t = String(text || '').toLowerCase().trim(), box = $('rcm_sugg');
+  if (t.length < 3) { box.innerHTML = ''; $('rcm_chat').innerHTML = ''; return; }
+  const words = t.split(/[^a-z0-9-]+/).filter(w => w.length > 1);
+  const sc = Object.entries(RCM_KEYS).map(([id, k]) => {
+    const kw = k.split(' '); let n = 0;
+    // a whole-word match counts double, so "audit fees" goes to audit, not to every case with "fees"
+    words.forEach(w => { if (kw.includes(w)) n += 2; else if (w.length > 3 && kw.some(x => x.length > 3 && !x.includes('-') && (x.startsWith(w) || w.startsWith(x)))) n++; });
+    k.split(' ').forEach(x => { if (x.includes('-') || x.length > 9) { if (t.includes(x)) n++; } });
+    return [id, n];
+  }).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  // rent of a "house" used as an office is still commercial use: let the use decide
+  if (/rent/.test(t) && !sc.length) sc.push(['comm', 1]);
+  if (!sc.length) { box.innerHTML = ''; $('rcm_case').value = ''; rcmRender(true); rcmChat(t); return; }
+  box.innerHTML = sc.slice(0, 4).map(([id], k) => `<button class="${k ? '' : 'top'}" onclick="rcmPick('${id}')">${RCM_CASES.find(c => c.id === id).label}</button>`).join('');
+  rcmPick(sc[0][0], t);
+}
+function rcmPick(id, text) {
+  const sel = $('rcm_case'); sel.value = id; rcmRender(true);
+  const c = RCM_CASES.find(x => x.id === id), t = text || String(($('rcm_ask') || {}).value || '').toLowerCase();
+  // fill the answers the words make clear, in question order
+  c.qs.forEach(q => { const hit = RCM_CUES.find(([re, qid, v]) => qid === q.id && q.o.some(o => o[0] === v) && re.test(t)); if (hit) RCM_ANS[q.id] = hit[2]; });
+  if (id === 'resi' && /godown|office|shop|business/.test(t)) RCM_ANS.use = 'biz';
+  rcmRender(false);
+  document.querySelectorAll('#rcm_sugg button').forEach(b => b.classList.toggle('top', b.textContent === c.label));
+}
+const RCM_ANS = {};
+
+// Guru: the checker's answers, said in plain words. Built-in rules only, offline: it never guesses beyond them.
+const rcmEsc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function rcmChat(text) {
+  const box = $('rcm_chat'); if (!box) return;
+  const t = String(text != null ? text : (($('rcm_ask') || {}).value || '')).trim();
+  if (t.length < 3) { box.innerHTML = ''; return; }
+  const me = `<div class="me">${rcmEsc(t)}</div>`;
+  const say = (h, extra) => `<div class="mu"><div class="av">G</div><div class="bub"><span class="nm">Guru</span>${h}${extra || ''}</div></div>`;
+  const foot = '<div class="ft">Guru answers from the reverse charge rules built into ITC Desk (works offline). If a bill is not covered, it says so instead of guessing.</div>';
+  const c = RCM_CASES.find(x => x.id === $('rcm_case').value);
+  if (!c) { box.innerHTML = me + say("I don't have a reverse charge rule for that. If the bill is not one of the cases under <a href='#' onclick='rcmShowAll();return false'>All reverse charge cases</a>, it is a normal bill: a registered supplier charges GST on it, and you take the credit as usual. Try other words, such as <i>rent</i>, <i>freight</i>, <i>advocate</i> or <i>security</i>.") + foot; return; }
+  const a = RCM_ANS;
+  let next = null;
+  for (const q of c.qs) { if (q.show && !q.show(a)) continue; if (!a[q.id]) { next = q; break; } }
+  const d = c.decide(a);
+  let h = `I read this as: <b>${rcmEsc(c.label)}</b>. `;
+  if (!d && next) {
+    const qt = typeof next.t === 'function' ? next.t(a) : next.t;
+    h += Object.keys(a).length ? 'Noted. One more thing:' : 'Before I answer, tell me:';
+    box.innerHTML = me + say(`${h}<div style="margin-top:4px"><b>${qt}</b></div>`, `<div class="opts">${next.o.map(([v, l]) => `<button onclick="rcmAns('${next.id}','${v}')">${l}</button>`).join('')}</div>`) + foot;
+    return;
+  }
+  if (!d) { box.innerHTML = me + say(h + 'Pick the options in the checker below to finish.') + foot; return; }
+  const lead = d.v === 'rcm' ? 'You pay the GST yourself: <b>reverse charge</b>.' : d.v === 'fcm' ? 'The supplier pays: <b>forward charge</b>. Take the GST on his bill as credit.' : d.v === 'ex' ? "<b>No GST at all</b>: it's exempt, so there's no reverse charge either." : '<b>No GST is paid</b> on this bill.';
+  const tally = d.v === 'rcm' ? 'In Tally, mark the bill or ledger as reverse charge applicable.' : d.v === 'fcm' ? 'In Tally, enter it as a normal bill with GST; do not mark reverse charge.' : 'In Tally, enter it without GST and without reverse charge.';
+  box.innerHTML = me + say(`${h}${lead}<div style="margin-top:4px">${d.w || ''}</div>`, `<div class="tl"><b>${tally}</b><br><span class="hint">Rule: ${rcmEsc(c.src)}</span></div><div class="opts"><button onclick="rcmRestart()">Change an answer</button></div>`) + foot;
+}
+function rcmRestart() { for (const k in RCM_ANS) delete RCM_ANS[k]; rcmRender(false); }
+function rcmRender(reset) {
+  if ($('rcm_allN') && !$('rcm_allN').textContent) $('rcm_allN').textContent = '(' + document.querySelectorAll('.rcmref tbody tr').length + ', click to show)';
+  const sel = $('rcm_case'); if (!sel) return;
+  if (!sel.options.length) sel.innerHTML = '<option value="">Choose…</option>' + RCM_CASES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+  const c = RCM_CASES.find(x => x.id === sel.value);
+  if (reset) for (const k in RCM_ANS) delete RCM_ANS[k];
+  if (!c) { $('rcm_qs').innerHTML = ''; $('rcm_out').innerHTML = '<span class="hint">Choose what the bill is for.</span>'; return; }
+  const a = RCM_ANS; setTimeout(() => rcmChat(), 0);
+  // questions appear one after another, as each is answered
+  let html = '';
+  for (const q of c.qs) {
+    if (q.show && !q.show(a)) continue;
+    const t = typeof q.t === 'function' ? q.t(a) : q.t;
+    html += `<div class="rq"><b>${t}</b><div class="opts">${q.o.map(([v, l]) => `<button class="${a[q.id] === v ? 'on' : ''}" onclick="rcmAns('${q.id}','${v}')">${l}</button>`).join('')}</div></div>`;
+    if (!a[q.id]) break;
+  }
+  $('rcm_qs').innerHTML = html;
+  const d = c.decide(a);
+  if (!d) { $('rcm_out').innerHTML = '<span class="hint">Answer the questions on the left.</span>'; return; }
+  const cls = d.v === 'rcm' ? 'v-rcm' : d.v === 'fcm' ? 'v-fcm' : 'v-ex';
+  const s1 = d.v === 'ex' || d.v === 'none' ? (d.v === 'ex' ? 'GST not payable: exempt. Stop here.' : 'No GST is paid on this bill.') : 'GST is payable.';
+  const tally = d.v === 'rcm' ? 'In Tally: mark the bill (or the ledger) as reverse charge applicable. ITC Desk then counts the credit in Table 4(A)(3) and applies Rule 42 to it.' : d.v === 'fcm' ? 'In Tally: enter as a normal bill with the GST shown on it; do not mark reverse charge.' : 'In Tally: enter without GST and without reverse charge.';
+  $('rcm_out').innerHTML = `<div class="verdict ${cls}">${d.h}</div>
+    <div class="stp"><b>Step 1</b><span>${s1}</span></div>
+    ${d.v === 'rcm' || d.v === 'fcm' ? `<div class="stp"><b>Step 2</b><span>${d.v === 'rcm' ? 'The recipient (you) pays: reverse charge.' : 'The supplier pays: forward charge.'}</span></div>` : ''}
+    ${d.w ? `<div style="margin-top:6px">${d.w}</div>` : ''}
+    <div style="margin-top:8px"><b>${tally}</b></div>
+    <div class="src">Source: ${c.src}. ICAI Handbook on Reverse Charge Mechanism.</div>`;
+}
+function rcmAns(q, v) {
+  RCM_ANS[q] = v;
+  // a changed answer clears the answers after it
+  const c = RCM_CASES.find(x => x.id === $('rcm_case').value); let after = false;
+  c.qs.forEach(x => { if (after) delete RCM_ANS[x.id]; if (x.id === q) after = true; });
+  rcmRender(false);
+}
+function rcmShowAll() { rcmAllToggle(true); $('rcm_all').scrollIntoView({ behavior: 'smooth' }); }
+function rcmAllToggle(force) {
+  const c = $('rcm_all'), open = force != null ? force : !c.classList.contains('open');
+  c.classList.toggle('open', open); c.querySelector('.rcmall-t').setAttribute('aria-expanded', open);
+}
+let RCM_GRP = '';
+function rcmGroup(btn, g) { RCM_GRP = g; document.querySelectorAll('#rcm_grp button').forEach(b => b.classList.toggle('on', b === btn)); rcmFilter(); }
+function rcmFilter() {
+  const q = String(($('rcm_q') || {}).value || '').toLowerCase().trim();
+  document.querySelectorAll('.rcmref tbody tr').forEach(tr => {
+    const g = tr.cells[0].textContent.trim(), txt = tr.textContent.toLowerCase();
+    tr.style.display = (!RCM_GRP || g === RCM_GRP) && (!q || q.split(/\s+/).every(w => txt.includes(w))) ? '' : 'none';
+  });
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { rcmRender(true); } catch (e) {} }, 60));
 document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); flowSetMode(FLOW.mode); if (!$('p6').classList.contains('hide')) autoCheckLink(); } catch (e) {} }, 50));
 async function autoStopLink() {
   try { await linkFetch('/quit', null, 3000); } catch (e) {}
