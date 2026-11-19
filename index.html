@@ -400,6 +400,37 @@ tr.notax td { color: var(--mut); }
 .rcmsugg { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; min-height: 4px; }
 .rcmsugg button { font-size: 12.5px; padding: 4px 10px; box-shadow: none; border-radius: 14px; }
 .rcmsugg button.top { background: var(--acc); border-color: var(--acc); color: #fff; }
+/* Guru: the helper dock on every tab */
+.guru { position: fixed; right: 18px; bottom: 18px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.guru .av { width: 30px; height: 30px; border-radius: 50%; background: var(--acc); color: #fff; font: 600 14px/30px Georgia, serif; text-align: center; flex: none; }
+.guru-pane { width: min(380px, calc(100vw - 36px)); height: min(520px, calc(100vh - 110px)); background: var(--card); border-radius: 14px; box-shadow: 0 0 0 1.5px var(--line), 0 16px 40px -14px #0007; display: flex; flex-direction: column; overflow: hidden; }
+.guru-pane[hidden] { display: none; }
+.guru-hd { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.guru-link { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mut); margin-right: 14px; }
+.guru-link:hover, .guru-link:focus-visible { color: var(--acc); }
+.guru-link:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 4px; }
+.guru-link .av { width: 18px; height: 18px; border-radius: 50%; background: var(--acc); color: #fff; font: 600 10px/18px Georgia, serif; text-align: center; }
+.guru-link.has-note .av { box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px #E8A317; }
+.guru-hd small { display: block; font-size: 11.5px; color: var(--mut); font-weight: 400; }
+.guru-x { margin-left: auto !important; box-shadow: none; border: 0; background: none; font-size: 20px; padding: 0 6px; }
+.guru-log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; line-height: 1.5; }
+.guru-log .g { align-self: flex-start; max-width: 92%; background: var(--bg, #f4f4f4); box-shadow: 0 0 0 1px var(--line); padding: 8px 11px; border-radius: 3px 13px 13px 13px; }
+.guru-log .g.live { box-shadow: 0 0 0 1.5px var(--acc); }
+.guru-log .g .tag { display: block; font-size: 11px; color: var(--acc); font-weight: 600; margin-bottom: 1px; }
+.guru-log .u { align-self: flex-end; max-width: 80%; background: var(--acc); color: #fff; padding: 7px 11px; border-radius: 13px 13px 3px 13px; }
+.guru-log .g .src { display: block; margin-top: 5px; font-size: 11.5px; color: var(--mut); }
+.guru-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+.guru-chips button { font-size: 12px; padding: 3px 10px; border-radius: 13px; box-shadow: none; }
+.guru-ask { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.guru-ask input { flex: 1; height: 38px; border: 0; border-radius: 10px; padding: 0 12px; box-shadow: 0 0 0 1.5px var(--line); background: var(--card); color: var(--ink); }
+.guru-ask input:focus { outline: none; box-shadow: 0 0 0 2px var(--acc); }
+.guru-ask button { width: 40px; border-radius: 10px; background: var(--acc); color: #fff; border-color: var(--acc); box-shadow: none; }
+@media print { .guru { display: none !important; } }
+.rcmhow { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; font-size: 12.5px; }
+.rcmhow summary { cursor: pointer; color: var(--acc); font-weight: 600; }
+.rcmhow .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+.rcmhow ol { margin: 4px 0 0; padding-left: 18px; } .rcmhow li { margin: 2px 0; }
+@media (max-width: 720px) { .rcmhow .cols { grid-template-columns: 1fr; } }
 .rcmchat:empty { display: none; }
 .rcmchat { margin: 0 0 14px; display: flex; flex-direction: column; gap: 8px; }
 .rcmchat .me { align-self: flex-end; max-width: 75%; background: var(--acc); color: #fff; padding: 7px 12px; border-radius: 14px 14px 3px 14px; font-size: 13.5px; }
@@ -553,6 +584,7 @@ summary:hover { color: var(--acc); }
       <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
     </nav>
     <div class="side-foot">
+      <button class="guru-link no-print" onclick="guruOpen()" title="Ask Guru, the ITC Desk helper (Alt+G)"><span class="av">G</span>Ask Guru</button>
       <span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span>
       <span>Concept by Avinash G</span>
     </div>
@@ -1444,6 +1476,14 @@ summary:hover { color: var(--acc); }
 </div>
 
 <div id="toastBox" class="toast"></div>
+<div id="guru" class="guru no-print">
+  <div class="guru-pane" id="guru_pane" role="dialog" aria-label="Guru, the ITC Desk helper" hidden>
+    <div class="guru-hd"><div class="av">G</div><div><b>Guru</b><small id="guru_mode">Built-in rules · offline</small></div><button class="guru-x" onclick="guruOpen(false)" aria-label="Close">×</button></div>
+    <div class="guru-log" id="guru_log" aria-live="polite"></div>
+    <div class="guru-chips" id="guru_chips"></div>
+    <form class="guru-ask" onsubmit="guruAsk($('guru_q').value);return false"><input id="guru_q" autocomplete="off" placeholder="Ask Guru: what next? · why this difference? · is rent RCM?"><button type="submit" aria-label="Ask">➤</button></form>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -1558,6 +1598,7 @@ function downloadArrayAsCSV(rows, filename) {
 }
 
 function notify(msg) {
+  try { if (typeof guruOnNote === 'function') guruOnNote(msg); } catch (e) {}
   const t = $('toastBox');
   if (!t) return;
   t.textContent = msg;
@@ -6398,6 +6439,7 @@ function flowRender() {
     if (x.id === 'get' && x.tab === tab) nb.disabled = true;
     nb.onclick = () => { if (x.id === 'post' && x.tab === tab) { exportTallyXMLVoucher(); flowRender(); return; } if (x.tab === tab && (x.id === 'review' || x.id === 'single' || x.id === 'cg')) { if (x.id === 'review' && flowLedgersToCheck()) { notify('Settle the ledgers marked Check first: choose a bucket for each in the ledger-wise summary.'); const e = $('impLedgerSummary'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } FLOW.seen[x.id] = true; flowRender(); flowNext(); } else flowGo(nowI); };
     $('fsay').innerHTML = x.say;
+    try { guruOnStep(x); } catch (e) {}
   }
 }
 function flowGo(i) {
@@ -6605,9 +6647,171 @@ function rcmChat(text) {
   if (!d) { box.innerHTML = me + say(h + 'Pick the options in the checker below to finish.') + foot; return; }
   const lead = d.v === 'rcm' ? 'You pay the GST yourself: <b>reverse charge</b>.' : d.v === 'fcm' ? 'The supplier pays: <b>forward charge</b>. Take the GST on his bill as credit.' : d.v === 'ex' ? "<b>No GST at all</b>: it's exempt, so there's no reverse charge either." : '<b>No GST is paid</b> on this bill.';
   const tally = d.v === 'rcm' ? 'In Tally, mark the bill or ledger as reverse charge applicable.' : d.v === 'fcm' ? 'In Tally, enter it as a normal bill with GST; do not mark reverse charge.' : 'In Tally, enter it without GST and without reverse charge.';
-  box.innerHTML = me + say(`${h}${lead}<div style="margin-top:4px">${d.w || ''}</div>`, `<div class="tl"><b>${tally}</b><br><span class="hint">Rule: ${rcmEsc(c.src)}</span></div><div class="opts"><button onclick="rcmRestart()">Change an answer</button></div>`) + foot;
+  box.innerHTML = me + say(`${h}${lead}<div style="margin-top:4px">${d.w || ''}</div>`, `<div class="tl"><b>${tally}</b><br><span class="hint">Rule: ${rcmEsc(c.src)}</span></div>${rcmHowHtml(d.v, true)}<div class="opts"><button onclick="rcmRestart()">Change an answer</button></div>`) + foot;
+}
+
+/* ---------- Guru: reacts to what happens on screen, and answers typed questions ----------
+   Text only. Answers come from (1) what ITC Desk itself knows about this month, (2) the built-in reverse charge rules,
+   (3) the ICAI notes built in, and (4) the assistant model on this computer when ITC assistant.bat is running.
+   Nothing is sent to the internet. */
+const GURU = { log: [], lastStep: '', lastNote: '', busy: false };
+const guruTxt = h => String(h).replace(/<div class="opts">[\s\S]*?<\/div>/g, '').replace(/<[^>]+>/g, ' ').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&').replace(/\s+/g, ' ').replace(/ ([.,:;?!])/g, '$1').trim();
+function guruPush(html, kind, tag) {
+  const log = $('guru_log'); if (!log) return null;
+  const d = document.createElement('div'); d.className = kind || 'g';
+  d.innerHTML = (kind === 'u' ? '' : tag ? `<span class="tag">${rcmEsc(tag)}</span>` : '') + html;
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
+  if ($('guru_pane').hidden && /live/.test(kind || '')) document.querySelectorAll('.guru-link').forEach(b => b.classList.add('has-note'));
+  return d;
+}
+document.addEventListener('keydown', e => { if (e.altKey && !e.ctrlKey && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); guruOpen(); } else if (e.key === 'Escape' && $('guru_pane') && !$('guru_pane').hidden) guruOpen(false); });
+function guruOpen(v) {
+  const p = $('guru_pane'); const open = v != null ? v : p.hidden;
+  p.hidden = !open;
+  document.querySelectorAll('.guru-link').forEach(b => b.classList.remove('has-note'));
+  if (open) { if (!$('guru_log').children.length) guruHello(); guruChips(); setTimeout(() => $('guru_q').focus(), 50); }
+}
+function guruHello() {
+  guruPush('Namaskara! I\'m Guru. I keep an eye on this month\'s working and tell you what to do next. Ask me anything about the steps, a difference you can\'t trace, or whether a bill is reverse charge. I only answer from what ITC Desk has and the rules built in; if I don\'t know, I\'ll say so.');
+  guruAsk('what next', true);
+}
+function guruChips() {
+  const c = []; c.push(['What next?', 'what next']);
+  if (importedRows.length) c.push(['Explain the reversal', 'explain the reversal']);
+  if (importedRows.length && typeof flowLedgersToCheck === 'function' && flowLedgersToCheck()) c.push(['Ledgers to check', 'which ledgers to check']);
+  c.push(['Is it RCM?', 'rcm']);
+  $('guru_chips').innerHTML = c.map(([l, q]) => `<button onclick="guruAsk('${q}')">${l}</button>`).join('');
+}
+// Live reactions: a new step on the path, and warnings the tool shows
+function guruOnStep(st) {
+  if (!st || st.id + st.say === GURU.lastStep) return;
+  const first = !GURU.lastStep; GURU.lastStep = st.id + st.say;
+  if (first) return;
+  guruPush(guruTxt(st.say).replace(/^Step (\d), [^:]+:\s*(.)/, (m, n, c) => `On to step ${n}. ${c.toUpperCase()}`), 'g live', 'Next');
+}
+function guruOnNote(msg) {
+  if (!msg || msg === GURU.lastNote || !/not|refus|error|wrong|differ|missing|check|skipp|failed|cannot|can't/i.test(msg)) return;
+  GURU.lastNote = msg;
+  guruPush(rcmEsc(msg) + guruHint(msg), 'g live', 'I noticed');
+}
+function guruHint(m) {
+  if (/not xml|not.*xml|tally replied/i.test(m)) return '<br><b>Try:</b> check that TallyPrime is open with the company loaded, and that ITC Desk.bat is running. Then click Find Tally again.';
+  if (/month|period/i.test(m) && /wrong|match|refus/i.test(m)) return '<br><b>Try:</b> in Tally, change the period to the whole month (Alt+F2), export again and drop the new file.';
+  if (/company|gstin/i.test(m)) return '<br><b>Try:</b> this file is for another client. Clear all, or drop the right client\'s file.';
+  return '';
+}
+// What ITC Desk knows about the month on screen, in a few lines (also given to the assistant model)
+function guruFacts() {
+  const c = window._calc1 || {}, f = [];
+  const nm = ($('meta_name') || {}).value, per = $('meta_period') ? $('meta_period').selectedOptions[0]?.textContent : '';
+  if (!importedRows.length) return 'No month is loaded yet.';
+  f.push(`Client: ${nm || 'not named'}; month: ${per || 'not set'}; ${importedRows.length} bills.`);
+  if (c.T != null) f.push(`Total ITC (T) Rs ${fmt(c.T)}; non-business T1 Rs ${fmt(c.T1 || 0)}; exempt-only T2 Rs ${fmt(c.T2 || 0)}; blocked T3 Rs ${fmt(c.T3 || 0)}; taxable-only T4 Rs ${fmt(c.T4 || 0)}; common C2 Rs ${fmt(c.C2 || 0)}.`);
+  if (c.F != null) f.push(`Turnover: exempt E Rs ${fmt(c.E || 0)} out of total F Rs ${fmt(c.F || 0)}${c.F ? ' (' + ((c.E || 0) / c.F * 100).toFixed(2) + '% exempt)' : ''}.`);
+  if (c.rev4B1 != null) f.push(`Reversal for GSTR-3B 4(B)(1): Rs ${fmt(c.rev4B1)}.`);
+  const chk = typeof flowLedgersToCheck === 'function' ? flowLedgersToCheck() : 0; if (chk) f.push(`${chk} ledger(s) marked Check.`);
+  const dn = importedRows.filter(r => r.dn).length; if (dn) f.push(`${dn} debit note row(s) reduce the credit.`);
+  return f.join('\n');
+}
+// Answers ITC Desk can give by itself, without any model
+function guruBuiltIn(q) {
+  const t = q.toLowerCase();
+  if (/what next|next step|what (do|should) i do|where (do|should) i start|^next$|help me start/.test(t)) {
+    const st = flowSteps(), i = st.findIndex(x => x.need && !x.done);
+    if (i === -1) return importedRows.length ? 'Everything is done for this client and month. Click <b>Save backup</b> to keep the work, then <b>Clear all</b> before the next client.' : null;
+    return guruTxt(st[i].say).replace(/^Step (\d), ([^:]+):\s*(.)/, (m, n, l, c) => `<b>Step ${n} of 5, ${l}:</b> ${c.toUpperCase()}`) + ` <a href="#" onclick="flowGo(${i});return false">Take me there</a>`;
+  }
+  if (/explain (the )?(reversal|working|figure)|how (is|was) (the )?(reversal|figure)|why (this|the) reversal/.test(t)) {
+    const c = window._calc1; if (!importedRows.length || !c) return 'Load a month first (step 1); then I can walk you through the figure.';
+    return `Here is how this month works out.<br>All the GST on bills (T) is ₹ ${fmt(c.T)}. Out of that, ₹ ${fmt((c.T1 || 0) + (c.T2 || 0) + (c.T3 || 0))} can never be claimed (personal, exempt-only or blocked), and ₹ ${fmt(c.T4 || 0)} is fully yours (taxable-only).<br>The rest, ₹ ${fmt(c.C2 || 0)}, is common credit. It is shared in the ratio of exempt sales to total sales: ₹ ${fmt(c.E || 0)} ÷ ₹ ${fmt(c.F || 0)}${c.F ? ' = ' + ((c.E || 0) / c.F * 100).toFixed(2) + '%' : ''}.<br>So the reversal for GSTR-3B Table 4(B)(1) is <b>₹ ${fmt(c.rev4B1 || 0)}</b>.`;
+  }
+  if (/which ledger|ledgers? to check|marked check/.test(t)) {
+    const n = typeof flowLedgersToCheck === 'function' ? flowLedgersToCheck() : 0;
+    return n ? `${n} ledger${n > 1 ? 's are' : ' is'} marked <b>Check</b> in the ledger-wise summary on the Review tab. Read the reason beside each, then pick the bucket that matches how the purchase is used. Your choice is remembered for this client. <a href="#" onclick="flowGo(1);return false">Show me</a>` : (importedRows.length ? 'No ledger needs checking this month.' : 'Load a month first; then I\'ll list the doubtful ledgers.');
+  }
+  if (/debit note|difference|differ|doesn.?t match|not matching|mismatch|tally shows/.test(t)) {
+    const dn = importedRows.filter(r => r.dn);
+    return (dn.length ? `This month has ${dn.length} debit note row(s) (purchase returns). ITC Desk takes them off the credit, as GSTR-3B Table 4(A) does, but Tally's Purchase Register shows purchases only. That is the most common reason for a gap: see the yellow note under the ledger in the summary.<br>` : '') +
+      'Other usual reasons: a bill dated in another month, a ledger not marked GST in Tally, or a credit already reversed in Tally (Table 4(B)(1)), which the Vouchers tab nets off. Compare ledger by ledger: the ledger-wise summary shows each total.';
+  }
+  if (/nature view|return view|export.*3b|3b.*export|how.*export/.test(t)) return 'In Tally, open GSTR-3B for the whole month. Keep <b>Return View</b> (if the screen says Nature View, press <b>Ctrl+H</b> and pick Return View), press <b>Alt+F5</b> for Detailed, then <b>Alt+E &gt; Export &gt; Excel</b>. Drop that file here.';
+  if (/how.*(forward charge|fcm)|(forward charge|fcm).*(tally|portal|how)/.test(t)) return RCM_HOW.fcm.t + '.<br><b>Tally:</b> ' + RCM_HOW.fcm.tally.join(' ') + '<br><b>Portal:</b> ' + RCM_HOW.fcm.portal.join(' ');
+  if (/how.*(reverse charge|rcm)|(reverse charge|rcm).*(in tally|portal|how|enter it|3b)/.test(t)) return RCM_HOW.rcm.t + '.<br><b>Tally:</b> ' + RCM_HOW.rcm.tally.join(' ') + '<br><b>Portal:</b> ' + RCM_HOW.rcm.portal.join(' ');
+  if (/^(rcm|reverse charge|is it rcm\??)$/.test(t)) return 'Tell me the bill in plain words, for example <i>rent paid to unregistered landlord for godown</i> or <i>lorry freight</i>, and I\'ll work it out.';
+  // a bill described in plain words: use the reverse charge rules
+  const words = t.split(/[^a-z0-9-]+/).filter(w => w.length > 1);
+  const hit = Object.entries(RCM_KEYS).map(([id, k]) => [id, words.filter(w => k.split(' ').includes(w)).length]).filter(x => x[1]).sort((a, b) => b[1] - a[1])[0];
+  if (hit && (/rcm|reverse|who pays|gst on|payable|bill|rent|fees|freight|charges|paid/.test(t) || hit[1] > 1)) {
+    showTab(7); $('rcm_ask').value = q; rcmAsk(q); rcmChat(q);
+    const out = guruTxt($('rcm_chat').innerHTML.split('<div class="ft">')[0]).replace(/^.*?Guru\s*/, '');
+    return rcmEsc(out) + ' <span class="src">Opened the RCM guide, where you can answer the questions.</span>';
+  }
+  return null;
+}
+function guruKbHtml(q) {
+  const hits = typeof kbSearch === 'function' ? kbSearch(q, 2) : [];
+  if (!hits.length) return '';
+  return hits.map(h => `${rcmEsc(h.text.slice(0, 420))}${h.text.length > 420 ? '…' : ''}<span class="src">ICAI ${rcmEsc(h.label)}</span>`).join('<br><br>');
+}
+const GURU_RULES = `You are Guru, the helper inside ITC Desk, a tool an Indian CA office uses for GST input tax credit reversal (Rules 42, 43, 37 of the CGST Rules) from TallyPrime.
+Who reads you: office staff, not CAs. Speak in simple, warm English, like a patient senior colleague. Short sentences. At most 120 words.
+Rules: answer only from the facts and passages given; never invent figures, dates or section numbers. If the answer is not in them, say plainly "I'm not sure" and suggest who to ask (the CA) or which tab to check. Use ₹ for amounts. Do not give legal opinions; point to the rule. No greetings, no sign-offs.`;
+async function guruModel(q, el) {
+  const c = aiCfg(); if (!aiUrlAllowed(c.url)) throw new Error('blocked');
+  const refs = typeof kbSearch === 'function' ? kbSearch(q, 3) : [];
+  const user = `This month in ITC Desk:\n${guruFacts()}\n\n${refs.length ? 'Reference passages (ICAI):\n' + refs.map(x => `[ICAI ${x.label}] ${x.text.slice(0, 900)}`).join('\n') + '\n\n' : ''}Question from staff: ${q}`;
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 90000);
+  try {
+    const out = await aiStream({ model: c.model || 'local', temperature: 0.2, stream: true, max_tokens: 320, messages: [{ role: 'system', content: GURU_RULES }, { role: 'user', content: user }] }, ctl.signal,
+      (n, txt) => { el.innerHTML = '<span class="tag">Guru</span>' + rcmEsc(txt.replace(/<think>[\s\S]*?(<\/think>|$)/g, '')).replace(/\n/g, '<br>'); $('guru_log').scrollTop = 1e9; });
+    const clean = out.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    el.innerHTML = '<span class="tag">Guru</span>' + rcmEsc(clean || "I'm not sure.").replace(/\n/g, '<br>') + (refs.length ? `<span class="src">From ITC Desk's figures${refs.length ? ' and ICAI ' + refs.map(r => rcmEsc(r.label)).join(', ') : ''}. The assistant model on this computer wrote this answer: check it before relying on it.</span>` : '<span class="src">The assistant model on this computer wrote this answer: check it before relying on it.</span>');
+  } finally { clearTimeout(to); }
+}
+async function guruAsk(q, quiet) {
+  q = String(q || '').trim(); if (!q || GURU.busy) return;
+  if (!quiet) { guruPush(rcmEsc(q), 'u'); $('guru_q').value = ''; }
+  const b = guruBuiltIn(q);
+  if (b) { guruPush(b, 'g', 'Guru'); guruChips(); return; }
+  GURU.busy = true; const el = guruPush('Thinking…', 'g', 'Guru');
+  try {
+    await guruModel(q, el); $('guru_mode').textContent = 'Assistant on this computer · offline';
+  } catch (e) {
+    const kb = guruKbHtml(q);
+    $('guru_mode').textContent = 'Built-in rules · offline';
+    el.innerHTML = '<span class="tag">Guru</span>' + (kb ? 'Here is what the ICAI notes built into ITC Desk say on that:<br>' + kb : "I don't have an answer for that in the rules built into ITC Desk. Ask your CA, or try other words.") +
+      '<span class="src">For answers in your own words, double-click <b>ITC assistant.bat</b> (a small model on this PC; nothing goes online) and ask again.</span>';
+  } finally { GURU.busy = false; guruChips(); }
 }
 function rcmRestart() { for (const k in RCM_ANS) delete RCM_ANS[k]; rcmRender(false); }
+
+// How to enter each answer, in Tally (TallyPrime 3.0 and later, which includes 6.x) and on the GST portal
+const RCM_HOW = {
+  fcm: { t: 'Forward charge: the supplier charges GST, you take the credit',
+    tally: ['Purchase voucher (F9): the supplier\'s ledger (with his GSTIN), the purchase or expense ledger, and the GST shown on his bill: CGST + SGST if he is in your state, IGST if he is in another state.',
+      'Do not mark reverse charge anywhere: not on the ledger, not on the bill.'],
+    portal: ['The supplier reports the bill in his GSTR-1. It then appears in your GSTR-2B, under B2B invoices.',
+      'GSTR-3B: claim the GST in Table 4(A)(5) "All other ITC". You pay nothing extra.',
+      'Claim only what is in GSTR-2B, and only once the goods or services are received.'] },
+  rcm: { t: 'Reverse charge: you pay the GST yourself, then take it back as credit',
+    tally: ['Purchase voucher (F9) for the supplier\'s bill. His bill has no GST on it.',
+      'In the expense or purchase ledger (or stock item), GST details: set <b>Reverse charge applicable</b> and the rate. For an unregistered supplier, his party ledger has Registration type <b>Unregistered</b>.',
+      'TallyPrime then works out the tax by itself and shows it in GSTR-3B Table 3.1 (reverse charge inward supplies).',
+      'To take the credit in a later month (for example, when the tax is paid late), use a journal in that month: <b>Alt+J</b> (Stat Adjustment) &gt; GST &gt; <b>Increase in Input Tax Credit</b>. (TallyPrime 2.1 or older: a journal with Alt+J &gt; Increase in Tax Liability &amp; Input Tax Credit &gt; Purchase Under Reverse Charge.)',
+      'Pay the tax: Payment voucher, <b>Alt+J</b> (Stat Payment) &gt; GST. Reverse charge tax is paid in cash only; it cannot be paid from your input tax credit.'],
+    portal: ['GSTR-3B Table 3.1(d) "Inward supplies liable to reverse charge": the value and the tax.',
+      'Pay that tax from the electronic cash ledger.',
+      'Claim the same tax as credit in Table 4(A)(3) (import of services: Table 4(A)(2), as IGST). Rule 42 then applies to it like any other credit.',
+      'From a registered supplier, the bill also appears in your GSTR-2B as reverse charge. From an unregistered supplier it does not: you report it yourself, and issue a self-invoice and a payment voucher for it (section 31(3)(f) and (g)).'] },
+  ex: { t: 'No GST: exempt, nil-rated or outside GST',
+    tally: ['Purchase voucher (F9) without any GST ledger.',
+      'In the purchase or expense ledger, GST details: Taxability <b>Exempt</b>, <b>Nil rated</b> or <b>Non-GST</b>, as the case may be. Do not mark reverse charge.'],
+    portal: ['GSTR-3B Table 5: "Values of exempt, nil-rated and non-GST inward supplies".', 'No tax to pay and no credit to claim.'] }
+};
+function rcmHowHtml(v, open) {
+  const h = RCM_HOW[v === 'none' ? 'ex' : v]; if (!h) return '';
+  return `<details class="rcmhow"${open ? ' open' : ''}><summary>How to do it in Tally and on the GST portal</summary><div class="cols"><div><b>In TallyPrime</b><ol>${h.tally.map(x => `<li>${x}</li>`).join('')}</ol></div><div><b>On the GST portal (GSTR-3B)</b><ol>${h.portal.map(x => `<li>${x}</li>`).join('')}</ol></div></div><div class="src">Tally steps as in TallyPrime Help (version 3.0 and later, including 6.x).</div></details>`;
+}
 function rcmRender(reset) {
   if ($('rcm_allN') && !$('rcm_allN').textContent) $('rcm_allN').textContent = '(' + document.querySelectorAll('.rcmref tbody tr').length + ', click to show)';
   const sel = $('rcm_case'); if (!sel) return;
@@ -6635,6 +6839,7 @@ function rcmRender(reset) {
     ${d.v === 'rcm' || d.v === 'fcm' ? `<div class="stp"><b>Step 2</b><span>${d.v === 'rcm' ? 'The recipient (you) pays: reverse charge.' : 'The supplier pays: forward charge.'}</span></div>` : ''}
     ${d.w ? `<div style="margin-top:6px">${d.w}</div>` : ''}
     <div style="margin-top:8px"><b>${tally}</b></div>
+    ${rcmHowHtml(d.v, false)}
     <div class="src">Source: ${c.src}. ICAI Handbook on Reverse Charge Mechanism.</div>`;
 }
 function rcmAns(q, v) {
