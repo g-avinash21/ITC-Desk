@@ -1,5 +1,7 @@
 # ITC Desk
 
+**Version 1.0.0 · Last updated 19 November 2026**
+
 An offline working tool for GST input tax credit reversal under **Rules 42, 43 and 37 of the CGST Rules, 2017**. It reads TallyPrime exports, or GSTR-2B from the GST portal for clients on other software, puts each purchase ledger in a Rule 42 bucket with a reason, and works out the reversal for GSTR-3B Table 4(B)(1).
 
 It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data leaves the computer.

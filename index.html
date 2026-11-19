@@ -406,6 +406,8 @@ tr.notax td { color: var(--mut); }
 .guru-pane { width: min(380px, calc(100vw - 36px)); height: min(520px, calc(100vh - 110px)); background: var(--card); border-radius: 14px; box-shadow: 0 0 0 1.5px var(--line), 0 16px 40px -14px #0007; display: flex; flex-direction: column; overflow: hidden; }
 .guru-pane[hidden] { display: none; }
 .guru-hd { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+@media (max-width: 1240px) { #xlsxStatusBadge { display: none; } }
+.sitefoot { text-align: center; font-size: 12px; color: var(--mut); padding: 22px 16px 28px; }
 .guru-link { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mut); margin-right: 14px; }
 .guru-link:hover, .guru-link:focus-visible { color: var(--acc); }
 .guru-link:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 4px; }
@@ -584,9 +586,8 @@ summary:hover { color: var(--acc); }
       <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
     </nav>
     <div class="side-foot">
-      <button class="guru-link no-print" onclick="guruOpen()" title="Ask Guru, the ITC Desk helper (Alt+G)"><span class="av">G</span>Ask Guru</button>
+      <button class="guru-link no-print" onclick="guruOpen()" title="Ask Guru, the ITC Desk helper (Alt+G)"><span class="av">G</span><span class="gl">Ask Guru</span></button>
       <span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span>
-      <span>Concept by Avinash G</span>
     </div>
   </aside>
 
@@ -1475,6 +1476,7 @@ summary:hover { color: var(--acc); }
   </main>
 </div>
 
+<footer class="sitefoot">Concept by Avinash G · ITC Desk v1.0.0 · Last updated 19 Nov 2026</footer>
 <div id="toastBox" class="toast"></div>
 <div id="guru" class="guru no-print">
   <div class="guru-pane" id="guru_pane" role="dialog" aria-label="Guru, the ITC Desk helper" hidden>
