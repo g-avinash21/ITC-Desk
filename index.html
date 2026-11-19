@@ -6638,7 +6638,7 @@ function autoPurchaseRows(V, L, base) {
     if (R.i > 0) return R.i;
     if (R.c > 0 || R.s > 0) return (R.c || 0) + (R.s || 0);
     const n = String(l.led || '');
-    if (/exempt|nil\s*rated|non[\s-]*gst|without\s*gst|\bnil\b/i.test(n)) return 0;
+    if (/exempt|nil[\s-]*rated|non[\s-]*gst|without\s*(gst|tax)|tax[\s-]*free|\bnil\b|@\s*0\s*%|\b0\s*%/i.test(n)) return 0;
     const m = n.match(/(\d+(?:\.\d+)?)\s*%/);
     return m ? +m[1] : null;
   };
@@ -6757,7 +6757,7 @@ function autoSalesSummary(V, L, base) {
     sl.forEach(l => {
       const amt = sign * Math.abs(l.amt), n = String(l.led);
       if (/non[\s-]*gst|without\s*gst/i.test(n)) { e += amt; exLed[n] = (exLed[n] || 0) + amt; }
-      else if (/exempt|nil[\s-]*rated|\bnil\b/i.test(n)) { c += amt; exGst += amt; exLed[n] = (exLed[n] || 0) + amt; }
+      else if (/exempt|nil[\s-]*rated|tax[\s-]*free|without\s*tax|\bnil\b|@\s*0\s*%|\b0\s*%/i.test(n)) { c += amt; exGst += amt; exLed[n] = (exLed[n] || 0) + amt; }
       else a += amt;
     });
   });
