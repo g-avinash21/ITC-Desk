@@ -1165,7 +1165,7 @@ summary:hover { color: var(--acc); }
         </div>
       </div>
       <p class="hint" style="margin-bottom:10px">Built from the Single period figures, the capital goods register and the 180-day tracker below. In TallyPrime use <b>Vouchers &gt; F7 Journal &gt; Alt+J (Stat Adjustment)</b>, or import the XML through <b>Alt+O &gt; Import &gt; Transactions</b>.</p>
-      <p class="hint" style="margin:0 0 10px">Check before importing: every ledger name and the GST registration must exist in Tally exactly as typed here. After importing, open GSTR-3B for the month: the amount should be in Table 4(B)(1), and nothing under Uncertain Transactions.</p>
+      <p class="hint" style="margin:0 0 10px">Check before importing: every ledger name and the GST registration must exist in Tally exactly as typed here. After importing, open GSTR-3B for the month: the amount should be in Table 4(B)(1), and nothing under Uncertain Transactions. If the journal is there asking <b>Type of Supply</b>, choose <b>Goods</b> (it only labels the reversal ledger; amounts do not change).</p>
       <div id="tallyVoucherText"></div>
     </div>
 
@@ -1787,7 +1787,7 @@ function renderLedgerSummary() {
     if (r.nodetail) { o.ndN = (o.ndN || 0) + 1; o.ndTax = (o.ndTax || 0) + t; (o.ndDates = o.ndDates || []).push(r.date); }
     if (r.rcmHeld) { o.heldN = (o.heldN || 0) + 1; o.heldTax = (o.heldTax || 0) + (r.rcmHeldTax || 0); o.heldVal = (o.heldVal || 0) + (r.taxable || 0); (o.heldDates = o.heldDates || []).push(r.date); }
     if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
-    o.buckets[r.bucket] = 1;
+    o.buckets[r.bucket] = 1; (o.bt = o.bt || {})[r.bucket] = (o.bt[r.bucket] || { n: 0, t: 0, tally: 0 }); o.bt[r.bucket].n++; o.bt[r.bucket].t += t; if (r.how === 'tally' || r.inelig) o.bt[r.bucket].tally++;
   });
   const keys = Object.keys(g).sort((a, b) => g[b].tax - g[a].tax);
   window._ledgerKeys = keys;
@@ -1812,7 +1812,7 @@ function renderLedgerSummary() {
 const heldWhy = o => `<b>Not counted: ${o.heldN} reverse charge payment${o.heldN > 1 ? 's' : ''}, tax ₹ ${fmt(o.heldTax)}</b> (${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}). Tally's GSTR-3B leaves ${o.heldN > 1 ? 'them' : 'it'} out, so no credit. In Tally: if it is reverse charge, fill the party details on the payment; if not, remove the reverse charge mark.`;
         if (o.allNoTax && o.heldN === o.n) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="pill T3">Check</span> <span class="hint">Not counted</span></td><td class="why">${heldWhy(o)}</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
-        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
+        return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed (see why)</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${!cur && o.bt ? `<div class="dnwhy"><b>Mixed: this ledger's bills are in more than one bucket.</b> ${Object.entries(o.bt).map(([b, v]) => `${b} ₹ ${fmt(v.t)} on ${v.n} bill${v.n > 1 ? 's' : ''}${v.tally ? (v.tally === v.n ? ' (marked Ineligible ITC in Tally)' : ` (${v.tally} marked Ineligible ITC in Tally)`) : ''}`).join(' · ')}. That is fine if the bills really differ. To put every bill in one bucket, choose it here.</div>` : ''}${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }
@@ -5601,6 +5601,7 @@ function exportTallyXMLVoucher() {
       <PARENT>Indirect Expenses</PARENT>
       <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
       <AFFECTSSTOCK>No</AFFECTSSTOCK>
+      <GSTTYPEOFSUPPLY>Goods</GSTTYPEOFSUPPLY>
      </LEDGER>
     </TALLYMESSAGE>`).join('')}${V.map(vch).join('')}
    </REQUESTDATA>
