@@ -23,12 +23,16 @@ rem 2. Start the Tally link, unless it is already running
 set "BATFILE=%~f0"
 set "LINKPS=%TEMP%\ITC Desk link.ps1"
 set "LINKLOG=%TEMP%\ITC Desk link.log"
-powershell -NoProfile -Command "try { $c = New-Object Net.Sockets.TcpClient('127.0.0.1', 9800); $c.Close(); exit 0 } catch { exit 1 }"
+rem Ask the link itself (/ping). A link that holds the port but does not answer (stuck, or an older copy started
+rem with Windows) is stopped and started fresh. Another program on port 9800 is named, not stopped.
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 'http://127.0.0.1:9800/ping'; if ($r.Content -match 'ITC Tally link') { exit 0 } } catch { }; $h = @(Get-NetTCPConnection -LocalPort 9800 -State Listen -ErrorAction SilentlyContinue); if (-not $h.Count) { exit 1 }; foreach ($c in $h) { $p = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue; if ($p -and $p.ProcessName -match '^(powershell|pwsh)$') { Stop-Process -Id $p.Id -Force } else { Write-Host ('  Port 9800 is used by another program: ' + $p.ProcessName); exit 3 } }; Start-Sleep -Milliseconds 800; exit 2"
+if errorlevel 3 goto portbusy
 if not errorlevel 1 goto linkok
+if errorlevel 2 echo  An older Tally link was not answering: it was stopped.
 echo  Starting the Tally link in the background...
 powershell -NoProfile -Command "$s = [IO.File]::ReadAllText($env:BATFILE); [IO.File]::WriteAllText($env:LINKPS, $s.Substring($s.LastIndexOf('#' + 'PS-START')))"
 start "" /min powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "& $env:LINKPS *> $env:LINKLOG"
-powershell -NoProfile -Command "for ($i = 0; $i -lt 24; $i++) { try { $c = New-Object Net.Sockets.TcpClient('127.0.0.1', 9800); $c.Close(); exit 0 } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+powershell -NoProfile -Command "for ($i = 0; $i -lt 24; $i++) { try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:9800/ping'; if ($r.Content -match 'ITC Tally link') { exit 0 } } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
 if errorlevel 1 goto linkvisible
 :linkok
 echo  The Tally link is running.
@@ -71,6 +75,14 @@ if defined PAGE start "" "%~dp0%PAGE%"
 if not defined PAGE echo  No ITC Desk file in this folder: opening the online copy.
 if not defined PAGE start "" "%ONLINE%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%LINKPS%"
+pause
+exit /b
+
+:portbusy
+echo.
+echo  The Tally link cannot start: another program is using port 9800 (named above).
+echo  Close that program, or restart the computer, then double-click this file again.
+echo.
 pause
 exit /b
 
