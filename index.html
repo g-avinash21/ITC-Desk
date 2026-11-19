@@ -389,6 +389,8 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 /* Most months come through Auto: the manual drop area stays compact instead of filling the column */
 body.on-auto .metabar { display: none; }
 body.mode-auto .manual-only, body.mode-manual .auto-only { display: none !important; }
+tr.notax td { color: var(--mut); }
+tr.notax td.why b { color: var(--ink); }
 .linksetup { flex-basis: 100%; border: 1px solid var(--line); border-left: 4px solid var(--acc); background: var(--card); border-radius: 4px; padding: 10px 14px; font-size: 13px; line-height: 1.6; }
 .linksetup ol { margin: 0 0 6px; padding-left: 20px; }
 .linksetup li { margin: 0 0 4px; }
@@ -1657,6 +1659,7 @@ function renderLedgerSummary() {
     const t = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
     o.tax += t;
     // Debit notes (purchase returns) lower the credit: kept apart so the reason for a difference from Tally's Purchase Register is shown here
+    o.allNoTax = (o.allNoTax === undefined ? true : o.allNoTax) && !!r.noTax; o.val = (o.val || 0) + (r.taxable || 0);
     if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
     o.buckets[r.bucket] = 1;
   });
@@ -1669,10 +1672,18 @@ function renderLedgerSummary() {
   const aiDiff = keys.filter((k) => aiSug[k] && !(Object.keys(g[k].buckets).length === 1 && g[k].buckets[aiSug[k].bucket])).length;
   box.innerHTML = `
     <div class="card-title" style="margin-top:6px"><span>Ledger-wise summary</span><span class="row">${memKeysOfClient().length ? '<button class="sm" onclick="resetAllLedgers()">Forget remembered choices</button>' : ''}${aiDiff ? `<button class="sm" onclick="aiUseAll()">Use all ${aiDiff} assistant suggestion(s)</button>` : ''}</span></div>
+    ${(() => {
+      // Goods bought without GST, but no exempt sales this month: if they were sold, the exempt sales are missing from 3.1(c)
+      const ntv = importedRows.filter(r => r.noTax && r.in2B !== false).reduce((a, r) => a + (r.taxable || 0), 0);
+      const ex = ['imp_31c', 'imp_31e'].reduce((a, id) => a + (+($(id) || {}).value || 0), 0);
+      return ntv >= 1 && ex < 1 ? `<div class="alert warn" style="margin:0 0 10px"><b>Purchases without GST ₹ ${fmt(ntv)}, but no exempt sales this month.</b> If these goods (exempt or nil-rated, for example loose food grains or papad) are sold, those sales are exempt and belong in GSTR-3B 3.1(c). Then Rule 42 reverses part of the common credit, and the reversal shown now (no exempt sales) would be too low. Check the sales of these goods in Tally, and that their stock items are marked Exempt or Nil rated. If they are only in stock and not yet sold, or were bought for a taxable product, nothing changes.</div>` : '';
+    })()}
     <div class="scroll" style="margin-bottom:12px"><table>
       <thead><tr><th>Ledger</th><th>Rows</th><th>ITC (₹)</th><th>Bucket for every row of this ledger</th><th style="text-align:left;min-width:300px">Why</th>${aiHas ? '<th style="text-align:left;min-width:260px">Assistant</th>' : ''}</tr></thead>
       <tbody>${keys.slice(0, 80).map((k, i) => {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
+        // Bills on which no GST was charged: shown for completeness, with nothing to decide
+        if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
@@ -6199,7 +6210,7 @@ function flowSetMode(m) {
 }
 function flowLedgersToCheck() {
   const k = new Set();
-  importedRows.forEach(r => { if (r.in2B !== false && r.check && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
+  importedRows.forEach(r => { if (r.in2B !== false && r.check && !r.noTax && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
   return k.size;
 }
 function flowSteps() {
@@ -6587,7 +6598,13 @@ function autoPurchaseRows(V, L, base) {
     const sign = isDN ? -1 : 1;
     // Input tax: debits to GST ledgers (credits on a debit note)
     const tax = v.lines.filter(l => info(l.led).head && (isDN ? l.amt > 0 : l.amt < 0));
-    if (!tax.length) return;
+    if (!tax.length) {
+      // A purchase bill with no GST (exempt or nil-rated goods, or an unregistered supplier): no credit, nothing to reverse.
+      // Kept as a zero-credit line so the ledger appears and the purchases agree with Tally's Purchase Register.
+      if ((isPur || isDN) && !v.rcm) v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && !l.rcm && (isDN ? l.amt > 0 : l.amt < 0) && !/round(ing)?\s*-?\s*off|rounding/i.test(l.led); })
+        .forEach(l => rows.push({ noTax: true, vno: v.no || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: sign * Math.abs(l.amt), igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'T4', how: 'auto', src: 'tally' }));
+      return;
+    }
     if (isJ && !/input tax credit/i.test(v.adj)) { skippedJ++; return; }
     const heads = { i: 0, c: 0, s: 0, z: 0 }; tax.forEach(l => heads[info(l.led).head] += Math.abs(l.amt));
     // The tax ledgers this bill used, by head, so the reversal voucher can credit the same ledgers
@@ -6613,7 +6630,7 @@ function autoPurchaseRows(V, L, base) {
       rows.push({ taxLed, dn: isDN || undefined, vno: v.no || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
-  rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); });
+  rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); if (r.noTax) r.check = false; });
   if (skippedJ) notes.push(`${skippedJ} journal(s) touching input tax ledgers were left out because they carry no GST Stat Adjustment for input tax credit. Check them in Tally.`);
   const dnRows = rows.filter(r => r.dn);
   if (dnRows.length) {
