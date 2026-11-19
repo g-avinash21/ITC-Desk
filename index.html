@@ -388,6 +388,27 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 .dropzone { flex: 1; display: flex; flex-direction: column; justify-content: center; border: 1.5px dashed var(--mut); background: var(--bg); border-radius: var(--radius); padding: 24px 22px; text-align: left; cursor: pointer; transition: border-color .1s, background .1s; }
 /* Most months come through Auto: the manual drop area stays compact instead of filling the column */
 body.on-auto .metabar { display: none; }
+body.mode-auto .manual-only, body.mode-manual .auto-only { display: none !important; }
+.flowbar { display: grid; grid-template-columns: auto 1fr auto; gap: 10px 16px; align-items: center; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--acc); border-radius: 4px; padding: 10px 14px; margin: 0 0 14px; }
+.fmode { display: flex; align-items: center; gap: 0; font-size: 12px; color: var(--mut); }
+.fmode span { margin-right: 8px; }
+.fmode button { font-size: 12px; padding: 5px 10px; box-shadow: none; border-radius: 0; margin: 0; }
+.fmode button + button { border-left: 0; }
+.fmode button.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+.fsteps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; counter-reset: fs; }
+.fsteps li { counter-increment: fs; display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 6px; border: 1px solid var(--line); border-radius: 20px; font-size: 12.5px; cursor: pointer; background: var(--bg); line-height: 1.25; }
+.fsteps li::before { content: counter(fs); flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--mut); background: var(--card); }
+.fsteps li small { display: block; font-size: 11px; color: var(--mut); }
+.fsteps li.done::before { content: "\2713"; background: #1f8a4c; border-color: #1f8a4c; color: #fff; }
+.fsteps li.now { border-color: var(--acc); background: var(--card); box-shadow: 0 0 0 1px var(--acc); }
+.fsteps li.now::before { background: var(--acc); border-color: var(--acc); color: #fff; }
+.fsteps li.skip { opacity: .55; }
+.fsteps li.skip b { text-decoration: line-through; font-weight: 600; }
+.fsteps li.wait { opacity: .5; cursor: default; }
+.fsteps li.here b { text-decoration: underline; text-underline-offset: 3px; }
+.fnext button { white-space: nowrap; }
+.fsay { grid-column: 1 / -1; font-size: 13px; color: var(--ink); border-top: 1px dashed var(--line); padding-top: 8px; }
+@media (max-width: 1100px) { .flowbar { grid-template-columns: 1fr; } }
 .dnwhy { margin: 6px 0 0; padding: 6px 9px; border-left: 3px solid var(--warn); background: var(--bg); font-size: 12.5px; line-height: 1.45; }
 #tallyDropzone { flex: none; padding: 14px 18px; min-height: 0; }
 #tallyDropzone .hint { margin: 2px 0 0; }
@@ -423,6 +444,7 @@ summary:hover { color: var(--acc); }
 .kbref details { display: inline-block; margin: 0 10px 0 0; padding: 0; border: 0; }
 .kbref summary { font-size: 11.5px; font-weight: 600; color: var(--info); }
 .kbref details[open] { display: block; }
+.kbsrc { margin-top: 6px; font-size: 11px; color: var(--mut); }
 .kbref details div { margin: 4px 0 6px; padding: 8px 10px; background: var(--bg); border-left: 2px solid var(--info); color: var(--ink); font-size: 12px; line-height: 1.5; }
 
 @media (max-width: 1100px) {
@@ -472,12 +494,12 @@ summary:hover { color: var(--acc); }
       <div class="ref">Rules 42, 43 and 37, CGST Rules</div>
     </div>
     <nav class="tabs" aria-label="Sections">
-      <button class="tab on" id="t6" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
-      <button class="tab" id="t0" onclick="showTab(0)"><span>Import</span><small>Tally, portal, Excel</small></button>
+      <button class="tab on auto-only" id="t6" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
+      <button class="tab" id="t0" onclick="showTab(0)"><span id="t0lab">Import</span><small id="t0sub">Tally, portal, Excel</small></button>
       <button class="tab" id="t1" onclick="showTab(1)"><span>Single period</span><small>Rule 42</small></button>
       <button class="tab" id="t2" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
-      <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
       <button class="tab" id="t4" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
+      <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
       <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
     </nav>
     <div class="side-foot">
@@ -502,6 +524,17 @@ summary:hover { color: var(--acc); }
       <button onclick="toggleTheme()" id="themeBtn">Dark theme</button>
       <button onclick="clearAllSheets()" class="danger" title="Remove every figure on every tab">Clear all</button>
     </div>
+  </div>
+
+  <div class="flowbar no-print" id="flowbar">
+    <div class="fmode" role="group" aria-label="How you are working">
+      <span>Working from</span>
+      <button id="fm_auto" onclick="flowSetMode('auto')" title="ITC Desk reads TallyPrime directly">TallyPrime (Auto)</button>
+      <button id="fm_manual" onclick="flowSetMode('manual')" title="You drop exported files: Tally reports, GSTR-2B or the template">Files (Manual)</button>
+    </div>
+    <ol class="fsteps" id="fsteps"></ol>
+    <div class="fnext"><button class="p" id="fnext_btn" onclick="flowNext()">Start</button></div>
+    <div class="fsay" id="fsay"></div>
   </div>
 
   <div class="metabar">
@@ -542,6 +575,7 @@ summary:hover { color: var(--acc); }
   <!-- ==================== TAB 0: ZERO-TOUCH TALLY / EXCEL / JSON IMPORTER ==================== -->
   <div id="p0" class="hide">
     <div class="card">
+      <div class="manual-only">
       <div class="card-title">
         <span>Import the month</span>
         <div class="row no-print">
@@ -598,6 +632,7 @@ summary:hover { color: var(--acc); }
           </ol>
           </div>
         </details>
+      </div>
       </div>
       <div id="importStatusBanner" class="alert ok hide" style="margin:0 0 14px"></div>
       <details class="no-print" id="aiPanel">
@@ -1463,6 +1498,7 @@ function showTab(k) {
   // On Auto the month is chosen in step 1 and the client comes from Tally: the top bar would only repeat it
   document.body.classList.toggle('on-auto', k === 6);
   if (k === 6 && typeof autoCheckLink === 'function') autoCheckLink();
+  if (typeof flowRender === 'function') setTimeout(flowRender, 0);
 }
 
 /* ---------- SMART TALLY / EXCEL / JSON / XML AUTO-IMPORTER (TAB 0) ---------- */
@@ -2508,6 +2544,43 @@ const KB_REF_Q = {
   GTA: ['goods transport agency GTA reverse charge recipient category of supply', [2]],
   RCM: ['reverse charge services recipient liable notified category of supply', [2]]
 };
+// The concept behind each reference, in plain words for office staff. Shown where the ICAI publication itself is
+// not built in (the public copy): what the rule says, what it means in practice, and what ITC Desk does about it.
+const KB_PLAIN = {
+  T4: 'Taxable only (T4). These goods or services are used only to make sales on which GST is charged, or exports. The law allows full input tax credit on them, so nothing is reversed. Example: rice bought at 5% and sold at 5%; packing material used only for taxed goods. If even a part is used for exempt sales, the ledger is common credit (C2) instead. ITC Desk puts a ledger here when every sale of the month is taxable, or when the items bought are sold only with GST.',
+  T2: 'Exempt only (T2). These goods or services are used only to make exempt sales: nil-rated, exempt or non-GST supplies, such as loose rice, fresh vegetables or other goods sold without GST. No input tax credit is allowed on them at all (section 17(2)), so the whole GST on them is reversed every month under Rule 42 (the T2 amount). Example: gunny bags bought only for packing loose, exempt rice. If the same item is also used for taxed sales, it is common credit (C2) instead.',
+  'T2:ex': 'What counts as an exempt sale: nil-rated goods (0% rate), fully exempt goods and services (listed in the exemption notification), and non-GST supplies such as petrol or liquor. For Rule 42 these are added together as "E", the exempt turnover. Credit used for making them is not allowed. Exports and supplies to SEZ are not exempt: they are zero-rated, and credit on them is allowed in full.',
+  C2: 'Common credit (C2). These are used for both taxable and exempt sales, and cannot be traced to either one: shop or godown rent, electricity, telephone, audit fees, transport used for all goods. Credit is allowed only for the share that relates to taxable sales. Every month, the share for exempt sales is reversed under Rule 42: Common credit × Exempt turnover (E) ÷ Total turnover (F). Example: common credit ₹10,000, exempt sales ₹4 lakh out of total sales ₹10 lakh: reverse ₹4,000. At the end of the year the same is worked out again on the whole year\'s figures (Rule 42(2)), and any shortfall is paid with interest.',
+  T1: 'Non-business use (T1). Where goods or services are used partly for business and partly for personal or other non-business purposes, credit is allowed only on the business part (section 17(1)). The non-business part is reversed in full every month under Rule 42 (the T1 amount). Example: a phone or internet connection also used at the owner\'s home; the personal share is reversed. ITC Desk cannot know the personal share by itself, so such ledgers are marked Check.',
+  Tc: 'Common capital goods (Tc). Machinery, computers, furniture and other assets used for both taxable and exempt sales. Their GST is not reversed all at once. It is spread over 60 months (5 years) from the month of purchase: each month 1/60th of the GST is treated as that month\'s credit (Tm), and the exempt share of it, Tm × E ÷ F, is reversed (Te) under Rule 43. An asset used only for taxable sales gets full credit; one used only for exempt sales gets none. If the monthly reversal was never done in earlier months, the Capital goods tab shows what was missed, with interest.',
+  'T3:gen': 'Blocked credit (T3). Section 17(5) lists goods and services on which input tax credit is not allowed at all, even when they are used in the business: for example motor cars, food and refreshments, club membership, construction of a building, goods given as gifts, and goods lost or written off. The whole GST on such items is reversed (shown in Table 4(B)(1) of GSTR-3B). Most items have a narrow exception, so ITC Desk marks them Check: read the exception before deciding.',
+  'T3:0': 'Blocked: hiring or renting of vehicles (section 17(5)(b)(i)). Credit on cab hire, car rental or vehicle leasing for staff or owners is not allowed. Exceptions: the credit is allowed if the vehicle itself would have been eligible (for example a goods carrier, or a bus for passengers in a transport business), or if a law requires the employer to provide transport to staff. In a normal trading business, taxi and car hire bills are blocked and the GST is reversed.',
+  'T3:1': 'Blocked: motor cars and their upkeep (section 17(5)(a) and (ab)). Credit on cars and other passenger vehicles with 13 seats or fewer, including the driver, is not allowed; nor on their repair, servicing, insurance and spare parts. Exceptions: allowed if the business sells cars, runs a taxi or passenger transport service, or a driving school. Goods vehicles (trucks, tempos) are not blocked: their credit is allowed.',
+  'T3:2': 'Blocked: vessels and aircraft (section 17(5)(aa) and (ab)). Credit on boats, ships and aircraft and on their repair and insurance is not allowed. Exceptions: allowed if they are used to sell such vessels or aircraft, to carry passengers or goods for others, or to train pilots or crew.',
+  'T3:3': 'Blocked: food, drinks and catering (section 17(5)(b)(i)). Credit on food and beverages, office tea and snacks, staff lunches, hotel food and outdoor catering is not allowed. Exceptions: allowed only for a business that itself supplies food (a hotel or caterer using it for its sales), or where a law requires the employer to provide food to staff (for example a factory canteen under the Factories Act).',
+  'T3:4': 'Blocked: beauty, health and cosmetic services (section 17(5)(b)(i)). Credit on beauty treatment, health services, medical bills, and cosmetic or plastic surgery is not allowed. Exceptions: allowed only for a business that supplies the same service (a salon or hospital using it for its own sales), or where a law requires it.',
+  'T3:5': 'Blocked: life and health insurance (section 17(5)(b)(i)). Credit on life insurance, health or medical insurance and group mediclaim for staff or owners is not allowed. Exceptions: allowed where a law requires the employer to provide it (for example under the Employees\' State Insurance or factory laws), or for an insurance business. Insurance on goods, buildings and goods vehicles is not blocked.',
+  'T3:6': 'Blocked: club, gym and fitness membership (section 17(5)(b)(ii)). Credit on membership fees of clubs, health clubs, gyms and fitness centres is not allowed. There is practically no exception.',
+  'T3:7': 'Blocked: holiday travel for staff (section 17(5)(b)(iii)). Credit on leave travel, holiday packages, staff trips and picnics given to employees is not allowed. Exception: only where a law requires the employer to provide it. Ordinary business travel (tickets, hotel stay on business) is not covered by this block.',
+  'T3:8': 'Blocked: construction of own building (section 17(5)(c) and (d)). Credit on works contracts and on goods and services used to construct a building or other immovable property for the business itself (office, godown, shop, compound wall) is not allowed, where the cost is added to the building in the books. Exceptions: allowed for plant and machinery (even if fixed to the ground), for a business that itself builds for others, and for ordinary repairs charged as an expense.',
+  'T3:9': 'Blocked: personal use (section 17(5)(g)). Credit on anything bought for the personal use of the owner, partners or staff (household items, personal expenses booked in the business) is not allowed. There is no exception: the GST on such bills is reversed in full.',
+  'T3:10': 'Blocked: gifts, free samples, lost or written-off goods (section 17(5)(h)). Credit is not allowed on goods given away as gifts or free samples (Diwali gifts, CSR items), or goods lost, stolen, destroyed or written off (shortage, damaged stock). If credit was already taken when the goods were bought, it must be reversed when they are given away or lost. There is no exception.',
+  'RCM:gen': 'Reverse charge. For certain goods and services the buyer, not the seller, pays the GST to the government (section 9(3) and 9(4)). The buyer pays it in cash, shows it in GSTR-3B Table 3.1(d), and can take the same amount as input tax credit in Table 4(A)(3) of the same month, if the goods or services are used for business. This credit is like any other: if it is used for both taxable and exempt sales it is common credit, and Rule 42 reverses the exempt share.',
+  'RCM:0': 'Freight under reverse charge (goods transport agency). When freight is paid to a goods transport agency (GTA, a transporter who issues a consignment note or lorry receipt) that does not charge GST itself, the registered business pays GST at 5% under reverse charge. That GST can be taken as credit in the same month. Freight paid for both taxed and exempt goods is common credit (C2). Hire of a truck alone, without a consignment note, is not a GTA service.',
+  'RCM:1': 'Rent under reverse charge. When a registered business rents a residential house from anyone, or (from 10 October 2024) rents a shop, godown or office from an owner who is not registered under GST, the business pays the GST (18%) itself under reverse charge. It can take that GST as credit in the same month. The rented place is usually used for the whole business, so the credit is common (C2).',
+  'RCM:2': 'Legal fees under reverse charge. Fees paid to an advocate or a firm of advocates for legal services are taxed under reverse charge: the business pays 18% GST itself and can take it as credit. Fees for a case relating to the whole business are common credit (C2).',
+  'RCM:3': 'Security services under reverse charge. When a registered business takes watchman or security guard services from a supplier other than a company (a proprietor or partnership firm), the business pays the GST (18%) under reverse charge and can take it as credit. Security for the shop or godown serves the whole business, so it is common credit (C2).',
+  'RCM:4': 'Directors\' fees under reverse charge. Sitting fees, commission or remuneration paid by a company to its directors (other than as salaried employees) are taxed under reverse charge: the company pays 18% GST and can take it as credit.',
+  'RCM:5': 'Vehicle hire under reverse charge. When a business (body corporate) hires a vehicle with a driver for carrying passengers from a supplier who is not a company and charges GST at 5%, the business pays the GST under reverse charge. Note that credit on hiring passenger vehicles may still be blocked under section 17(5).',
+  'RCM:6': 'Sponsorship under reverse charge. Sponsorship given by a company or firm to an event, team or organisation is taxed under reverse charge: the business pays 18% GST and can take it as credit.',
+  'RCM:7': 'Import of services. Services bought from a supplier outside India (software subscriptions, consultancy, advertising on foreign platforms) are taxed under reverse charge: the business pays IGST at the applicable rate and can take it as credit in the same month.',
+  'RCM:8': 'Metal scrap under reverse charge. From 10 October 2024, when a registered business buys metal scrap from a seller who is not registered, the buyer pays the GST under reverse charge and can take it as credit.',
+  'RCM:9': 'Copyright fees under reverse charge. Payments to authors, music composers, photographers and artists for the use of their work (copyright) are taxed under reverse charge: the business pays the GST and can take it as credit.',
+  'RCM:10': 'Government services under reverse charge. Many services from the central or state government or a local authority to a business (for example some licence and permission fees) are taxed under reverse charge: the business pays the GST and can take it as credit. Some, like rent of property and postal services, are not covered.',
+  'RCM:11': 'Agents\' commission under reverse charge. Commission paid to insurance agents, recovery agents, and business correspondents by insurance companies, banks and finance companies is taxed under reverse charge: the company pays the GST and can take it as credit.',
+  'PEN:0': 'Interest on credit wrongly taken. If credit that should have been reversed was taken and used to pay tax, interest at 18% a year is payable (section 50(3)), from the date the credit was used until it is reversed or paid. If the credit was taken but never used (the credit ledger always had enough balance), no interest is due.',
+  'PEN:1': 'Where the reversal goes in GSTR-3B. Reversals under Rule 42, Rule 43 and section 17(5) go in Table 4(B)(1). Temporary reversals that can be claimed back later, such as Rule 37 (supplier not paid in 180 days), go in Table 4(B)(2), and the credit is claimed back in Table 4(D)(1) when the payment is made. In Tally the reversal is a journal with Stat Adjustment: Reversal of Input Tax Credit.'
+};
 const kbRefCache = new Map();
 // The ICAI passages behind a ledger's bucket: chosen by the bucket's principle, not by the ledger name
 const KB_RQ = [[/freight|transport/, 'goods transport agency GTA services reverse charge recipient'], [/rent of premises/, 'renting of immovable property unregistered person registered person reverse charge'], [/legal/, 'advocate firm of advocates legal services reverse charge'], [/security/, 'security services reverse charge body corporate'], [/director/, 'services by director to company reverse charge'], [/motor vehicle/, 'renting of motor vehicle designed to carry passengers reverse charge'], [/sponsor/, 'sponsorship services reverse charge'], [/import/, 'import of services non-taxable territory reverse charge'], [/scrap/, 'metal scrap unregistered reverse charge'], [/author|artist/, 'author music composer photographer artist reverse charge'], [/government/, 'services by government local authority business entity reverse charge'], [/commission/, 'insurance agent recovery agent direct selling agent reverse charge']];
@@ -2530,7 +2603,7 @@ function kbResolve(plan) {
   plan.forEach(x => {
     let h = null;
     if (KB) { const r = kbSearch(x.q, 1, x.ch)[0] || (x.alt ? kbSearch(x.q, 1, x.alt)[0] : null); if (r) h = { label: r.label, ch: r.ch, text: r.text.slice(0, 700) }; }
-    else if (KB_CITES && KB_CITES.refs[x.key]) h = { label: KB_CITES.refs[x.key][0], ch: KB_CITES.refs[x.key][1], text: '' };
+    else if (KB_CITES && KB_CITES.refs[x.key]) h = { key: x.key, label: KB_CITES.refs[x.key][0], ch: KB_CITES.refs[x.key][1], text: '', plain: KB_PLAIN[x.key] || '' };
     if (h && !out.some(o => o.label === h.label)) out.push(h);
   });
   return out;
@@ -2550,6 +2623,13 @@ function kbRefLinkHtml(r, withTitle) {
   const titles = (KB && KB.data.titles) || (KB_CITES && KB_CITES.titles) || {};
   const label = 'ICAI ' + esc(r.label) + (withTitle && r.ch < 100 && titles[r.ch] ? ', ' + esc(titles[r.ch]) : '');
   if (r.text) return `<details><summary>${label}</summary><div>${esc(r.text)}…</div></details>`;
+  // Public copy: the concept in plain words, with the ICAI source named (no link: the publications move on ICAI's site)
+  if (r.plain) {
+    const src = r.ch >= 100 ? `ICAI ${esc(r.label)}` : `ICAI study material, Paper 5 (Indirect Tax Laws), ${esc(r.label)}${titles[r.ch] ? ' ' + esc(titles[r.ch]) : ''}`;
+    let head = r.plain.split(/\.\s/)[0].replace(/\s*\(section .*\)\s*$/i, '');
+    if (head.length > 70 && head.includes(':')) head = head.split(':')[0];
+    return `<details><summary>In simple words: ${esc(head.length > 70 ? head.slice(0, 68) + '…' : head)}</summary><div>${esc(r.plain)}<div class="kbsrc">Source: ${src}</div></div></details>`;
+  }
   const pub = r.ch >= 100 ? 'ICAI GST handbook' : 'ICAI study material, Paper 5 (Indirect Tax Laws)';
   return `<a href="${kbSourceUrl(r.ch)}" target="_blank" rel="noopener" title="${pub}: free to download from ICAI's website" style="font-size:11.5px;font-weight:600;color:var(--info);margin-right:10px;text-decoration:none">${label} ↗</a>`;
 }
@@ -5225,6 +5305,7 @@ function renderTallyVoucher(d) {
 }
 
 function copyTallyVoucherPlain() {
+  FLOW.posted = true;
   if (!lastTallyData) return;
   const d = lastTallyData, V = tallyVouchers(d), period = $('meta_period').value || '';
   if (!V) { notify('No voucher to copy: the tax-wise split is not known.'); return; }
@@ -5240,6 +5321,7 @@ function copyTallyVoucherPlain() {
 }
 
 function exportTallyXMLVoucher() {
+  FLOW.posted = true;
   if (!lastTallyData) return;
   const d = lastTallyData, V = tallyVouchers(d);
   if (!V) { notify('No Tally XML: the tax-wise split is not known, or this is a bank (Rule 38). Pass the journal by hand.'); return; }
@@ -5794,6 +5876,7 @@ function applyState(sv) {
 }
 
 function calcAll() {
+  setTimeout(() => { try { flowRender(); } catch (e) {} }, 0);
   checkGstin();
   calc1();
   calc2();
@@ -6078,7 +6161,84 @@ function autoStepsRender() {
   if ($('as2m')) $('as2m').textContent = pOk ? AUTO.periodOk : 'the month in step 1';
   if ($('auto_go') && !pOk) $('auto_go').title = 'Choose the month in step 1 first';
 }
-document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); } catch (e) {} }, 50));
+
+/* ---------- The month's path, shown on every tab: Auto (or Import) > Review > Single period > Capital goods > Post in Tally ----------
+   Staff follow it in order; a step not needed this month is struck out with the reason, and Next always goes to the right place. */
+const FLOW = { mode: (() => { try { return localStorage.getItem('itc_mode') === 'manual' ? 'manual' : 'auto'; } catch (e) { return 'auto'; } })(), seen: {}, posted: false, key: '' };
+function flowSetMode(m) {
+  FLOW.mode = m === 'manual' ? 'manual' : 'auto';
+  try { localStorage.setItem('itc_mode', FLOW.mode); } catch (e) {}
+  document.body.classList.toggle('mode-auto', FLOW.mode === 'auto');
+  document.body.classList.toggle('mode-manual', FLOW.mode === 'manual');
+  if ($('t0lab')) { $('t0lab').textContent = FLOW.mode === 'auto' ? 'Review' : 'Import'; $('t0sub').textContent = FLOW.mode === 'auto' ? 'ledgers and buckets' : 'files, then review'; }
+  const onTab = [0, 1, 2, 3, 4, 5, 6].find(i => $('p' + i) && !$('p' + i).classList.contains('hide'));
+  if (FLOW.mode === 'manual' && onTab === 6) showTab(0);
+  else if (FLOW.mode === 'auto' && onTab === 0 && !importedRows.length) showTab(6);
+  flowRender();
+}
+function flowLedgersToCheck() {
+  const k = new Set();
+  importedRows.forEach(r => { if (r.in2B !== false && r.check && r.how !== 'user' && r.how !== 'memory') k.add(String(r.ledger || '').trim().toLowerCase()); });
+  return k.size;
+}
+function flowSteps() {
+  const auto = FLOW.mode === 'auto', have = importedRows.length > 0;
+  const c = window._calc1 || {}, rev = c.rev4B1 || 0;
+  let r37 = 0; try { r37 = (getR37Totals() || {}).revTotal || 0; } catch (e) {}
+  const assets = (typeof cgAssets !== 'undefined' ? cgAssets : []).length;
+  const chk = flowLedgersToCheck();
+  const after1 = 'after step 1';
+  return [
+    { id: 'get', tab: auto ? 6 : 0, label: auto ? 'Work out in Auto' : 'Import the files', need: true, done: have,
+      sub: have ? (($('meta_name') || {}).value || 'loaded') : (auto ? 'read from TallyPrime' : 'drop the month\'s files'),
+      say: auto ? '<b>Step 1, Auto:</b> choose the month, click Find Tally, tick the companies and click Work out selected. When it finishes, click <b>Open</b> on a company to review it.' : '<b>Step 1, Import:</b> drop one client\'s files for the month together (the three Tally reports, or GSTR-2B and the 3.1 sales, or the filled template). Read the notes that appear above the table.' },
+    { id: 'review', tab: 0, label: 'Review ledgers', need: have, done: have && !chk && !!FLOW.seen.review, sub: !have ? after1 : chk ? `${chk} ledger${chk > 1 ? 's' : ''} to check` : FLOW.seen.review ? 'all settled' : 'read each reason',
+      say: chk ? `<b>Step 2, Review:</b> ${chk} ledger${chk > 1 ? 's are' : ' is'} marked <b>Check</b> in the ledger-wise summary. Read the reason beside each, and choose the right bucket (the choice is remembered for this client). Also read the notes at the top of the page.` : '<b>Step 2, Review:</b> read the notes at the top and the reason beside each ledger in the ledger-wise summary. Change a bucket only if the reason does not fit this client.' },
+    { id: 'single', tab: 1, label: 'Single period', need: have && rev > 0.004, done: !!FLOW.seen.single, sub: !have ? after1 : rev > 0.004 ? `reversal ₹ ${fmt(rev)}` : 'nothing to reverse',
+      say: '<b>Step 3, Single period:</b> the figure at the top is the reversal for GSTR-3B Table 4(B)(1), split into IGST, CGST and SGST. Check that the turnover figures (E and F) look right for this client.' },
+    { id: 'cg', tab: 2, label: 'Capital goods', need: have && assets > 0, done: !!FLOW.seen.cg, sub: !have ? after1 : assets ? `${assets} asset${assets > 1 ? 's' : ''}` : 'none this month',
+      say: '<b>Step 4, Capital goods:</b> check each machine or asset listed. Mark one used only for taxable sales, or only for exempt sales, if that is the case; the rest stay common and are spread over 60 months (Rule 43).' },
+    { id: 'post', tab: 4, label: 'Post in Tally', need: have && (rev > 0.004 || r37 > 0.004), done: !!FLOW.posted, sub: !have ? after1 : rev > 0.004 || r37 > 0.004 ? (FLOW.posted ? 'XML downloaded' : 'download the XML') : 'no journal needed',
+      say: '<b>Step 5, Post in Tally:</b> on the Vouchers tab, check that every ledger shows <b>✓ from Tally</b>, click <b>Download Tally XML</b> and import it in Tally (Alt+O &gt; Import &gt; Transactions). Then open GSTR-3B in Tally and see the amount in Table 4(B)(1). Click <b>Save backup</b> to keep this client\'s work.' }
+  ];
+}
+function flowCurrentTab() { return [0, 1, 2, 3, 4, 5, 6].find(i => $('p' + i) && !$('p' + i).classList.contains('hide')); }
+function flowRender() {
+  const ol = $('fsteps'); if (!ol) return;
+  // A new client or month starts the path again
+  const key = [($('meta_gstin') || {}).value, ($('meta_period') || {}).value, importedRows.length ? 'x' : ''].join('|');
+  if (key !== FLOW.key) { FLOW.key = key; FLOW.seen = {}; FLOW.posted = false; }
+  ['fm_auto', 'fm_manual'].forEach(id => $(id) && $(id).classList.toggle('on', id === 'fm_' + FLOW.mode));
+  const st = flowSteps(), tab = flowCurrentTab();
+  const nowI = st.findIndex(x => x.need && !x.done);
+  ol.innerHTML = st.map((x, i) => {
+    const cls = !x.need ? (importedRows.length ? 'skip' : 'wait') : x.done ? 'done' : i === nowI ? 'now' : '';
+    const here = x.tab === tab ? ' here' : '';
+    return `<li class="${cls}${here}" ${cls === 'wait' ? '' : `onclick="flowGo(${i})"`} title="${x.need || !importedRows.length ? '' : 'Not needed this month'}"><span><b>${x.label}</b><small>${escA(x.sub)}</small></span></li>`;
+  }).join('');
+  const nb = $('fnext_btn');
+  if (nowI === -1) { nb.textContent = 'Month done: Save backup'; nb.onclick = () => exportJSON(); $('fsay').innerHTML = '<b>All steps done for this client and month.</b> Click <b>Save backup</b> to keep the work, then Clear all (top right) before the next client.'; }
+  else {
+    const x = st[nowI];
+    nb.disabled = false;
+    nb.textContent = x.tab === tab ? (x.id === 'review' ? 'Reviewed: next step' : x.id === 'single' || x.id === 'cg' ? 'Checked: next step' : x.id === 'post' ? 'Download Tally XML' : 'Finish this step first') : `Go to: ${x.label}`;
+    if (x.id === 'get' && x.tab === tab) nb.disabled = true;
+    nb.onclick = () => { if (x.id === 'post' && x.tab === tab) { exportTallyXMLVoucher(); flowRender(); return; } if (x.tab === tab && (x.id === 'review' || x.id === 'single' || x.id === 'cg')) { if (x.id === 'review' && flowLedgersToCheck()) { notify('Settle the ledgers marked Check first: choose a bucket for each in the ledger-wise summary.'); const e = $('impLedgerSummary'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } FLOW.seen[x.id] = true; flowRender(); flowNext(); } else flowGo(nowI); };
+    $('fsay').innerHTML = x.say;
+  }
+}
+function flowGo(i) {
+  const x = flowSteps()[i]; if (!x) return;
+  showTab(x.tab);
+  if (x.id === 'review' && importedRows.length) { const e = $('impLedgerSummary'); if (e) setTimeout(() => e.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function flowNext() {
+  const st = flowSteps(), i = st.findIndex(x => x.need && !x.done);
+  if (i === -1) { flowRender(); return; }
+  flowGo(i);
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); flowSetMode(FLOW.mode); } catch (e) {} }, 50));
 async function autoStopLink() {
   try { await linkFetch('/quit', null, 3000); } catch (e) {}
   AUTO.ports = []; AUTO.companies = [];

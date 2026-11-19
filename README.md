@@ -19,10 +19,12 @@ It is one HTML file. Open it in Chrome or Edge: nothing to install, and no data 
 - **GSTR-3B Table 4 as on the portal**: 4(A)(1) to (5), 4(B)(1) and (2), 4(C) and 4(D), by IGST, CGST, SGST and Cess, filled from the bills (reverse charge in 4(A)(3), imports in 4(A)(1), ISD in 4(A)(4)), with the GSTR-9 Table 7 split of the reversal.
 - **Tally journals that land in 4(B)(1)**: the XML carries the Stat Adjustment (GST, Reversal of Input Tax Credit, with Rule 42(1)(m), Rule 43(1)(h) or Ineligible Credit), and the rate and taxable value of every tax line. CGST and SGST are always equal, with any paisa difference on an editable Round Off line, so Tally does not list the journal under Uncertain Transactions. Ledger names and the GST registration are editable to match your Tally, rate-wise or one per tax, and remembered for each client.
 - **Output**: Excel working with live formulas (bills, ledgers, working, month-wise and true-up), a printable A4 working paper, the journal entries and Tally XML.
-- **ICAI references**: beside each bucket's reason, the ICAI study material page or GST handbook page that supports it (for example *ICAI Blocked credit handbook p. 71* for cab hire). The link opens ICAI's website, where the publications are free to download.
+- **The rule in simple words**: beside each bucket's reason, a plain explanation for office staff (what the rule says, an example, and what ITC Desk does), with the ICAI study material or GST handbook named as the source.
 - **Optional assistant**: a small AI model running on your own computer (llama.cpp with a Hugging Face model) can suggest buckets for ledgers marked Check. It only suggests; nothing changes until you accept. See `ITC assistant.bat`.
 
 ## How to use
+
+A step bar at the top of every tab shows the month's path and what to do next: **Auto** (or **Import** for files) > **Review ledgers** > **Single period** > **Capital goods** > **Post in Tally**. Choose *TallyPrime (Auto)* or *Files (Manual)* in it; steps not needed this month are struck out with the reason.
 
 1. Download `index.html` and open it in Chrome or Edge.
 2. In TallyPrime, export for one month, as Excel:
