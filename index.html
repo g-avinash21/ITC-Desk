@@ -3001,7 +3001,7 @@ function exportExcel() {
   const views = {}; // sheet name -> { freezeRow, freezeCol, tab }
 
   // ---------- Bills ----------
-  const Bh = ['Date', 'Supplier', 'Ledger', 'Taxable value', 'IGST', 'CGST', 'SGST', 'Total ITC', 'In GSTR-2B', 'Bucket', 'Reverse charge'];
+  const Bh = ['Date', 'Supplier', 'Ledger', 'Taxable value', 'IGST', 'CGST', 'SGST', 'Total ITC', 'In GSTR-2B', 'Bucket', 'Reverse charge', 'Bill / voucher no.'];
   const Bs = XLSX.utils.aoa_to_sheet([Bh]);
   Bh.forEach((h, i) => { const col = String.fromCharCode(65 + i); Bs[col + '1'].s = i >= 3 && i <= 7 ? S.thR : i >= 8 ? S.thC : S.th; });
   M.bills.forEach((r, k) => {
@@ -3011,19 +3011,19 @@ function exportExcel() {
     put(Bs, 'A' + n, dm ? { t: 'n', v: (Date.UTC(+dm[1], +dm[2] - 1, +dm[3]) - Date.UTC(1899, 11, 30)) / 864e5, z: 'dd-mm-yyyy' } : sv(r.date), out ? S.grey : Object.assign({}, S.td, { alignment: { vertical: 'top', horizontal: 'left' } })); put(Bs, 'B' + n, sv(r.party), tx); put(Bs, 'C' + n, sv(r.ledger), tx);
     put(Bs, 'D' + n, nv(r.taxable), nx); put(Bs, 'E' + n, nv(r.igst), nx); put(Bs, 'F' + n, nv(r.cgst), nx); put(Bs, 'G' + n, nv(r.sgst), nx);
     put(Bs, 'H' + n, fv(`E${n}+F${n}+G${n}`, (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)), out ? S.greyN : S.num);
-    put(Bs, 'I' + n, sv(out ? 'No' : 'Yes'), out ? S.chk : S.tdC); put(Bs, 'J' + n, sv(r.bucket), out ? S.grey : S.tdC); put(Bs, 'K' + n, sv(r.rcm ? 'Yes' : ''), S.tdC);
+    put(Bs, 'I' + n, sv(out ? 'No' : 'Yes'), out ? S.chk : S.tdC); put(Bs, 'J' + n, sv(r.bucket), out ? S.grey : S.tdC); put(Bs, 'K' + n, sv(r.rcm ? 'Yes' : ''), S.tdC); put(Bs, 'L' + n, sv(String(r.vno || r.docNo || r.invNo || '')), out ? S.grey : S.td);
   });
   const nb = Math.max(2, M.bills.length + 1);
   if (M.bills.length) {
     const tn = nb + 1;
     put(Bs, 'A' + tn, sv('Total'), S.totL); fill(Bs, 'BC', tn, S.totL);
     'DEFGH'.split('').forEach(col => put(Bs, col + tn, fv(`SUBTOTAL(9,${col}2:${col}${nb})`, M.bills.reduce((a, r) => a + ({ D: r.taxable, E: r.igst, F: r.cgst, G: r.sgst, H: (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0) })[col], 0)), S.totN));
-    fill(Bs, 'IJK', tn, S.totL);
-    Bs['!ref'] = 'A1:K' + tn;
-  } else Bs['!ref'] = 'A1:K2';
-  Bs['!cols'] = [{ wch: 12 }, { wch: 32 }, { wch: 36 }, { wch: 15 }, { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 14 }, { wch: 11 }, { wch: 9 }, { wch: 10 }];
+    fill(Bs, 'IJKL', tn, S.totL);
+    Bs['!ref'] = 'A1:L' + tn;
+  } else Bs['!ref'] = 'A1:L2';
+  Bs['!cols'] = [{ wch: 12 }, { wch: 32 }, { wch: 36 }, { wch: 15 }, { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 14 }, { wch: 11 }, { wch: 9 }, { wch: 10 }, { wch: 22 }];
   Bs['!rows'] = [{ hpt: 24 }];
-  Bs['!autofilter'] = { ref: 'A1:K' + nb };
+  Bs['!autofilter'] = { ref: 'A1:L' + nb };
   const rng = col => `Bills!$${col}$2:$${col}$${nb}`;
   const billsSum = (col, bucket) => `SUMPRODUCT((${rng('I')}="Yes")*(${rng('J')}${bucket ? '="' + bucket + '"' : '<>"Tc"'})*${rng(col)})`;
   // Linked to the bills only when the single-period figures are exactly what the bills give
@@ -3672,7 +3672,7 @@ function parseTallySheetRows(rows, fileName) {
   const notParty = c => /invoice|inv\.?\s*no|gstin|uin|date|ledger/.test(c);
   const skipHdr = /date|voucher|vch|invoice|gstin|uin|gross|total|^cess|round|discount|addl|taxable|assessable|narration|bucket|category|^tax$|tax amount|^value$|^amount$|particulars|party|supplier|vendor|^name$|^itc$/;
   let hdrIdx = -1, hdr = [];
-  const colMap = { date: -1, party: -1, ledger: -1, particulars: -1, taxable: -1, gross: -1, igst: -1, cgst: -1, sgst: -1, totalTax: -1, bucket: -1 };
+  const colMap = { vno: -1, date: -1, party: -1, ledger: -1, particulars: -1, taxable: -1, gross: -1, igst: -1, cgst: -1, sgst: -1, totalTax: -1, bucket: -1 };
 
   for (let i = 0; i < Math.min(rows.length, 35); i++) {
     const r = rows[i].map(c => String(c).trim().toLowerCase());
@@ -3684,6 +3684,7 @@ function parseTallySheetRows(rows, fileName) {
       colMap.taxCols = { igst: [], cgst: [], sgst: [] };
       r.forEach((c, k) => { const t = taxHead(c); if (t) colMap.taxCols[t].push(k); });
       r.forEach((col, cIdx) => {
+        if (colMap.vno === -1 && /^(vch|voucher|bill|invoice|inv|supplier invoice|reference|ref)\.?\s*(no|number|num)\.?$|^vch\.? ?no\.?$|^voucher no\.?$|^supplier invoice no\.?$/.test(col)) colMap.vno = cIdx;
         if (colMap.date === -1 && (col.includes('date') || col === 'period')) colMap.date = cIdx;
         if (colMap.party === -1 && (col.includes('party') || col.includes('supplier') || col.includes('vendor') || col === 'name') && !notParty(col)) colMap.party = cIdx;
         if (colMap.ledger === -1 && (col.includes('purchase ledger') || col.includes('expense') || col.includes('ledger') || col.includes('account head') || col.includes('nature'))) colMap.ledger = cIdx;
@@ -3777,7 +3778,7 @@ function parseTallySheetRows(rows, fileName) {
       const withTax = parts.filter(l => l.igst || l.cgst || l.sgst);
       if (!withTax.length) { noTax++; continue; }
       withTax.forEach(l => {
-        importedRows.push({ date: colMap.date !== -1 ? normDate(row[colMap.date]) : '', party: partyTxt, ledger: l.name, taxable: l.amt, igst: +l.igst.toFixed(2), cgst: +l.cgst.toFixed(2), sgst: +l.sgst.toFixed(2), in2B: true, bucket: autoClassifyLedger(l.name), how: 'auto', rcm: false });
+        importedRows.push({ vno: colMap.vno !== -1 ? String(row[colMap.vno] || '').trim() || undefined : undefined, date: colMap.date !== -1 ? normDate(row[colMap.date]) : '', party: partyTxt, ledger: l.name, taxable: l.amt, igst: +l.igst.toFixed(2), cgst: +l.cgst.toFixed(2), sgst: +l.sgst.toFixed(2), in2B: true, bucket: autoClassifyLedger(l.name), how: 'auto', rcm: false });
         added++;
       });
       continue;
@@ -3801,6 +3802,7 @@ function parseTallySheetRows(rows, fileName) {
     if (!isRcmSheet) [['i', 'igst'], ['c', 'cgst'], ['s', 'sgst']].forEach(([h, hd]) => { const k = colMap.taxCols[hd].filter(k => cleanNum(row[k])).sort((a, b) => Math.abs(cleanNum(row[b])) - Math.abs(cleanNum(row[a])))[0]; if (k !== undefined) { const nm = String(rows[hdrIdx][k] || '').replace(/\s+/g, ' ').trim(); if (nm) taxLed[h] = nm; } });
     importedRows.push({
       taxLed: Object.keys(taxLed).length ? taxLed : undefined,
+      vno: colMap.vno !== -1 ? String(row[colMap.vno] || '').trim() || undefined : undefined,
       date: colMap.date !== -1 ? normDate(row[colMap.date]) : '',
       party: partyTxt,
       ledger: ledgerTxt || 'Unmapped ledger',
