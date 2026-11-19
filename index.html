@@ -389,6 +389,10 @@ input.ledname:hover, input.ledname:focus { border-style: solid; border-color: va
 /* Most months come through Auto: the manual drop area stays compact instead of filling the column */
 body.on-auto .metabar { display: none; }
 body.mode-auto .manual-only, body.mode-manual .auto-only { display: none !important; }
+.linksetup { flex-basis: 100%; border: 1px solid var(--line); border-left: 4px solid var(--acc); background: var(--card); border-radius: 4px; padding: 10px 14px; font-size: 13px; line-height: 1.6; }
+.linksetup ol { margin: 0 0 6px; padding-left: 20px; }
+.linksetup li { margin: 0 0 4px; }
+.linksetup li button { margin: 0 6px; padding: 2px 10px; }
 .flowbar { display: grid; grid-template-columns: auto 1fr auto; gap: 10px 16px; align-items: center; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--acc); border-radius: 4px; padding: 10px 14px; margin: 0 0 14px; }
 .fmode { display: flex; align-items: center; gap: 0; font-size: 12px; color: var(--mut); }
 .fmode span { margin-right: 8px; }
@@ -1192,7 +1196,7 @@ summary:hover { color: var(--acc); }
         <div class="as" id="as4"><span class="asn">5</span><div><b>Check with GSTR-3B</b><small>Before filing: choose the GSTR-3B Excel exports</small><button class="sm" id="auto_chk_btn" onclick="autoChkAllPick()" disabled title="Available once a company has been worked out">Check with Tally's GSTR-3B</button></div></div>
         <div class="as" id="as5"><span class="asn">6</span><div><b>Review</b><small>Open each company and settle the ledgers marked Check</small></div></div>
       </div>
-      <details class="hint" style="margin:0 0 12px"><summary style="cursor:pointer;font-size:13px"><b>First time on a computer:</b> Tally settings and the launcher</summary>
+      <details class="hint" style="margin:0 0 12px"><summary style="cursor:pointer;font-size:13px"><b>More about the setup:</b> Tally settings, ports and the launcher</summary>
       <div class="grid-2" style="margin:10px 0 0">
         <ol class="hint" style="font-size:13px;line-height:1.65;margin:0;padding-left:20px">
           <li><b>Tally:</b> F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>. A second Tally window on this PC needs its own port (9001, 9002…).</li>
@@ -6103,7 +6107,24 @@ function autoRowState(c, cls, text) { c.st = [cls, text]; autoRenderCompanies();
 function autoConnRender(linkOk) {
   const box = $('auto_conn'); if (!box) return;
   const dot = $('auto_dot');
-  if (!linkOk) { box.innerHTML = `<div class="achip bad"><div><b>Tally link not running</b><small>Double-click ITC Desk.bat, then Find Tally</small></div></div>`; if (dot) { dot.className = 'tdot'; dot.title = 'Not connected to Tally'; } return; }
+  if (!linkOk) {
+    // First time on a computer: a short setup, opened only on request; once the link has run here, only a reminder
+    let seen = false; try { seen = localStorage.getItem('itc_link_seen') === '1'; } catch (e) {}
+    box.innerHTML = `<div class="achip bad"><div><b>Tally link not running</b><small>Double-click ITC Desk.bat, then Find Tally</small></div></div>
+      <div id="link_setup" class="linksetup hide">
+        <b>The Tally link is not running on this computer.</b> ${seen ? 'Double-click <code>ITC Desk.bat</code> in the ITC Desk folder, then click Find Tally again. If it is missing, set it up once more:' : 'It is set up once on each computer, in about 2 minutes:'}
+        <ol>
+          <li><b>Download the launcher:</b> <button class="sm p" onclick="autoDownloadLink()">Download launcher</button> Your browser saves <code>ITC Desk.bat</code>.</li>
+          <li><b>Keep it.</b> Edge or Chrome may say <i>"ITC Desk.bat could harm your device"</i>. In the Downloads box click <b>Keep</b> (in Edge, point at the file and click <b>⋯ &gt; Keep</b> if the button is hidden). It is safe: it only reads Tally, on this computer, and changes nothing.</li>
+          <li><b>Move it</b> into the same folder as ITC_Desk.html (Downloads box &gt; folder icon shows where it was saved).</li>
+          <li><b>Double-click ITC Desk.bat.</b> If Windows says <i>"Windows protected your PC"</i>, click <b>More info &gt; Run anyway</b>. When it asks to start with Windows, press <b>Y</b>: then this setup is never needed again on this computer.</li>
+          <li>ITC Desk opens. Choose the month and click <b>Find Tally</b>.</li>
+        </ol>
+        <div class="hint">In Tally, once: F1 &gt; Settings &gt; Connectivity &gt; Client/Server configuration: TallyPrime is acting as <b>Both</b>, Port <b>9000</b>.</div>
+      </div>`;
+    if (dot) { dot.className = 'tdot'; dot.title = 'Not connected to Tally'; } return;
+  }
+  try { localStorage.setItem('itc_link_seen', '1'); } catch (e) {}
   const byPort = {}; AUTO.companies.forEach(c => (byPort[c.port] = byPort[c.port] || []).push(c));
   box.innerHTML = `<div class="achip link"><div><b>Tally link running</b><small>Read-only · this computer only</small></div></div>` +
     (AUTO.ports.length ? AUTO.ports.map(p => { const cs = byPort[p] || []; return `<div class="achip ${cs.length ? 'ok' : 'bad'}"><div><b>Tally on port ${p}</b><small>${cs.length ? cs.length + ' compan' + (cs.length === 1 ? 'y' : 'ies') + ' loaded' : 'no company loaded'}</small></div></div>`; }).join('') : `<div class="achip bad"><div><b>No Tally found</b><small>Check the port setting in Tally</small></div></div>`);
@@ -6114,7 +6135,7 @@ async function autoCheckLink() {
   if (AUTO.companies.length) return;
   let ok = false;
   try { const r = await linkFetch('/ping', null, 2500); ok = !!(r && (r.ok || /ITC Tally link/.test(JSON.stringify(r)))); } catch (e) {}
-  if (ok) { $('auto_conn').innerHTML = `<div class="achip link"><div><b>Tally link running</b><small>Read-only · this computer only. Click Find Tally.</small></div></div>`; if ($('auto_dot')) { $('auto_dot').className = 'tdot'; $('auto_dot').title = 'Link running, not yet connected to Tally'; } }
+  if (ok) { try { localStorage.setItem('itc_link_seen', '1'); } catch (e) {} $('auto_conn').innerHTML = `<div class="achip link"><div><b>Tally link running</b><small>Read-only · this computer only. Click Find Tally.</small></div></div>`; if ($('auto_dot')) { $('auto_dot').className = 'tdot'; $('auto_dot').title = 'Link running, not yet connected to Tally'; } }
   else autoConnRender(false);
 }
 
@@ -6238,7 +6259,7 @@ function flowNext() {
   if (i === -1) { flowRender(); return; }
   flowGo(i);
 }
-document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); flowSetMode(FLOW.mode); } catch (e) {} }, 50));
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { document.body.classList.toggle('on-auto', !$('p6').classList.contains('hide')); autoStepsRender(); flowSetMode(FLOW.mode); if (!$('p6').classList.contains('hide')) autoCheckLink(); } catch (e) {} }, 50));
 async function autoStopLink() {
   try { await linkFetch('/quit', null, 3000); } catch (e) {}
   AUTO.ports = []; AUTO.companies = [];
@@ -6254,8 +6275,10 @@ async function autoConnect() {
     const r = await linkFetch('/ping', null, 4000);
     if (!r.ok) throw new Error();
   } catch (e) {
-    autoStatus('<b>The Tally link is not running.</b> It starts when ITC Desk is opened with <code>ITC Desk.bat</code>, not when ITC_Desk.html is opened directly, and it stops when the computer restarts or Stop link is clicked. Double-click <code>ITC Desk.bat</code> (first time: Download launcher, keep it next to ITC_Desk.html), then click Find Tally. When it asks, answer <b>Y</b> to start the link with Windows, so this does not happen again.', 'bad');
+    autoStatus('<b>The Tally link is not running.</b> Follow the steps below.', 'bad');
     autoConnRender(false);
+    // The setup steps appear only now, when they are needed: never for a computer where the link already runs
+    if ($('link_setup')) { $('link_setup').classList.remove('hide'); $('link_setup').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     return;
   }
   const pr = String($('auto_ports').value || '9000-9005').match(/(\d+)\s*-\s*(\d+)/) || [0, '9000', '9005'];
