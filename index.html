@@ -495,7 +495,22 @@ tr.notax td.why b { color: var(--ink); }
 #tallyDropzone .hint { margin: 2px 0 0; }
 .dropzone:hover, .dropzone.dragover { border-color: var(--acc); border-style: solid; background: var(--acc-bg); }
 .drop-title { font-weight: 700; font-size: 14.5px; }
-.side-note { border-left: 1px solid var(--line); padding: 2px 0 2px 22px; }
+.sealbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 8px; font-size: 13px; }
+    .sealbar.bad { border-left-color: var(--bad); }
+    .sealbar code { font-size: 12px; word-break: break-all; }
+    .sealbar .st { font-weight: 700; color: var(--ok); }
+    .sealbar.bad .st { color: var(--bad); }
+    body.sealed .wrap input:disabled, body.sealed .wrap select:disabled { opacity: .75; cursor: not-allowed; }
+    #printReport .rp-seal { border: 1px solid #000; padding: 6px 8px; margin: 10px 0; font-size: 8.5pt; }
+    #printReport .rp-seal.bad { border: 2px solid #000; }
+    #printReport .rp-seal code { word-break: break-all; }
+    .billsearch { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+    .billsearch input { max-width: 340px; }
+    .setupwarn { border: 2px solid var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); border-radius: 6px; padding: 8px 10px; line-height: 1.5; }
+    tr.setupbad td { background: color-mix(in srgb, var(--bad) 5%, transparent); }
+    .setupwarn b:first-child { color: var(--bad); }
+    .side-note { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.side-note:not([open]) .lead { margin-bottom: 0; }
 .side-note .lead { font-weight: 700; margin-bottom: 8px; }
 .side-note ol { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: var(--mut); }
 .side-note ol b { color: var(--ink); font-weight: 600; }
@@ -574,15 +589,15 @@ summary:hover { color: var(--acc); }
       <div class="name">ITC Desk</div>
       <div class="ref">Rules 42, 43 and 37, CGST Rules</div>
     </div>
-    <nav class="tabs" aria-label="Sections">
-      <button class="tab on auto-only" id="t6" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
-      <button class="tab" id="t0" onclick="showTab(0)"><span id="t0lab">Import</span><small id="t0sub">Tally, portal, Excel</small></button>
-      <button class="tab" id="t1" onclick="showTab(1)"><span>Single period</span><small>Rule 42</small></button>
-      <button class="tab" id="t2" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
-      <button class="tab" id="t4" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
-      <button class="tab" id="t3" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
-      <button class="tab" id="t7" onclick="showTab(7)"><span>RCM guide</span><small>who pays GST</small></button>
-      <button class="tab" id="t5" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
+    <nav class="tabs" aria-label="Sections" role="tablist">
+      <button class="tab on auto-only" id="t6" role="tab" aria-controls="p6" aria-selected="false" tabindex="-1" onclick="showTab(6)"><span>Auto <i class="tdot" id="auto_dot" title="Not connected to Tally"></i></span><small>from Tally</small></button>
+      <button class="tab" id="t0" role="tab" aria-controls="p0" aria-selected="false" tabindex="-1" onclick="showTab(0)"><span id="t0lab">Import</span><small id="t0sub">Tally, portal, Excel</small></button>
+      <button class="tab" id="t1" role="tab" aria-controls="p1" aria-selected="false" tabindex="-1" onclick="showTab(1)"><span>Single period</span><small>Rule 42</small></button>
+      <button class="tab" id="t2" role="tab" aria-controls="p2" aria-selected="false" tabindex="-1" onclick="showTab(2)"><span>Capital goods</span><small>Rule 43</small></button>
+      <button class="tab" id="t4" role="tab" aria-controls="p4" aria-selected="false" tabindex="-1" onclick="showTab(4)"><span>Vouchers, 180 days</span><small>Rule 37</small></button>
+      <button class="tab" id="t3" role="tab" aria-controls="p3" aria-selected="false" tabindex="-1" onclick="showTab(3)"><span>Full year</span><small>Rule 42(2)</small></button>
+      <button class="tab" id="t7" role="tab" aria-controls="p7" aria-selected="false" tabindex="-1" onclick="showTab(7)"><span>RCM guide</span><small>who pays GST</small></button>
+      <button class="tab" id="t5" role="tab" aria-controls="p5" aria-selected="false" tabindex="-1" onclick="showTab(5)"><span>Notes</span><small>checklist</small></button>
     </nav>
     <div class="side-foot">
       <button class="guru-link no-print" onclick="guruOpen()" title="Ask Guru, the ITC Desk helper (Alt+G)"><span class="av">G</span><span class="gl">Ask Guru</span></button>
@@ -597,15 +612,17 @@ summary:hover { color: var(--acc); }
       <p class="sub">Monthly reversal on common credit, capital goods over 60 months, the annual true-up, and interest and penalty on any shortfall. Each time the file is opened it starts empty; use Save backup to keep a client's work, and Load backup to continue it.</p>
     </div>
     <div class="top-actions no-print">
-      <button onclick="exportExcel()" title="Download the working as an Excel file, with the formulas that produce each figure">Export Excel</button>
-      <button onclick="exportJSON()" title="Save this client's figures as a backup file">Save backup</button>
+      <button data-sealok onclick="exportExcel()" title="Download the working as an Excel file, with the formulas that produce each figure">Export Excel</button>
+      <button data-sealok onclick="exportJSON()" title="Save this client's figures as a backup file">Save backup</button>
       <button onclick="$('importFile').click()" title="Open a saved backup file">Load backup</button>
       <input type="file" id="importFile" accept=".json" class="hide" onchange="importJSON(event)">
-      <button onclick="printReport()" title="Print the working paper, or save it as PDF">Print</button>
-      <button onclick="toggleTheme()" id="themeBtn">Dark theme</button>
+      <button data-sealok onclick="printReport()" title="Print the working paper, or save it as PDF">Print</button>
+      <button data-sealok onclick="toggleTheme()" id="themeBtn">Dark theme</button>
       <button onclick="clearAllSheets()" class="danger" title="Remove every figure on every tab">Clear all</button>
+      <button onclick="sealFinalise()" id="sealBtn" data-sealok title="Lock this month's working and stamp it with a fingerprint (SHA-256)">Finalise &amp; seal</button>
     </div>
   </div>
+  <div id="sealBar" class="sealbar hide" role="status" aria-live="polite"></div>
 
   <div class="flowbar no-print" id="flowbar">
     <div class="fmode" role="group" aria-label="How you are working">
@@ -620,16 +637,16 @@ summary:hover { color: var(--acc); }
 
   <div class="metabar">
     <div>
-      <label><b>Client name</b></label>
+      <label for="meta_name"><b>Client name</b></label>
       <input type="text" id="meta_name" placeholder="Legal name" oninput="saveState()">
     </div>
     <div>
-      <label><b>GSTIN</b></label>
+      <label for="meta_gstin"><b>GSTIN</b></label>
       <input type="text" id="meta_gstin" placeholder="15 characters" maxlength="15" autocapitalize="characters" spellcheck="false" oninput="checkGstin();saveState()">
       <div class="hint" id="gstinHint" aria-live="polite"></div>
     </div>
     <div>
-      <label><b>Financial year</b></label>
+      <label for="FY"><b>Financial year</b></label>
       <select id="FY" onchange="buildPeriodDropdown();buildMonths();calcAll();saveState();autoStepsRender()">
         <option value="2026">FY 2026-27</option>
         <option value="2025">FY 2025-26</option>
@@ -640,11 +657,11 @@ summary:hover { color: var(--acc); }
       </select>
     </div>
     <div>
-      <label><b>Return period</b></label>
+      <label for="meta_period"><b>Return period</b></label>
       <select id="meta_period" onchange="calcAll();saveState();autoStepsRender()"></select>
     </div>
     <div>
-      <label><b>Taxpayer type</b></label>
+      <label for="meta_cat"><b>Taxpayer type</b></label>
       <select id="meta_cat" onchange="calc1();saveState()">
         <option value="regular">Regular (Rules 42 and 43)</option>
         <option value="bank">Bank, FI or NBFC (50% option)</option>
@@ -654,7 +671,7 @@ summary:hover { color: var(--acc); }
 
 
   <!-- ==================== TAB 0: ZERO-TOUCH TALLY / EXCEL / JSON IMPORTER ==================== -->
-  <div id="p0" class="hide">
+  <div id="p0" class="hide" role="tabpanel" aria-labelledby="t0" tabindex="0">
     <div class="card">
       <div class="manual-only">
       <div class="card-title">
@@ -666,7 +683,7 @@ summary:hover { color: var(--acc); }
         </div>
       </div>
 
-      <div class="grid-2" style="margin-bottom:14px">
+      <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;flex-direction:column">
           <div class="dropzone" id="tallyDropzone" onclick="$('tallyFiles').click()"
                ondragover="event.preventDefault();this.classList.add('dragover')"
@@ -716,12 +733,12 @@ summary:hover { color: var(--acc); }
       </div>
       </div>
       <div id="importStatusBanner" class="alert ok hide" style="margin:0 0 14px"></div>
-      <details class="no-print" id="aiPanel">
+      <details class="no-print hide" id="aiPanel" hidden>
         <summary>Assistant on this computer (optional)</summary>
         <p class="hint" style="margin:8px 0 10px">A small AI model, running on this computer, reads the ledger names, suppliers, rates and the month's sales, and suggests a bucket with a reason. Use it for ledgers marked <b>Check</b>. It only suggests: nothing changes until you click <b>Use</b>. No client data leaves the computer.</p>
         <div class="grid" style="grid-template-columns:1fr">
           <div>
-            <label><b>What the client does</b> (helps the assistant; remembered for this client)</label>
+            <label for="ai_about"><b>What the client does</b> (helps the assistant; remembered for this client)</label>
             <input type="text" id="ai_about" placeholder="e.g. Rice trader: branded rice at 5%, loose rice exempt; owns a godown; no exports" oninput="aiSaveAbout()">
           </div>
         </div>
@@ -743,8 +760,8 @@ summary:hover { color: var(--acc); }
             <li>Click <b>Test</b> below. It should say Connected.</li>
           </ol>
           <div class="grid" style="grid-template-columns:1fr">
-            <div><label>Address</label><input type="url" id="ai_url" value="http://127.0.0.1:8080" onchange="aiSaveCfg()"></div>
-            <div><label>Model name (only for Ollama or LM Studio)</label><input type="text" id="ai_model" placeholder="leave blank for llama.cpp" onchange="aiSaveCfg()"></div>
+            <div><label for="ai_url">Address</label><input type="url" id="ai_url" value="http://127.0.0.1:8080" onchange="aiSaveCfg()"></div>
+            <div><label for="ai_model">Model name (only for Ollama or LM Studio)</label><input type="text" id="ai_model" placeholder="leave blank for llama.cpp" onchange="aiSaveCfg()"></div>
           </div>
           <div class="row" style="margin-top:8px;gap:8px">
             <button class="sm" onclick="aiDownloadSetup()">Download setup file</button>
@@ -768,23 +785,23 @@ summary:hover { color: var(--acc); }
       <div id="turnHelp" class="alert bad hide" style="margin:0 0 12px"></div>
       <div class="grid" style="margin-bottom:12px">
         <div>
-          <label><b>3.1(a) Taxable turnover (₹)</b></label>
+          <label for="imp_31a"><b>3.1(a) Taxable turnover (₹)</b></label>
           <input type="number" id="imp_31a" oninput="pushImportToCalculator(false);renderTurnHelp()" onchange="if(importedRows.length){judgeBuckets();renderImporterTable();pushImportToCalculator(false);}">
         </div>
         <div>
-          <label><b>3.1(b) Zero-rated and SEZ (₹)</b></label>
+          <label for="imp_31b"><b>3.1(b) Zero-rated and SEZ (₹)</b></label>
           <input type="number" id="imp_31b" oninput="pushImportToCalculator(false);renderTurnHelp()" onchange="if(importedRows.length){judgeBuckets();renderImporterTable();pushImportToCalculator(false);}">
         </div>
         <div>
-          <label><b>3.1(c) Nil-rated and exempt (₹)</b></label>
+          <label for="imp_31c"><b>3.1(c) Nil-rated and exempt (₹)</b></label>
           <input type="number" id="imp_31c" oninput="pushImportToCalculator(false);renderTurnHelp()" onchange="if(importedRows.length){judgeBuckets();renderImporterTable();pushImportToCalculator(false);}">
         </div>
         <div>
-          <label><b>3.1(e) Non-GST outward (₹)</b></label>
+          <label for="imp_31e"><b>3.1(e) Non-GST outward (₹)</b></label>
           <input type="number" id="imp_31e" oninput="pushImportToCalculator(false);renderTurnHelp()" onchange="if(importedRows.length){judgeBuckets();renderImporterTable();pushImportToCalculator(false);}">
         </div>
         <div>
-          <label><b>Interest on deposits and loans, left out (₹)</b></label>
+          <label for="imp_fd"><b>Interest on deposits and loans, left out (₹)</b></label>
           <input type="number" id="imp_fd" oninput="pushImportToCalculator(false)">
         </div>
       </div>
@@ -800,6 +817,11 @@ summary:hover { color: var(--acc); }
         </ol>
       </details>
       <div id="impLedgerSummary"></div>
+      <div class="no-print billsearch">
+        <label for="billSearch">Find a bill</label>
+        <input type="search" id="billSearch" placeholder="Supplier, invoice or voucher no." autocomplete="off" oninput="renderImporterTable()">
+        <span class="hint" id="billSearchCount"></span>
+      </div>
       <div class="scroll">
         <table>
           <thead>
@@ -825,7 +847,7 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 1: SINGLE PERIOD & HEAD-WISE ==================== -->
-  <div id="p1" class="hide">
+  <div id="p1" class="hide" role="tabpanel" aria-labelledby="t1" tabindex="0">
     <div class="card">
       <div class="card-title">
         <span>A. Input tax credit for the period</span>
@@ -842,27 +864,27 @@ summary:hover { color: var(--acc); }
       <!-- CONSOLIDATED INPUTS -->
       <div id="consolidatedBox" class="grid">
         <div>
-          <label><b>T</b> Total ITC on inputs and input services (₹)</label>
+          <label for="T"><b>T</b> Total ITC on inputs and input services (₹)</label>
           <input type="number" id="T" oninput="syncFromCons();calc1()">
           <div class="hint">GSTR-2B matched ITC on inputs/services (excl. Capital Goods)</div>
         </div>
         <div>
-          <label><b>T1</b> Used only for non-business purposes (₹)</label>
+          <label for="T1"><b>T1</b> Used only for non-business purposes (₹)</label>
           <input type="number" id="T1" oninput="syncFromCons();calc1()">
           <div class="hint">Sec 17(1): Guest house, personal drawings, etc.</div>
         </div>
         <div>
-          <label><b>T2</b> Used only for exempt supplies (₹)</label>
+          <label for="T2"><b>T2</b> Used only for exempt supplies (₹)</label>
           <input type="number" id="T2" oninput="syncFromCons();calc1()">
           <div class="hint">Sec 17(2): Direct raw material/packing for exempt goods</div>
         </div>
         <div>
-          <label><b>T3</b> Blocked under section 17(5) (₹)</label>
+          <label for="T3"><b>T3</b> Blocked under section 17(5) (₹)</label>
           <input type="number" id="T3" oninput="syncFromCons();calc1()">
           <div class="hint">Motor vehicles, F&amp;B, club, staff insurance, CSR u/s 17(5)(fa)</div>
         </div>
         <div>
-          <label><b>T4</b> Used only for taxable and zero-rated supplies (₹)</label>
+          <label for="T4"><b>T4</b> Used only for taxable and zero-rated supplies (₹)</label>
           <input type="number" id="T4" oninput="syncFromCons();calc1()">
           <div class="hint">100% admissible ITC (incl. LUT/IGST Export inputs)</div>
         </div>
@@ -932,6 +954,11 @@ summary:hover { color: var(--acc); }
           <b>Apply D2, 5% of common credit.</b> Tick only if common inputs or input services are partly used for non-business purposes (Rule 42(1)(j)). Leave it off if all non-business use is already in T1, or there is none.
         </label>
       </div>
+      <div id="bankSpBox" class="hide" style="margin-top:10px;max-width:520px">
+        <label for="Tsp"><b>Tsp</b> ITC on supplies from your own other registrations, same PAN (₹)</label>
+        <input type="number" id="Tsp" oninput="calc1();saveState()">
+        <div class="hint">Part of T. Not cut by 50%: second proviso to section 17(4) and Rule 38.</div>
+      </div>
     </div>
 
     <!-- TURNOVER & SECTION 17(3) BUILDER -->
@@ -941,17 +968,17 @@ summary:hover { color: var(--acc); }
       </div>
       <div class="grid">
         <div>
-          <label><b>E</b> Exempt turnover in the State (₹)</label>
+          <label for="E"><b>E</b> Exempt turnover in the State (₹)</label>
           <input type="number" id="E" oninput="calc1();saveState()">
           <div class="hint">Nil-rated + Wholly Exempt + Non-GST outward supplies</div>
         </div>
         <div>
-          <label><b>F</b> Total turnover in the State (₹)</label>
+          <label for="F"><b>F</b> Total turnover in the State (₹)</label>
           <input type="number" id="F" oninput="calc1();saveState()">
           <div class="hint">Taxable + Zero-Rated Exports + Exempt (E) in State</div>
         </div>
         <div>
-          <label><b>Zero-rated</b> exports and SEZ supplies (₹)</label>
+          <label for="X"><b>Zero-rated</b> exports and SEZ supplies (₹)</label>
           <input type="number" id="X" oninput="calc1();saveState()">
           <div class="hint">Included in F, excluded from E (Sec 16 IGST Act)</div>
         </div>
@@ -964,32 +991,32 @@ summary:hover { color: var(--acc); }
         </p>
         <div class="grid">
           <div>
-            <label><b>Outward RCM Supplies</b> (Tax paid by recipient) (₹)</label>
+            <label for="adj_rcm"><b>Outward RCM Supplies</b> (Tax paid by recipient) (₹)</label>
             <input type="number" id="adj_rcm" oninput="calc1();saveState()">
             <div class="hint">Sec 17(3): Added to E (and F if not already in F)</div>
           </div>
           <div>
-            <label><b>Sale of Securities / Shares</b> (Total Sale Value) (₹)</label>
+            <label for="adj_sec"><b>Sale of Securities / Shares</b> (Total Sale Value) (₹)</label>
             <input type="number" id="adj_sec" oninput="calc1();saveState()">
             <div class="hint">Sec 17(3): Only <b>1% of sale value</b> is added to E &amp; F</div>
           </div>
           <div>
-            <label><b>Sale of Land / Completed Building</b> (Stamp Duty Value) (₹)</label>
+            <label for="adj_land"><b>Sale of Land / Completed Building</b> (Stamp Duty Value) (₹)</label>
             <input type="number" id="adj_land" oninput="calc1();saveState()">
             <div class="hint">Sec 17(3): Stamp duty value added to E &amp; F</div>
           </div>
           <div>
-            <label><b>Arrival Terminal Duty-Free Shop</b> Sales (₹)</label>
+            <label for="adj_dfs"><b>Arrival Terminal Duty-Free Shop</b> Sales (₹)</label>
             <input type="number" id="adj_dfs" oninput="calc1();saveState()">
             <div class="hint">Expl. 1 (w.e.f. 01.10.2023): Included in E &amp; F</div>
           </div>
           <div>
-            <label><b>Bank FD / Loan Interest &amp; Discount</b> Earned (₹)</label>
+            <label for="FD"><b>Bank FD / Loan Interest &amp; Discount</b> Earned (₹)</label>
             <input type="number" id="FD" oninput="calc1();saveState()">
             <div class="hint">Expl. 1(b): Excluded from both E &amp; F (except for Banks/NBFCs)</div>
           </div>
           <div>
-            <label><b>Sale of Duty Credit Scrips</b> (MEIS/RoDTEP) (₹)</label>
+            <label for="adj_scrip"><b>Sale of Duty Credit Scrips</b> (MEIS/RoDTEP) (₹)</label>
             <input type="number" id="adj_scrip" oninput="calc1();saveState()">
             <div class="hint">Expl. 1(d): Excluded from Exempt Turnover E</div>
           </div>
@@ -1000,9 +1027,9 @@ summary:hover { color: var(--acc); }
         <summary>Whole year: for a notice or the annual true-up (Return period: Full Year)</summary>
         <p class="hint" style="margin:8px 0">Import the year's files (GSTR-3B Nature View, purchase register and reverse-charge register for 1 April to 31 March) and choose <b>Full Year</b> as the return period. Single period then works out the year as one period under Rule 42(2): the reversal the whole year needed, set against what the GSTR-3B returns actually reversed.</p>
         <div class="grid" style="margin-top:6px">
-          <div><label>Reversed in GSTR-3B 4(B)(1) during the year (₹)</label><input type="number" id="ann_filed" oninput="calc1();saveState()"><div class="hint">Filled from an annual GSTR-3B import</div></div>
-          <div><label>Amount demanded in the notice (₹, optional)</label><input type="number" id="ann_demand" oninput="calc1();saveState()"></div>
-          <div><label>Interest up to</label><input type="date" id="ann_upto" oninput="calc1();saveState()"></div>
+          <div><label for="ann_filed">Reversed in GSTR-3B 4(B)(1) during the year (₹)</label><input type="number" id="ann_filed" oninput="calc1();saveState()"><div class="hint">Filled from an annual GSTR-3B import</div></div>
+          <div><label for="ann_demand">Amount demanded in the notice (₹, optional)</label><input type="number" id="ann_demand" oninput="calc1();saveState()"></div>
+          <div><label for="ann_upto">Interest up to</label><input type="date" id="ann_upto" oninput="calc1();saveState()"></div>
         </div>
       </details>
 
@@ -1010,25 +1037,25 @@ summary:hover { color: var(--acc); }
         <summary>Capital goods total, annual true-up and penalty</summary>
         <div class="grid" style="margin-top:10px">
           <div>
-            <label><b>Tc</b> Manual Common Capital Goods ITC Pool (₹)</label>
+            <label for="Tc"><b>Tc</b> Manual Common Capital Goods ITC Pool (₹)</label>
             <input type="number" id="Tc" oninput="calc1();saveState()">
             <div class="hint">Added to the assets in the capital goods register</div>
           </div>
           <div>
-            <label><b>Annual True-Up:</b> Full-Year D1 + D2 Required (₹)</label>
+            <label for="YR"><b>Annual True-Up:</b> Full-Year D1 + D2 Required (₹)</label>
             <input type="number" id="YR" oninput="calc1();saveState()">
             <div class="hint">Or use Full year for the 12-month working</div>
           </div>
           <div>
-            <label><b>Already Reversed</b> D1 + D2 during the Year (₹)</label>
+            <label for="AR"><b>Already Reversed</b> D1 + D2 during the Year (₹)</label>
             <input type="number" id="AR" oninput="calc1();saveState()">
           </div>
           <div>
-            <label><b>1 April After FY End</b> (Interest Start Date)</label>
+            <label for="AP"><b>1 April After FY End</b> (Interest Start Date)</label>
             <input type="date" id="AP" oninput="calc1();saveState()">
           </div>
           <div>
-            <label><b>Actual Reversal / Payment Date</b></label>
+            <label for="PD"><b>Actual Reversal / Payment Date</b></label>
             <input type="date" id="PD" oninput="calc1();saveState()">
           </div>
           <div>
@@ -1039,7 +1066,7 @@ summary:hover { color: var(--acc); }
             </div>
           </div>
           <div>
-            <label><b>Penalty stage</b></label>
+            <label for="PEN_MODE1"><b>Penalty stage</b></label>
             <select id="PEN_MODE1" onchange="calc1();saveState()">
               <option value="none">Non-fraud, paid before notice or within the notice window: nil</option>
               <option value="74A_nonfraud">Non-fraud, order stage: higher of 10% of tax or ₹20,000</option>
@@ -1059,7 +1086,7 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 2: RULE 43 CAPITAL GOODS REGISTER ==================== -->
-  <div id="p2" class="hide">
+  <div id="p2" class="hide" role="tabpanel" aria-labelledby="t2" tabindex="0">
     <div class="card">
       <div class="card-title">
         <span>Capital goods register</span>
@@ -1100,7 +1127,7 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 3: MONTH-WISE APR-MAR & TRUE-UP ==================== -->
-  <div id="p3" class="hide">
+  <div id="p3" class="hide" role="tabpanel" aria-labelledby="t3" tabindex="0">
     <div class="card">
       <div class="card-title">
         <span>Month-wise working and annual true-up</span>
@@ -1111,23 +1138,23 @@ summary:hover { color: var(--acc); }
       </div>
       <div class="grid" style="margin-bottom:10px">
         <div>
-          <label><b>Interest calculated up to</b></label>
+          <label for="UPTO"><b>Interest calculated up to</b></label>
           <input type="date" id="UPTO" oninput="calc2();saveState()">
         </div>
         <div>
-          <label><b>GSTR-3B due day, next month</b></label>
+          <label for="DUE"><b>GSTR-3B due day, next month</b></label>
           <input type="number" id="DUE" value="20" min="1" max="28" oninput="calc2();saveState()">
         </div>
         <div>
-          <label><b>Interest rate, % a year</b></label>
+          <label for="RATE2"><b>Interest rate, % a year</b></label>
           <input type="number" id="RATE2" value="18" oninput="calc2();saveState()">
         </div>
         <div>
-          <label><b>Annual true-up due by</b></label>
+          <label for="tu_deadline"><b>Annual true-up due by</b></label>
           <input type="text" id="tu_deadline" readonly>
         </div>
         <div>
-          <label><b>Penalty stage</b></label>
+          <label for="PEN_MODE2"><b>Penalty stage</b></label>
           <select id="PEN_MODE2" onchange="calc2();saveState()">
               <option value="none">Non-fraud, paid before notice or within the notice window: nil</option>
               <option value="74A_nonfraud">Non-fraud, order stage: higher of 10% of tax or ₹20,000</option>
@@ -1155,7 +1182,7 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 4: TALLYPRIME & 180-DAY TRACKER ==================== -->
-  <div id="p4" class="hide">
+  <div id="p4" class="hide" role="tabpanel" aria-labelledby="t4" tabindex="0">
     <div class="card">
       <div class="card-title">
         <span>A. Journal vouchers for TallyPrime</span>
@@ -1197,12 +1224,12 @@ summary:hover { color: var(--acc); }
 
         <div class="grid" style="align-content:start">
           <div>
-            <label><b>Position as on</b></label>
+            <label for="r37_cutoff"><b>Position as on</b></label>
             <input type="date" id="r37_cutoff" value="" oninput="renderR37Table();saveState()">
             <div class="hint">Used to check if 180 days have elapsed &amp; count interest days</div>
           </div>
           <div>
-            <label><b>Interest basis</b></label>
+            <label for="r37_util"><b>Interest basis</b></label>
             <select id="r37_util" onchange="renderR37Table();saveState()">
               <option value="from181">Utilized — Interest from Day 181 (Post-180d Default Period)</option>
               <option value="fromAvail">Utilized — Conservative (From Invoice / Availment Date)</option>
@@ -1211,12 +1238,12 @@ summary:hover { color: var(--acc); }
             <div class="hint">Rule 88B interest applies only to the extent wrongly availed ITC is utilized</div>
           </div>
           <div>
-            <label><b>GST rate for bills whose ITC is not known, %</b></label>
+            <label for="r37_defrate"><b>GST rate for bills whose ITC is not known, %</b></label>
             <input type="number" id="r37_defrate" value="" placeholder="Leave blank if unsure" oninput="renderR37Table();saveState()">
             <div class="hint">Tally's Overdue Payables has no GST column. Leave this blank and the ITC cells of those bills stay red until you type the ITC (bills of exempt goods carry none). Auto mode reads the ITC from each purchase voucher instead. A rate typed here fills them as Bill × Rate ÷ (100 + Rate).</div>
           </div>
           <div>
-            <label><b>Show</b></label>
+            <label for="r37_filter"><b>Show</b></label>
             <select id="r37_filter" onchange="renderR37Table()">
               <option value="all">Show All Bills (Overdue + Within 180 Days + Reclaimable)</option>
               <option value="overdue">Only &gt;180 Days Unpaid (Reverse in Table 4(B)(2))</option>
@@ -1256,7 +1283,7 @@ summary:hover { color: var(--acc); }
 
 
   <!-- ==================== TAB 6: AUTO MODE, STRAIGHT FROM TALLYPRIME ==================== -->
-  <div id="p6">
+  <div id="p6" role="tabpanel" aria-labelledby="t6" tabindex="0">
     <div class="card">
       <div class="card-title">
         <span>Auto: extract from TallyPrime and work out every loaded company</span>
@@ -1283,7 +1310,7 @@ summary:hover { color: var(--acc); }
         </ol>
         <div>
           <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
-            <div><label>Tally ports to look at</label><input type="text" id="auto_ports" value="9000-9005"></div>
+            <div><label for="auto_ports">Tally ports to look at</label><input type="text" id="auto_ports" value="9000-9005"></div>
             <input type="hidden" id="auto_month_lbl">
           </div>
         </div>
@@ -1315,7 +1342,7 @@ summary:hover { color: var(--acc); }
   </div>
 
   <!-- ==================== TAB 5: MASTERCLASS GUIDE & CHECKLIST ==================== -->
-  <div id="p7" class="hide">
+  <div id="p7" class="hide" role="tabpanel" aria-labelledby="t7" tabindex="0">
     <div class="card">
       <div class="card-title"><span>Check a bill: is GST payable, and who pays it?</span></div>
       <div class="rcmask">
@@ -1327,7 +1354,7 @@ summary:hover { color: var(--acc); }
       <p class="hint" style="margin:0 0 10px">Or choose what the bill is for and answer the questions. The answer follows the order of the law: first whether GST is payable at all (step 1), then who pays it (step 2). Use it when entering the bill in Tally; ITC Desk itself takes what is marked in Tally.</p>
       <div class="rcmchk">
         <div class="rcmq">
-          <label><b>What is the bill for?</b></label>
+          <label for="rcm_case"><b>What is the bill for?</b></label>
           <select id="rcm_case" onchange="rcmRender(true)"></select>
           <div id="rcm_qs"></div>
         </div>
@@ -1354,7 +1381,7 @@ summary:hover { color: var(--acc); }
 
   </div>
 
-  <div id="p5" class="hide">
+  <div id="p5" class="hide" role="tabpanel" aria-labelledby="t5" tabindex="0">
     <div class="card" id="manual">
       <div class="card-title">
         <span>How ITC Desk works</span>
@@ -1453,6 +1480,17 @@ summary:hover { color: var(--acc); }
         </table>
       </div>
 
+      <div class="card" id="taxPositions">
+        <div class="card-title"><span>Positions ITC Desk takes</span></div>
+        <p class="hint" style="margin-top:0">Where the law leaves a choice, this is what ITC Desk does and why. Change the working if the client's facts point the other way.</p>
+        <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.6">
+          <li><b>Banks, capital goods.</b> Under the 50% option the bank takes 50% of each month's eligible ITC on inputs, input services <i>and capital goods</i>; the rest lapses (section 17(4), Rule 38). So capital goods ITC of the month goes into T, and no Rule 43 reversal (Te) is added on top. Non-business (T1) and blocked (T3) credit come out first (Rule 38(a) and (b)). Credit on supplies from the bank's own registrations with the same PAN is not cut (second proviso to section 17(4)): enter it as Tsp.</li>
+          <li><b>D2, 5% for non-business use.</b> Rule 42(1)(j) deducts 5% of common credit only where common inputs or input services are used partly for non-business purposes. It is off by default: when the non-business part is already in T1, adding D2 would reverse the same credit twice. Tick it only when that partly non-business use is a fact.</li>
+          <li><b>Capital goods, taxable to common use.</b> Proviso to Rule 43(1)(d): credit already taken on capital goods used only for taxable supplies is added to Tc when they start common use. No 5% per quarter (Tie) is charged at the switch; that applies only to goods moving from exempt or non-business use to common use (proviso to Rule 43(1)(c)). From the switch, Tm = A ÷ 60 for the months left of the 60, and Te = Tm × E ÷ F. ITC Desk shows only the unexpired part in Tc; Te is the same either way.</li>
+          <li><b>Rule 37, interest on unpaid bills.</b> If the supplier is not paid within 180 days of the invoice, the credit is paid back in the return for the period right after the 180 days, with interest under section 50 (second proviso to section 16(2), Rule 37). The law does not say from when the interest runs. Two views: from the date the credit was taken or used (the department's usual stand, section 50(3) read with Rule 88B), or from day 181. ITC Desk starts from day 181 by default; for the cautious figure, set Interest basis on the Vouchers, 180 days tab to "Conservative (from invoice or availment date)". The credit comes back when the supplier is paid.</li>
+        </ol>
+      </div>
+
       <div class="card">
         <div class="card-title"><span>Law points to keep in mind</span></div>
         <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6">
@@ -1479,7 +1517,7 @@ summary:hover { color: var(--acc); }
   </main>
 </div>
 
-<footer class="sitefoot"><span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span> · Concept by Avinash G · ITC Desk v1.0.3 · Last updated 19 Nov 2026</footer>
+<footer class="sitefoot"><span id="xlsxStatusBadge" title="Everything, including the Excel reader, is inside this file. Nothing is sent over the internet.">Import ready</span> · Concept by Avinash G · ITC Desk v1.0.4 · Last updated 24 Nov 2026</footer>
 <div id="toastBox" class="toast"></div>
 <div id="guru" class="guru no-print">
   <div class="guru-pane" id="guru_pane" role="dialog" aria-label="Guru, the ITC Desk helper" hidden>
@@ -1620,10 +1658,18 @@ function printManual() {
   window.addEventListener('afterprint', done);
   window.print();
 }
+// Tabs: left and right arrow keys move between them, Home and End jump to the ends
+document.addEventListener('keydown', e => {
+  const t = e.target; if (!t || t.getAttribute('role') !== 'tab' || !/^(ArrowLeft|ArrowRight|Home|End)$/.test(e.key)) return;
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]')).filter(b => b.offsetParent !== null);
+  let i = tabs.indexOf(t); if (i < 0) return;
+  i = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault(); tabs[i].focus(); tabs[i].click();
+});
 function showTab(k) {
   [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => {
     if ($('p' + i)) $('p' + i).classList.toggle('hide', i !== k);
-    if ($('t' + i)) $('t' + i).classList.toggle('on', i === k);
+    if ($('t' + i)) { $('t' + i).classList.toggle('on', i === k); $('t' + i).setAttribute('aria-selected', i === k ? 'true' : 'false'); $('t' + i).tabIndex = i === k ? 0 : -1; }
   });
   // On Auto the month is chosen in step 1 and the client comes from Tally: the top bar would only repeat it
   document.body.classList.toggle('on-auto', k === 6);
@@ -1705,6 +1751,8 @@ function renderImporterTable() {
   let sumTaxable = 0, sumI = 0, sumC = 0, sumS = 0, sumTot = 0;
   const bucketTotals = { T1: 0, T2: 0, T3: 0, T4: 0, C2: 0, Tc: 0, Rollover: 0 };
 
+  const bq = (($('billSearch') || {}).value || '').trim();
+  let shown = 0, hits = 0;
   tbody.innerHTML = importedRows.map((r, i) => {
     const tot = (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
     if (r.in2B !== false) {
@@ -1717,7 +1765,10 @@ function renderImporterTable() {
     } else {
       bucketTotals.Rollover += tot;
     }
-    if (i >= ROW_CAP) return '';
+    if (bq && !billMatches(r, bq)) return '';
+    hits++;
+    if (shown >= ROW_CAP) return '';
+    shown++;
     return `
       <tr style="${r.in2B === false ? 'opacity:0.65' : ''}">
         <td><input type="text" value="${fmtDate(r.date)}" placeholder="dd-mm-yyyy" style="min-width:112px" onchange="importedRows[${i}].date=normDate(this.value);this.value=fmtDate(importedRows[${i}].date);renderImporterTable();pushImportToCalculator(false)"></td>
@@ -1747,8 +1798,9 @@ function renderImporterTable() {
         <td class="no-print"><button class="sm danger" onclick="importedRows.splice(${i},1);renderImporterTable();pushImportToCalculator(false)">×</button></td>
       </tr>
     `;
-  }).join('') + (importedRows.length > ROW_CAP ? `<tr><td colspan="11" style="text-align:center;padding:12px;color:var(--mut)">Showing the first ${ROW_CAP} of ${importedRows.length} rows. Totals and the calculator use all rows. Use the ledger-wise summary above to change the bucket of a whole ledger at once.</td></tr>` : '');
+  }).join('') + (bq && !hits ? `<tr><td colspan="11" style="text-align:center;padding:12px;color:var(--mut)">No bill matches "${String(bq).replace(/&/g, '&amp;').replace(/</g, '&lt;')}". Clear the search to see all bills.</td></tr>` : '') + (!bq && importedRows.length > ROW_CAP ? `<tr><td colspan="11" style="text-align:center;padding:12px;color:var(--mut)">Showing the first ${ROW_CAP} of ${importedRows.length} rows. Totals and the calculator use all rows. Use the ledger-wise summary above to change the bucket of a whole ledger at once.</td></tr>` : '');
 
+  if ($('billSearchCount')) $('billSearchCount').textContent = bq ? `${hits} of ${importedRows.length} bills match. Totals below are for all bills.` : '';
   tfoot.innerHTML = `
     <tr class="tot">
       <td colspan="3">Total in GSTR-2B (sent to the calculator)</td>
@@ -1789,6 +1841,7 @@ function renderLedgerSummary() {
     if (r.nodetail) { o.ndN = (o.ndN || 0) + 1; o.ndTax = (o.ndTax || 0) + t; (o.ndDates = o.ndDates || []).push(r.date); }
     if (r.rcmHeld) { o.heldN = (o.heldN || 0) + 1; o.heldTax = (o.heldTax || 0) + (r.rcmHeldTax || 0); o.heldVal = (o.heldVal || 0) + (r.taxable || 0); (o.heldDates = o.heldDates || []).push(r.date); }
     if (r.dn) { o.dnN = (o.dnN || 0) + 1; o.dnTax = (o.dnTax || 0) + t; (o.dnNos = o.dnNos || []).push(r.vno || r.date); }
+    if (r.bucket === 'T4' && Math.abs(t) >= 0.005) { const sk = t4Suspect(r.party); if (sk) (o.sus = o.sus || []).push({ party: r.party, kind: sk, no: (r.inv || r.docNo) ? 'Inv ' + (r.inv || r.docNo) : r.vno ? 'Vch ' + r.vno : (r.date || ''), t }); }
     o.buckets[r.bucket] = 1; (o.bt = o.bt || {})[r.bucket] = (o.bt[r.bucket] || { n: 0, t: 0, tally: 0 }); o.bt[r.bucket].n++; o.bt[r.bucket].t += t; if (r.how === 'tally' || r.inelig) o.bt[r.bucket].tally++;
   });
   const keys = Object.keys(g).sort((a, b) => g[b].tax - g[a].tax);
@@ -1812,17 +1865,68 @@ function renderLedgerSummary() {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
         // Bills on which no GST was charged: shown for completeness, with nothing to decide
 const heldWhy = o => `<b>Not counted: ${o.heldN} reverse charge payment${o.heldN > 1 ? 's' : ''}, tax ₹ ${fmt(o.heldTax)}</b> (${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}). Tally's GSTR-3B leaves ${o.heldN > 1 ? 'them' : 'it'} out, so no credit. In Tally: if it is reverse charge, fill the party details on the payment; if not, remove the reverse charge mark.`;
+        if (/\u0001inelig$/.test(k) && looksTrading(o.name)) return `<tr class="setupbad"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">as Tally has it</span></td><td class="why"><div class="setupwarn"><b>Tally setup warning: ₹ ${fmt(o.tax)} of credit may be lost.</b> This looks like a purchase ledger for goods you trade, but its bills are marked "Ineligible ITC", so Tally reverses the whole credit in GSTR-3B 4(B)(1). If these goods are sold with GST, the credit is eligible. Fix in Tally:<br>1. Alter this ledger (and its stock items, if GST is set there). In the GST rate details, set <b>Eligible for Input Tax Credit</b> to Yes, in every "Applicable From" row.<br>2. Bills already entered keep their own setting. Open GSTR-3B, drill into the ineligible ITC vouchers and set each bill's GST details to eligible (use your Release's bulk update if it has one).<br>Then read the month again. If the goods really are for exempt sales or personal use, leave it as it is.</div></td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (/\u0001inelig$/.test(k)) return `<tr class="notax"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">fixed</span></td><td class="why">Marked "Ineligible ITC" on the bill in Tally. Tally reverses it itself in GSTR-3B 4(B)(1), so it stays T3 and is left out of ITC Desk's journal. Nothing to do.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax && o.heldN === o.n) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="pill T3">Check</span> <span class="hint">Not counted</span></td><td class="why">${heldWhy(o)}</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         return `<tr><td>${esc(o.name)}</td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><select onchange="setLedgerBucket(${i}, this.value)" style="min-width:210px">${cur ? '' : '<option value="" selected disabled>Mixed (see why)</option>'}${opts.map(([v, t]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td class="why">${!cur && o.bt ? `<div class="dnwhy">${(() => { const tl = Object.values(o.bt).reduce((x, v) => x + v.tally, 0), tlT = (o.bt.T3 || { t: 0 }).t, other = Object.entries(o.bt).filter(([b]) => b !== 'T3' || !tl);
   return tl && Object.keys(o.bt).length === 2 && o.bt.T3 && o.bt.T3.tally === o.bt.T3.n
     ? `<b>Mixed is correct here. Nothing to do.</b> ${o.bt.T3.n} bill${o.bt.T3.n > 1 ? 's are' : ' is'} marked "Ineligible ITC" in Tally (₹ ${fmt(tlT)}): Tally reverses ${o.bt.T3.n > 1 ? 'them' : 'it'} itself, so ${o.bt.T3.n > 1 ? 'they stay' : 'it stays'} in T3. The other ${other.map(([b, v]) => `${v.n} bill${v.n > 1 ? 's' : ''} (₹ ${fmt(v.t)}) ${v.n > 1 ? 'are' : 'is'} in ${b}`).join(', ')}. Changing the bucket here moves only those.`
-    : `<b>Mixed: this ledger's bills are in more than one bucket.</b> ${Object.entries(o.bt).map(([b, v]) => `${b} ₹ ${fmt(v.t)} on ${v.n} bill${v.n > 1 ? 's' : ''}${v.tally ? (v.tally === v.n ? ' (marked Ineligible ITC in Tally, stays T3)' : ` (${v.tally} marked Ineligible ITC in Tally, stay T3)`) : ''}`).join(' · ')}. Choosing a bucket here moves all the other bills.`; })()}</div>` : ''}${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic${o.bt ? '' : ''}</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
+    : `<b>Mixed: this ledger's bills are in more than one bucket.</b> ${Object.entries(o.bt).map(([b, v]) => `${b} ₹ ${fmt(v.t)} on ${v.n} bill${v.n > 1 ? 's' : ''}${v.tally ? (v.tally === v.n ? ' (marked Ineligible ITC in Tally, stays T3)' : ` (${v.tally} marked Ineligible ITC in Tally, stay T3)`) : ''}`).join(' · ')}. Choosing a bucket here moves all the other bills.`; })()}</div>` : ''}${o.sus ? susNote(o.sus) : ''}${o.check ? '<span class="pill T3" style="margin-right:6px">Check</span>' : ''}${o.differs ? '<span class="pill Tc" style="margin-right:6px">Changed</span>' : ''}${esc(o.why)}${rcmDoubt(o)}${/^(memory|user)$/.test(o.how) ? ` <button class="sm" style="margin-left:4px;padding:1px 8px;box-shadow:none" onclick="resetLedger(${i})">Use automatic${o.bt ? '' : ''}</button>` : ''}${kbRefHtml(o.name, cur || Object.keys(o.buckets)[0], o.rcm)}${o.heldN ? `<div class="dnwhy">${heldWhy(o)}</div>` : ''}${o.dnN ? `<div class="dnwhy"><b>Includes ${o.dnN} debit note${o.dnN > 1 ? 's' : ''}</b> (purchase return${o.dnN > 1 ? 's' : ''}, voucher no. ${esc([...new Set(o.dnNos)].slice(0, 5).join(', '))}${o.dnNos.length > 5 ? '…' : ''}): credit reduced by ₹ ${fmt(-o.dnTax)}. Tally's Purchase Register lists purchases only and shows ₹ ${fmt(o.tax - o.dnTax)}; GSTR-3B Table 4(A) is net of the return, as here.</div>` : ''}</td>${aiHas ? `<td class="why">${aiCell(k, cur, i)}</td>` : ''}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }
 
+
+// Find a bill: every word typed must appear in the supplier, invoice no., voucher no. or ledger; one typo allowed in longer words
+function billMatches(r, q) {
+  const hay = [r.party, r.inv, r.docNo, r.vno, r.ledger].filter(Boolean).join(' ').toLowerCase();
+  const toks = hay.split(/[^a-z0-9]+/).filter(Boolean);
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w) || (w.length >= 5 && toks.some(t => near1(t.slice(0, w.length + 1), w) || near1(t, w))));
+}
+// Edit distance of at most 1 (one letter added, dropped or changed)
+function near1(a, b) {
+  if (a === b) return true;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+  let i = 0, j = 0, d = 0;
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++d > 1) return false;
+    if (la > lb) i++; else if (lb > la) j++; else { i++; j++; }
+  }
+  return d + (la - i) + (lb - j) <= 1;
+}
+// Suppliers whose name points to a service or a consumable, not goods for resale. Found on a T4 (trading) ledger,
+// the bill is probably booked in the wrong ledger: telecom, bank charges, couriers and packing are usually common credit (C2).
+const T4_SUSPECT = [
+  ['telecom or internet', ['broadband', 'telecom', 'telecommunications', 'airtel', 'jio', 'vodafone', 'bsnl']],
+  ['meal vouchers', ['pluxee', 'sodexo']],
+  ['bank or payment charges', ['bank', 'paytm', 'razorpay']],
+  ['courier or transport', ['courier', 'couriers', 'logistics']],
+  ['packing material', ['paper bag', 'paper bags', 'print pack', 'printpack', 'plastic', 'plastics', 'multiplast', 'polymer', 'polymers', 'packaging', 'packagers', 'packing']],
+  ['stationery or cleaning', ['stationery', 'stationers', 'cleaning']]
+];
+function t4Suspect(party) {
+  const p = String(party || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  if (!p) return '';
+  const toks = p.split(' ');
+  for (const [kind, words] of T4_SUSPECT) for (const w of words) {
+    if (w.includes(' ') ? (' ' + p + ' ').includes(' ' + w + ' ') : toks.includes(w)) return kind;
+    // one typo is forgiven only in longer words, so short names such as JIO match exactly
+    if (!w.includes(' ') && w.length >= 7 && toks.some(t => near1(t, w))) return kind;
+  }
+  return '';
+}
+
+function susNote(list) {
+  const e = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const tot = list.reduce((a, x) => a + x.t, 0);
+  return `<div class="dnwhy"><span class="pill T3" style="margin-right:6px">Check</span><b>${list.length} bill${list.length > 1 ? 's' : ''} in T4 look${list.length > 1 ? '' : 's'} like services or supplies, not trading goods (ITC ₹ ${fmt(tot)}):</b> ${list.slice(0, 6).map(x => `${e(x.party)} (${e(x.kind)}${x.no ? ', ' + e(x.no) : ''}, ₹ ${fmt(x.t)})`).join('; ')}${list.length > 6 ? `; and ${list.length - 6} more` : ''}. These are usually common credit (C2). Correct the ledger on these bills in Tally, or move them here with the bucket on the Bills table.</div>`;
+}
+
+// A ledger that buys goods for resale: purchase, trading, goods, or a GST rate in its name
+function looksTrading(name) { return /\b(purchases?|trading|goods)\b|\b(5|12|18|28|40)\s*%/i.test(String(name || '')) && !/\b(capital|fixed asset|assets?|machinery|vehicle|car)\b/i.test(String(name || '')); }
 
 function changeRowBucket(idx, newBucket) {
   const row = importedRows[idx];
@@ -3001,7 +3105,7 @@ function exportExcel() {
   const views = {}; // sheet name -> { freezeRow, freezeCol, tab }
 
   // ---------- Bills ----------
-  const Bh = ['Date', 'Supplier', 'Ledger', 'Taxable value', 'IGST', 'CGST', 'SGST', 'Total ITC', 'In GSTR-2B', 'Bucket', 'Reverse charge', 'Bill / voucher no.'];
+  const Bh = ['Date', 'Supplier', 'Ledger', 'Taxable value', 'IGST', 'CGST', 'SGST', 'Total ITC', 'In GSTR-2B', 'Bucket', 'Reverse charge', 'Supplier invoice no.'];
   const Bs = XLSX.utils.aoa_to_sheet([Bh]);
   Bh.forEach((h, i) => { const col = String.fromCharCode(65 + i); Bs[col + '1'].s = i >= 3 && i <= 7 ? S.thR : i >= 8 ? S.thC : S.th; });
   M.bills.forEach((r, k) => {
@@ -3011,7 +3115,7 @@ function exportExcel() {
     put(Bs, 'A' + n, dm ? { t: 'n', v: (Date.UTC(+dm[1], +dm[2] - 1, +dm[3]) - Date.UTC(1899, 11, 30)) / 864e5, z: 'dd-mm-yyyy' } : sv(r.date), out ? S.grey : Object.assign({}, S.td, { alignment: { vertical: 'top', horizontal: 'left' } })); put(Bs, 'B' + n, sv(r.party), tx); put(Bs, 'C' + n, sv(r.ledger), tx);
     put(Bs, 'D' + n, nv(r.taxable), nx); put(Bs, 'E' + n, nv(r.igst), nx); put(Bs, 'F' + n, nv(r.cgst), nx); put(Bs, 'G' + n, nv(r.sgst), nx);
     put(Bs, 'H' + n, fv(`E${n}+F${n}+G${n}`, (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0)), out ? S.greyN : S.num);
-    put(Bs, 'I' + n, sv(out ? 'No' : 'Yes'), out ? S.chk : S.tdC); put(Bs, 'J' + n, sv(r.bucket), out ? S.grey : S.tdC); put(Bs, 'K' + n, sv(r.rcm ? 'Yes' : ''), S.tdC); put(Bs, 'L' + n, sv(String(r.vno || r.docNo || r.invNo || '')), out ? S.grey : S.td);
+    put(Bs, 'I' + n, sv(out ? 'No' : 'Yes'), out ? S.chk : S.tdC); put(Bs, 'J' + n, sv(r.bucket), out ? S.grey : S.tdC); put(Bs, 'K' + n, sv(r.rcm ? 'Yes' : ''), S.tdC); put(Bs, 'L' + n, sv(String(r.inv || r.docNo || '')), out ? S.grey : S.td);
   });
   const nb = Math.max(2, M.bills.length + 1);
   if (M.bills.length) {
@@ -3050,7 +3154,8 @@ function exportExcel() {
   add('F', 'F     Total turnover in the State', () => fv(`${R.Fb}+${R.Ad}`, c.F), 'All sales + section 17(3) items', 'f');
   add('R', 'E ÷ F  Exempt share', () => fv(`IF(${R.F}=0,0,${R.E}/${R.F})`, c.ratio, PCT), 'E ÷ F', 'k');
   if (c.isBank) {
-    add('REV', 'Reversal for GSTR-3B Table 4(B)(1)', () => fv(`${R.T1}+${R.T3}+MAX(0,${R.T}-${R.T1}-${R.T3})*50%`, c.rev4B1), 'T1 + T3 + 50% of the rest (section 17(4), Rule 38)', 'rev');
+    add('Tsp', 'Tsp  From own registrations, same PAN', () => nv(c.Tsp || 0), 'Not cut by 50% (second proviso to section 17(4))', 'i');
+    add('REV', 'Reversal for GSTR-3B Table 4(B)(1)', () => fv(`${R.T1}+${R.T3}+MAX(0,${R.T}-${R.T1}-${R.T3}-${R.Tsp})*50%`, c.rev4B1), 'T1 + T3 + 50% of the rest, after Tsp (section 17(4), Rule 38)', 'rev');
   } else {
     add('D1', 'D1   Rule 42 reversal', () => fv(`${R.C2}*${R.R}`, c.D1), 'C2 × E ÷ F', 'f');
     add('D2', 'D2   5% for non-business use', () => fv(M.d2 ? `${R.C2}*5%` : '0', c.D2), M.d2 ? 'C2 × 5%' : 'Not applied', 'f');
@@ -3083,7 +3188,7 @@ function exportExcel() {
   const HC = ['B', 'C', 'D', 'E'], HB = ['E', 'F', 'G', null], HK = ['igst', 'cgst', 'sgst', null];
   const hr = (c.headRows || []);
   const headVal = (p, i) => num(p + '_' + ['i', 'c', 's', 'z'][i]);
-  const lines = c.isBank ? [['T', 'T'], ['T1', 'T1'], ['T3', 'T3'], ['REV', 'Reversal 4(B)(1)'], ['NET', 'Net ITC 4(C)']]
+  const lines = c.isBank ? [['T', 'T'], ['T1', 'T1'], ['T3', 'T3'], ['Tsp', 'Tsp'], ['REV', 'Reversal 4(B)(1)'], ['NET', 'Net ITC 4(C)']]
     : [['T', 'T'], ['T1', 'T1'], ['T2', 'T2'], ['T3', 'T3'], ['T4', 'T4'], ['C2', 'C2'], ['D1', 'D1'], ['D2', 'D2'], ['Te', 'Te'], ['REV', 'Reversal 4(B)(1)'], ['NET', 'Net ITC 4(C)']];
   const HR = {};
   lines.forEach(([key, lab], j) => {
@@ -3101,7 +3206,8 @@ function exportExcel() {
       else if (key === 'D1') cell = fv(`${col}${HR.C2}*${R.R}`, h.d1h);
       else if (key === 'D2') cell = fv(M.d2 ? `${col}${HR.C2}*5%` : '0', h.d2h);
       else if (key === 'Te') { cell = nv(h.teh); st = S.inp; }
-      else if (key === 'REV') cell = c.isBank ? fv(`${col}${HR.T1}+${col}${HR.T3}+MAX(0,${col}${HR.T}-${col}${HR.T1}-${col}${HR.T3})*50%`, h.rev4b1_h) : fv(`${col}${HR.T1}+${col}${HR.T2}+${col}${HR.T3}+${col}${HR.D1}+${col}${HR.D2}+${col}${HR.Te}`, h.rev4b1_h);
+      else if (key === 'Tsp') { cell = nv(h.tsph || 0); st = S.inp; }
+      else if (key === 'REV') cell = c.isBank ? fv(`${col}${HR.T1}+${col}${HR.T3}+MAX(0,${col}${HR.T}-${col}${HR.T1}-${col}${HR.T3}-${col}${HR.Tsp})*50%`, h.rev4b1_h) : fv(`${col}${HR.T1}+${col}${HR.T2}+${col}${HR.T3}+${col}${HR.D1}+${col}${HR.D2}+${col}${HR.Te}`, h.rev4b1_h);
       else if (key === 'NET') cell = fv(`${col}${HR.T}-${col}${HR.REV}`, h.net_h);
       put(ws, col + n, cell, st);
     });
@@ -3278,7 +3384,7 @@ function printReport() {
   <tr><td>Return period</td><td><b>${esc(M.period)}</b></td><td>Financial year</td><td><b>${esc(M.fyLabel)}</b></td></tr>
   <tr><td>Taxpayer type</td><td>${esc(M.type)}</td><td>Prepared on</td><td>${esc(M.prepared)}</td></tr></table>
   <div class="rp-result"><div>Reversal to report in GSTR-3B Table 4(B)(1)</div><div class="rp-big">${c.blocked ? 'Not worked out' : '₹ ' + money(c.rev4B1)}</div>
-  <div class="rp-small">${c.blocked ? esc(M.notes[0] || '') : c.isBank ? `T1 + T3 ₹ ${money(c.T1 + c.T3)} + 50% of the rest (section 17(4), Rule 38)` : `T1 + T2 + T3 ₹ ${money(c.T1 + c.T2 + c.T3)} + D1 + D2 ₹ ${money(c.D1 + c.D2)} + Te ₹ ${money(c.Te)}. Net ITC, Table 4(C): ₹ ${money(c.net4C)}`}</div></div>
+  <div class="rp-small">${c.blocked ? esc(M.notes[0] || '') : c.isBank ? `T1 + T3 ₹ ${money(c.T1 + c.T3)} + 50% of the rest${c.Tsp ? ' (Tsp ₹ ' + money(c.Tsp) + ' from same-PAN registrations not cut)' : ''} (section 17(4), Rule 38)` : `T1 + T2 + T3 ₹ ${money(c.T1 + c.T2 + c.T3)} + D1 + D2 ₹ ${money(c.D1 + c.D2)} + Te ₹ ${money(c.Te)}. Net ITC, Table 4(C): ₹ ${money(c.net4C)}`}</div></div>
   <h3>Working</h3>
   <table class="rp-t"><thead><tr><th style="width:9%"></th><th style="width:46%">Item</th><th style="width:20%" class="n">Amount (₹)</th><th>How it is worked out</th></tr></thead><tbody>
   ${lines.map(l => `<tr><td><b>${l[0]}</b></td><td>${esc(l[1])}</td><td class="n">${l[2] === null ? '' : money(l[2])}</td><td class="m">${esc(l[3])}</td></tr>`).join('')}
@@ -3293,6 +3399,7 @@ function printReport() {
   ${months.map(m => `<tr><td>${m.mon}</td><td class="n">${money(m.T)}</td><td class="n">${money(m.C2)}</td><td class="n">${m.blocked ? '—' : (m.r * 100).toFixed(2) + '%' + (m.borrowed ? ' *' : '')}</td><td class="n">${m.blocked ? '—' : money(m.RQ)}</td><td class="n">${money(m.fl)}</td><td class="n">${m.blocked ? '—' : money(m.SH)}</td><td class="n">${m.blocked ? '—' : money(m.IN)}</td></tr>`).join('')}
   <tr class="tot"><td>Year</td><td class="n">${money((M.m.S || {}).T)}</td><td class="n">${money((M.m.S || {}).C2)}</td><td class="n">${((M.m.rY || 0) * 100).toFixed(2)}%</td><td class="n">${money((M.m.S || {}).RQ)}</td><td class="n">${money((M.m.S || {}).fl)}</td><td class="n">${money((M.m.S || {}).SH)}</td><td class="n">${money((M.m.S || {}).IN)}</td></tr></tbody></table>
   <p class="rp-small">Annual true-up, Rule 42(2): D1 + D2 for the year ₹ ${money((M.m.D1y || 0) + (M.m.D2y || 0))} less reversed month by month ₹ ${money(M.m.monthlyD)} = <b>₹ ${money(M.m.tu)}</b> ${(M.m.tu || 0) >= 0 ? 'to pay' : 'to reclaim'} with the September return. * Month without sales: E ÷ F of the last month with sales.</p>` : ''}
+  ${sealPrintBlock()}
   <table class="rp-sign"><tr><td>Prepared by<br><br>__________________________</td><td>Reviewed by<br><br>__________________________</td><td>Date<br><br>__________________________</td></tr></table>
   <p class="rp-disc">ITC Desk is a computation and working-paper aid, not a legal opinion. The buckets marked Check depend on facts to be confirmed with the client. Verify before filing GSTR-3B, GSTR-9 or DRC-03.</p>`;
   let box = $('printReport');
@@ -3672,7 +3779,7 @@ function parseTallySheetRows(rows, fileName) {
   const notParty = c => /invoice|inv\.?\s*no|gstin|uin|date|ledger/.test(c);
   const skipHdr = /date|voucher|vch|invoice|gstin|uin|gross|total|^cess|round|discount|addl|taxable|assessable|narration|bucket|category|^tax$|tax amount|^value$|^amount$|particulars|party|supplier|vendor|^name$|^itc$/;
   let hdrIdx = -1, hdr = [];
-  const colMap = { vno: -1, date: -1, party: -1, ledger: -1, particulars: -1, taxable: -1, gross: -1, igst: -1, cgst: -1, sgst: -1, totalTax: -1, bucket: -1 };
+  const colMap = { inv: -1, vno: -1, date: -1, party: -1, ledger: -1, particulars: -1, taxable: -1, gross: -1, igst: -1, cgst: -1, sgst: -1, totalTax: -1, bucket: -1 };
 
   for (let i = 0; i < Math.min(rows.length, 35); i++) {
     const r = rows[i].map(c => String(c).trim().toLowerCase());
@@ -3684,7 +3791,8 @@ function parseTallySheetRows(rows, fileName) {
       colMap.taxCols = { igst: [], cgst: [], sgst: [] };
       r.forEach((c, k) => { const t = taxHead(c); if (t) colMap.taxCols[t].push(k); });
       r.forEach((col, cIdx) => {
-        if (colMap.vno === -1 && /^(vch|voucher|bill|invoice|inv|supplier invoice|reference|ref)\.?\s*(no|number|num)\.?$|^vch\.? ?no\.?$|^voucher no\.?$|^supplier invoice no\.?$/.test(col)) colMap.vno = cIdx;
+        if (colMap.inv === -1 && /^(supplier('s)? )?(invoice|inv|bill|reference|ref)\.?\s*(no|number|num)\.?$|^supplier inv/.test(col)) colMap.inv = cIdx;
+        if (colMap.vno === -1 && /^(vch|voucher)\.?\s*(no|number|num)\.?$/.test(col)) colMap.vno = cIdx;
         if (colMap.date === -1 && (col.includes('date') || col === 'period')) colMap.date = cIdx;
         if (colMap.party === -1 && (col.includes('party') || col.includes('supplier') || col.includes('vendor') || col === 'name') && !notParty(col)) colMap.party = cIdx;
         if (colMap.ledger === -1 && (col.includes('purchase ledger') || col.includes('expense') || col.includes('ledger') || col.includes('account head') || col.includes('nature'))) colMap.ledger = cIdx;
@@ -3778,7 +3886,7 @@ function parseTallySheetRows(rows, fileName) {
       const withTax = parts.filter(l => l.igst || l.cgst || l.sgst);
       if (!withTax.length) { noTax++; continue; }
       withTax.forEach(l => {
-        importedRows.push({ vno: colMap.vno !== -1 ? String(row[colMap.vno] || '').trim() || undefined : undefined, date: colMap.date !== -1 ? normDate(row[colMap.date]) : '', party: partyTxt, ledger: l.name, taxable: l.amt, igst: +l.igst.toFixed(2), cgst: +l.cgst.toFixed(2), sgst: +l.sgst.toFixed(2), in2B: true, bucket: autoClassifyLedger(l.name), how: 'auto', rcm: false });
+        importedRows.push({ inv: colMap.inv !== -1 ? String(row[colMap.inv] || '').trim() || undefined : undefined, vno: colMap.vno !== -1 ? String(row[colMap.vno] || '').trim() || undefined : undefined, date: colMap.date !== -1 ? normDate(row[colMap.date]) : '', party: partyTxt, ledger: l.name, taxable: l.amt, igst: +l.igst.toFixed(2), cgst: +l.cgst.toFixed(2), sgst: +l.sgst.toFixed(2), in2B: true, bucket: autoClassifyLedger(l.name), how: 'auto', rcm: false });
         added++;
       });
       continue;
@@ -3803,6 +3911,7 @@ function parseTallySheetRows(rows, fileName) {
     importedRows.push({
       taxLed: Object.keys(taxLed).length ? taxLed : undefined,
       vno: colMap.vno !== -1 ? String(row[colMap.vno] || '').trim() || undefined : undefined,
+      inv: colMap.inv !== -1 ? String(row[colMap.inv] || '').trim() || undefined : undefined,
       date: colMap.date !== -1 ? normDate(row[colMap.date]) : '',
       party: partyTxt,
       ledger: ledgerTxt || 'Unmapped ledger',
@@ -4548,10 +4657,10 @@ function renderCGCatchup() {
   box.innerHTML = `<div class="card-title"><span>Earlier months not reversed (Rule 43 catch-up)</span></div>
     <p class="hint" style="margin-bottom:10px">For every asset in the register, Te should have been reversed in each month of its 60 months: Tm (Tc ÷ 60) × E ÷ F of that month. If the full credit was taken and Te was not reversed, each missed month is a short reversal, with interest from that month's GSTR-3B due date. Type E ÷ F for each financial year (from that year's returns), and the total Te already reversed in earlier returns, if any.</p>
     <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:10px">
-      ${fys.map(fy => `<div><label>E ÷ F, FY ${fy}-${String(fy + 1).slice(2)} (%)</label><input type="number" step="0.01" id="cgfy_${fy}" value="${vals[fy]}" placeholder="type %" oninput="window._cgKeep['cgfy_${fy}']=this.value;renderCGCatchupSoon()"></div>`).join('')}
-      <div><label>Te already reversed earlier (₹)</label><input type="number" id="cg_done" value="${done}" oninput="window._cgKeep.cg_done=this.value;renderCGCatchupSoon()"></div>
-      <div><label>Interest up to</label><input type="date" id="cg_upto" value="${upto}" onchange="window._cgKeep.cg_upto=this.value;renderCGCatchup()"></div>
-      <div><label>Interest rate (% a year)</label><input type="number" id="cg_rate" value="${rate}" oninput="window._cgKeep.cg_rate=this.value;renderCGCatchupSoon()"></div>
+      ${fys.map(fy => `<div><label for="cgfy_${fy}">E ÷ F, FY ${fy}-${String(fy + 1).slice(2)} (%)</label><input type="number" step="0.01" id="cgfy_${fy}" value="${vals[fy]}" placeholder="type %" oninput="window._cgKeep['cgfy_${fy}']=this.value;renderCGCatchupSoon()"></div>`).join('')}
+      <div><label for="cg_done">Te already reversed earlier (₹)</label><input type="number" id="cg_done" value="${done}" oninput="window._cgKeep.cg_done=this.value;renderCGCatchupSoon()"></div>
+      <div><label for="cg_upto">Interest up to</label><input type="date" id="cg_upto" value="${upto}" onchange="window._cgKeep.cg_upto=this.value;renderCGCatchup()"></div>
+      <div><label for="cg_rate">Interest rate (% a year)</label><input type="number" id="cg_rate" value="${rate}" oninput="window._cgKeep.cg_rate=this.value;renderCGCatchupSoon()"></div>
     </div>
     ${missingRatio ? '<div class="alert warn" style="margin-bottom:10px">Type E ÷ F for every financial year above: months of a year without it are not counted yet.</div>' : ''}
     <div class="scroll"><table><thead><tr><th>Financial year</th><th>Months</th><th style="text-align:right">Te due</th><th style="text-align:right">Not reversed</th><th style="text-align:right">Interest</th></tr></thead><tbody>
@@ -4776,8 +4885,11 @@ function calc1() {
   // Rule 38: non-business (T1) and blocked (T3) credit is not taken at all; 50% of the rest of THIS MONTH's credit is reversed.
   // Capital goods ITC taken this month must be included in T; the 60-month register is not used in this mode.
   let bankRev = 0;
+  if ($('bankSpBox')) $('bankSpBox').classList.toggle('hide', !isBank);
+  const Tsp = isBank ? Math.min(Math.max(0, num('Tsp')), Math.max(0, T - T1 - T3)) : 0;
   if (isBank) {
-    bankRev = Math.max(0, T - T1 - T3) * 0.5;
+    // Second proviso to s.17(4): the 50% cut does not apply to supplies between registrations with the same PAN
+    bankRev = Math.max(0, T - T1 - T3 - Tsp) * 0.5;
   }
 
   const revRule42_43 = isBank ? bankRev : (D1 + D2 + Te);
@@ -4798,7 +4910,7 @@ function calc1() {
   if (C1 < 0) msgs += `<div class="alert bad"><b>ITC Pool Error:</b> T1 + T2 + T3 (₹ ${fmt(T1 + T2 + T3)}) exceeds Total ITC T (₹ ${fmt(T)}).</div>`;
   if (C2 < 0) msgs += `<div class="alert bad"><b>Common Credit Error:</b> Exclusive Taxable ITC T4 (₹ ${fmt(T4)}) exceeds Net Credit C1 (₹ ${fmt(C1)}).</div>`;
   if (tv.sec17_3_add > 0) msgs += `<div class="alert warn"><b>Section 17(3) Active:</b> ₹ ${fmt(tv.sec17_3_add)} added to both E and F (Outward RCM: ₹ ${fmt(tv.rcm)}, 1% of Securities: ₹ ${fmt(tv.sec1pct)}, Land/Building SDV: ₹ ${fmt(tv.land)}, Duty-Free Arrival: ₹ ${fmt(tv.dfs)}).</div>`;
-  if (isBank) msgs += `<div class="alert ok"><b>Section 17(4) / Rule 38 Banking Mode Active:</b> 50% of this month's eligible credit is reversed (after removing T1 and T3). Include this month's capital goods ITC in T. The E ÷ F lines (D1, D2), T2/T4 and the Rule 43 register are not used in this mode.</div>`;
+  if (isBank) msgs += `<div class="alert ok"><b>Section 17(4) / Rule 38 Banking Mode Active:</b> 50% of this month's eligible credit is reversed (after removing T1, T3 and Tsp, credit from your own same-PAN registrations). Include this month's capital goods ITC in T. The E ÷ F lines (D1, D2), T2/T4 and the Rule 43 register are not used in this mode.</div>`;
   if ($('headMode').checked && window._headAssumed) msgs += `<div class="alert warn"><b>Tax-wise split assumed:</b> only totals were entered, so each one is split half CGST and half SGST (all purchases within the State). If any ITC is IGST, type the actual IGST, CGST and SGST from GSTR-3B Table 4(A) or the books.</div>`;
   const headSumT = HEADS.reduce((a, h) => a + num('T_' + h), 0);
   if ($('headMode').checked && Math.abs(headSumT - T) > 1) msgs += `<div class="alert warn"><b>Head-wise split not entered:</b> IGST + CGST + SGST + Cess add up to ₹ ${fmt(headSumT)} but T is ₹ ${fmt(T)}. Type the actual split from the return or the books. Until then the head-wise table is incomplete and the Tally voucher shows one consolidated credit line.</div>`;
@@ -4827,9 +4939,10 @@ function calc1() {
     const d1h = c2h * ratio;
     const d2h = d2On ? c2h * 0.05 : 0;
     const teh = !headKnown ? 0 : HB && HB.TcTot > 0 ? Te * HB.Tc[h] / HB.TcTot : Te * (T > 0 ? th / T : 0);
-    const rev4b1_h = (t1h + t2h + t3h) + d1h + d2h + teh;
+    const tsph = isBank && T > 0 ? Tsp * th / T : 0;
+    const rev4b1_h = isBank ? (t1h + t3h) + Math.max(0, th - t1h - t3h - tsph) * 0.5 : (t1h + t2h + t3h) + d1h + d2h + teh;
     const net_h = th - rev4b1_h;
-    return { label, th, t1h, t2h, t3h, hard: t1h + t2h + t3h, c2h, d1h, d2h, teh, rev4b1_h, net_h };
+    return { label, th, t1h, t2h, t3h, hard: t1h + t2h + t3h, c2h, d1h, d2h, teh, tsph, rev4b1_h, net_h };
   });
 
   // Quick Annual True-Up Box (if YR is filled)
@@ -4974,7 +5087,8 @@ function calc1() {
     last1Summary = 'Reversal not worked out: ' + (impTurnoverMissing ? 'turnover missing.' : 'no sales this period. Import the last month with sales.');
     if ($('tallyVoucherText')) $('tallyVoucherText').innerHTML = '<div class="alert bad"><b>No journal entry yet.</b> This period has no sales, so the reversal is not worked out. Import the last month with sales on Single period first.</div>';
   } else renderTallyVoucher({ T, T1, T2: isBank ? 0 : T2, T3, T4, D1: isBank ? bankRev : D1, D2: isBank ? 0 : D2, Te, rev4B1, headRows, headKnown, HB, ratio, d2On, isBank });
-  window._calc1 = { T, T1, T2, T3, T4, C1, C2, E, F, ratio, D1, D2, Tm: Tm_total, Tc: Tc_total, Te, isBank, bankRev, rev4B1, net4C, headRows, headSplit: headKnown, headFrom: isHeadSplit ? 'typed' : HB ? 'bills' : '', blocked };
+  window._calc1 = { T, T1, T2, T3, T4, C1, C2, E, F, ratio, D1, D2, Tm: Tm_total, Tc: Tc_total, Te, isBank, bankRev, Tsp, rev4B1, net4C, headRows, headSplit: headKnown, headFrom: isHeadSplit ? 'typed' : HB ? 'bills' : '', blocked };
+  if (typeof sealCheck === 'function') sealCheck();
   const ir = $('impResult');
   if (ir) { ir.classList.toggle('hide', !(T > 0)); ir.innerHTML = blocked ? 'Reversal for 4(B)(1): <b style="color:var(--bad)">not worked out</b> (' + (impTurnoverMissing ? 'turnover missing' : 'no sales: import last month') + ')' : `Reversal for 4(B)(1): <b>₹ ${fmt(rev4B1)}</b>`; }
 }
@@ -5557,7 +5671,7 @@ function copyTallyVoucherPlain() {
 function revBasis() {
   const d = window._calc1 || {}, R = importedRows.filter(r => r.in2B !== false && !r.noTax);
   const tx = r => (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0);
-  const bill = r => [r.vno || r.docNo || '', r.date || ''].filter(Boolean).join(' dt ');
+  const bill = r => [r.inv || r.docNo ? 'Inv ' + (r.inv || r.docNo) : (r.vno ? 'Vch ' + r.vno : ''), r.date || ''].filter(Boolean).join(' dt ');
   const byLed = b => { const g = {}; R.filter(r => r.bucket === b).forEach(r => { const o = g[r.ledger] = g[r.ledger] || { t: 0, n: 0 }; o.t += tx(r); o.n++; }); return Object.entries(g).sort((x, y) => y[1].t - x[1].t); };
   const ledTxt = b => { const L = byLed(b); return L.slice(0, 6).map(([n, o]) => `${n} Rs ${fmt(o.t)} (${o.n} bill${o.n > 1 ? 's' : ''})`).join(', ') + (L.length > 6 ? ` + ${L.length - 6} more` : ''); };
   const bills = rs => rs.slice(0, 25).map(bill).filter(Boolean).join(', ') + (rs.length > 25 ? ` and ${rs.length - 25} more` : '');
@@ -6081,7 +6195,7 @@ function exportCSV() {
 function collectState() {
   const pre = clientId() + '|';
   const mem = {}; Object.keys(customLedgerMemory).forEach(k => { if (k.startsWith(pre)) mem[k] = customLedgerMemory[k]; });
-  const o = { cgAssets, r37Bills, importedRows, _demoActive: demoActive, _impTurnoverAnnual: impTurnoverAnnual, _ledgerMemory: mem };
+  const o = { cgAssets, r37Bills, importedRows, _demoActive: demoActive, _impTurnoverAnnual: impTurnoverAnnual, _ledgerMemory: mem, _seal: SEAL.seal, _sealHistory: SEAL.history };
   document.querySelectorAll('input,select').forEach(e => {
     if (e.id && e.type !== 'file') o[e.id] = e.type === 'checkbox' ? e.checked : e.value;
   });
@@ -6131,7 +6245,7 @@ function applyState(sv) {
   demoActive = !!sv._demoActive || sv.meta_name === 'Apex Precision Manufacturing Pvt. Ltd.';
   impTurnoverAnnual = !!sv._impTurnoverAnnual;
   for (const k in sv) {
-    if (k === 'cgAssets' || k === 'r37Bills' || k === 'importedRows' || k === '_ledgerMemory') continue;
+    if (k === 'cgAssets' || k === 'r37Bills' || k === 'importedRows' || k === '_ledgerMemory' || k === '_seal' || k === '_sealHistory') continue;
     const e = $(k);
     if (e && e.type !== 'file') {
       if (e.type === 'checkbox') e.checked = sv[k];
@@ -6145,7 +6259,211 @@ function applyState(sv) {
   renderImporterTable();
   renderCG();
   calcAll();
+  SEAL.history = Array.isArray(sv._sealHistory) ? sv._sealHistory : [];
+  SEAL.seal = sv._seal && sv._seal.hash ? sv._seal : null;
+  sealApplyLock();
+  sealCheck();
 }
+
+/* ---------- FINALISE AND SEAL: SHA-256 fingerprint of the month's working ---------- */
+const SEAL = { seal: null, history: [], cur: '', busy: null };
+// What the seal covers: who, which period, and the figures that go into GSTR-3B, each rounded to the paisa
+function sealPayload() {
+  const c = window._calc1 || {}, r2 = v => (Math.round((Number(v) || 0) * 100) / 100).toFixed(2), val = id => String(($(id) || {}).value || '').trim();
+  const bills = importedRows.filter(r => r.in2B !== false);
+  const figs = {};
+  ['T', 'T1', 'T2', 'T3', 'T4', 'C2', 'E', 'F', 'D1', 'D2', 'Tm', 'Te', 'Tsp', 'bankRev', 'rev4B1', 'net4C'].forEach(k => figs[k] = r2(c[k]));
+  return JSON.stringify({
+    v: 1, name: val('meta_name'), gstin: val('meta_gstin').toUpperCase(), fy: val('FY'), period: val('meta_period'), type: val('meta_cat'),
+    figures: figs, bills: bills.length, billTax: r2(bills.reduce((a, r) => a + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0)),
+    capitalGoods: cgAssets.length, vouchers180: r37Bills.length
+  });
+}
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  if (window.crypto && crypto.subtle) {
+    try { const h = await crypto.subtle.digest('SHA-256', bytes); return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join(''); } catch (e) {}
+  }
+  return sha256Js(bytes);
+}
+// Plain JavaScript SHA-256 (FIPS 180-4), used only where the browser offers no Web Crypto
+function sha256Js(bytes) {
+  const K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+  const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+  const l = bytes.length, n = ((l + 9 + 63) >> 6) << 6, m = new Uint8Array(n);
+  m.set(bytes); m[l] = 0x80;
+  const bits = l * 8; for (let i = 0; i < 8; i++) m[n - 1 - i] = i < 4 ? (bits >>> (8 * i)) & 255 : Math.floor(bits / 2 ** (8 * i)) & 255;
+  const w = new Uint32Array(64), ror = (x, r) => (x >>> r) | (x << (32 - r));
+  for (let o = 0; o < n; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (m[o + 4 * i] << 24) | (m[o + 4 * i + 1] << 16) | (m[o + 4 * i + 2] << 8) | m[o + 4 * i + 3];
+    for (let i = 16; i < 64; i++) { const s0 = ror(w[i - 15], 7) ^ ror(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = ror(w[i - 2], 17) ^ ror(w[i - 2], 19) ^ (w[i - 2] >>> 10); w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0; }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0, t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0; H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+}
+async function sealFinalise() {
+  if (SEAL.seal) { sealReopen(); return; }
+  if (!hasWork()) { notify('Nothing to seal yet: work out the month first.'); return; }
+  calcAll();
+  await new Promise(r => setTimeout(r, 30));
+  const payload = sealPayload();
+  SEAL.seal = { hash: await sha256Hex(payload), at: new Date().toISOString(), payload };
+  SEAL.cur = SEAL.seal.hash;
+  sealApplyLock(); sealRender(); unsavedWork = true;
+  notify('Sealed. Click Save backup to keep the seal with the working.');
+}
+function sealReopen() {
+  if (!SEAL.seal) return;
+  if (!confirm('Reopen this month for changes? The current seal is kept in the history, and you can seal again when done.')) return;
+  SEAL.history.push(Object.assign({}, SEAL.seal, { reopenedAt: new Date().toISOString() }));
+  SEAL.seal = null; SEAL.cur = '';
+  sealApplyLock(); sealRender(); unsavedWork = true;
+  notify('Reopened. The old seal is in the history.');
+}
+// Sealed: every input on the page is locked, except what only reads (tabs, Print, Export, Save backup, bill search)
+let sealObs = null;
+function sealApplyLock() {
+  const on = !!SEAL.seal;
+  document.body.classList.toggle('sealed', on);
+  if ($('sealBtn')) { $('sealBtn').textContent = on ? 'Reopen' : 'Finalise & seal'; $('sealBtn').title = on ? 'Unlock the working for changes; the seal goes to the history' : 'Lock this month\'s working and stamp it with a fingerprint (SHA-256)'; }
+  const lock = () => document.querySelectorAll('.wrap input, .wrap select, .wrap textarea, .wrap button').forEach(e => {
+    if (e.hasAttribute('data-sealok') || e.classList.contains('tab') || e.id === 'billSearch' || e.closest('#sealBar')) return;
+    if (on && !e.disabled) { e.disabled = true; e.setAttribute('data-sealdis', ''); }
+    if (!on && e.hasAttribute('data-sealdis')) { e.disabled = false; e.removeAttribute('data-sealdis'); }
+  });
+  lock();
+  if (on && !sealObs && window.MutationObserver) {
+    let q = 0;
+    sealObs = new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; lock(); }); });
+    sealObs.observe(document.querySelector('.wrap'), { childList: true, subtree: true });
+  }
+  if (!on && sealObs) { sealObs.disconnect(); sealObs = null; }
+}
+function sealGuard(what) {
+  if (!SEAL.seal) return false;
+  notify('This month is sealed. Click Reopen (top right) before ' + what + '.');
+  return true;
+}
+// Recheck the fingerprint whenever the figures are worked out again
+function sealCheck() {
+  if (!SEAL.seal) { sealRender(); return; }
+  clearTimeout(SEAL.busy);
+  SEAL.busy = setTimeout(async () => { SEAL.cur = await sha256Hex(sealPayload()); sealRender(); }, 60);
+}
+function sealMatch() { return !!SEAL.seal && SEAL.cur === SEAL.seal.hash; }
+function sealWhen(iso) { try { return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return iso; } }
+function sealRender() {
+  const bar = $('sealBar'); if (!bar) return;
+  if (!SEAL.seal) { bar.classList.add('hide'); bar.innerHTML = ''; return; }
+  const ok = sealMatch();
+  bar.classList.remove('hide'); bar.classList.toggle('bad', !ok);
+  bar.innerHTML = `<span class="st">${ok ? 'Sealed: figures match the seal' : 'Changed after sealing: figures do not match the seal'}</span>
+    <span>${sealWhen(SEAL.seal.at)}</span>
+    <span>SHA-256 <code>${SEAL.seal.hash}</code></span>
+    <button class="sm" data-sealok onclick="sealCopy()">Copy fingerprint</button>
+    <button class="sm" data-sealok onclick="sealReopen()">Reopen</button>
+    ${SEAL.history.length ? `<span class="hint">${SEAL.history.length} earlier seal${SEAL.history.length > 1 ? 's' : ''} in the history</span>` : ''}`;
+}
+function sealCopy() {
+  const h = SEAL.seal ? SEAL.seal.hash : '';
+  const done = () => notify('Fingerprint copied.');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(h).then(done, () => window.prompt('Copy the fingerprint:', h));
+  else window.prompt('Copy the fingerprint:', h);
+}
+function sealPrintBlock() {
+  if (!SEAL.seal) return '';
+  const ok = sealMatch();
+  return `<div class="rp-seal${ok ? '' : ' bad'}"><b>${ok ? 'Sealed working' : 'WARNING: changed after sealing. These figures are not the sealed ones.'}</b> Sealed ${sealWhen(SEAL.seal.at)}. SHA-256 of client, GSTIN, period, taxpayer type and the key figures (to the paisa): <code>${SEAL.seal.hash}</code>${!ok && SEAL.cur ? `<br>Now: <code>${SEAL.cur}</code>` : ''}${SEAL.history.length ? `<br>Earlier seals: ${SEAL.history.map(h => `${sealWhen(h.at)} (${h.hash.slice(0, 12)}…, reopened ${sealWhen(h.reopenedAt)})`).join('; ')}` : ''}</div>`;
+}
+// While sealed, nothing may replace or clear the working
+['clearAllSheets', 'importJSON', 'handleTallyUpload', 'handleFileDrop', 'handleR37Upload', 'handleR37Drop', 'importProvisoMonth', 'loadSep2026TallyDemo', 'loadR37BulkDemo', 'autoRunOne', 'autoRunSelected'].forEach(n => {
+  const f = window[n]; if (typeof f !== 'function') return;
+  window[n] = function () {
+    if (SEAL.seal) { const ev = arguments[0]; if (ev && ev.preventDefault && /drop|dragover/.test(ev.type || '')) ev.preventDefault(); if (ev && ev.target && ev.target.type === 'file') ev.target.value = ''; sealGuard(n === 'clearAllSheets' ? 'clearing' : 'importing'); return; }
+    return f.apply(this, arguments);
+  };
+});
+
+/* ---------- SELF-TEST: open the browser console (F12) and type ITCDeskTests.run() ----------
+   Fixed cases from ICAI illustrations and the rules themselves. The page's own figures are put back afterwards. */
+const ITCDeskTests = {
+  cases: [],
+  run() {
+    if (SEAL.seal) { console.warn('ITC Desk tests: the month is sealed. Reopen it first; the tests type into the inputs.'); return null; }
+    const snap = { rows: importedRows, cg: cgAssets, r37: r37Bills, vals: {} };
+    document.querySelectorAll('input,select').forEach(e => { if (e.id && e.type !== 'file') snap.vals[e.id] = e.type === 'checkbox' ? e.checked : e.value; });
+    const out = [], near = (a, b, tol) => Math.abs(a - b) <= (tol == null ? 0.01 : tol);
+    const check = (name, got, want, tol) => out.push({ test: name, expected: want, got: Math.round(got * 100) / 100, pass: near(got, want, tol) });
+    const setv = (id, v) => { const e = $(id); if (e) { if (e.type === 'checkbox') e.checked = !!v; else e.value = v; } };
+    const reset = cat => {
+      importedRows = []; cgAssets = []; r37Bills = [];
+      ['T', 'T1', 'T2', 'T3', 'T4', 'Tc', 'Tsp', 'E', 'F', 'X', 'adj_rcm', 'adj_sec', 'adj_land', 'adj_dfs', 'FD', 'adj_scrip'].forEach(id => setv(id, ''));
+      setv('D2on', false); setv('headMode', false); setv('meta_cat', cat || 'regular');
+      window._proviso = null;
+    };
+    const run1 = (cat, v) => { reset(cat); Object.keys(v).forEach(k => setv(k, v[k])); calc1(); return window._calc1; };
+    try {
+      // 1. ICAI, Rule 42: common credit 20,000; exempt 1 crore of total 5 crore -> reverse 4,000, keep 16,000
+      let c = run1('regular', { T: 20000, E: 10000000, F: 50000000 });
+      check('Rule 42, ICAI: D1 = 20,000 x 1 cr / 5 cr', c.D1, 4000); check('Rule 42, ICAI: net ITC', c.net4C, 16000);
+      // 2. ICAI, Rule 42: common credit 6,90,000; exempt 1,33,50,000 of 1,94,00,000 -> 4,74,820 (rounded)
+      c = run1('regular', { T: 690000, E: 13350000, F: 19400000 });
+      check('Rule 42, ICAI: D1 = 6,90,000 x 133.5 L / 194 L', c.D1, 474820, 0.5);
+      // 3. Buckets: T1 + T2 + T3 reversed in full, T4 kept, D2 = 5% of C2 when ticked
+      c = run1('regular', { T: 100000, T1: 5000, T2: 10000, T3: 5000, T4: 30000, E: 25, F: 100, D2on: true });
+      check('C2 = T - T1 - T2 - T3 - T4', c.C2, 50000); check('D1 = C2 x E/F', c.D1, 12500); check('D2 = 5% of C2', c.D2, 2500);
+      check('4(B)(1) = T1 + T2 + T3 + D1 + D2 + Te', c.rev4B1, 35000);
+      // 4. Rule 43 through calc1: common capital goods credit 60,000 -> Tm 1,000, Te = Tm x E/F
+      c = run1('regular', { T: 0, Tc: 60000, E: 25, F: 100 });
+      const nM = calcCGMetrics().nMonths || 1;
+      check('Rule 43: Tm = (60,000 / 60) per month of the period', c.Tm, 1000 * nM); check('Rule 43: Te = Tm x E/F', c.Te, 250 * nM);
+      // 5. Bank mode, Rule 38: T1 and T3 out, then 50% of the rest
+      c = run1('bank', { T: 100000, T1: 5000, T3: 10000 });
+      check('Bank: 50% of (T - T1 - T3)', c.bankRev, 42500); check('Bank: 4(B)(1) = T1 + T3 + 50%', c.rev4B1, 57500);
+      // 6. Bank mode, same PAN: supplies from own registrations are not cut (second proviso to s.17(4))
+      c = run1('bank', { T: 100000, T1: 5000, T3: 10000, Tsp: 20000 });
+      check('Bank, same PAN: 50% of (T - T1 - T3 - Tsp)', c.bankRev, 32500); check('Bank, same PAN: net ITC = T - (T1 + T3 + 50%)', c.net4C, 52500);
+      // 7. Bank mode ignores E/F, D2 and Rule 43
+      c = run1('bank', { T: 100000, Tc: 60000, E: 50, F: 100, D2on: true });
+      check('Bank: no D1, D2 or Te on top of 50%', c.rev4B1, 50000);
+      // 8. computeSingleCG, Rule 43
+      const ref = new Date('2026-10-15');
+      let g = computeSingleCG({ mode: 'common', invDate: '2026-04-10', gst: 60000 }, ref);
+      check('Rule 43 common: Tm = A / 60', g.tm, 1000); check('Rule 43 common: A in Tc', g.tcAdded, 60000);
+      g = computeSingleCG({ mode: 'exempt_to_common', invDate: '2026-01-10', switchDate: '2026-08-10', gst: 60000 }, ref);
+      check('Rule 43(1)(c) proviso: Tie = 5% x 3 quarters (7 months)', g.upfrontRev, 9000); check('Rule 43(1)(c) proviso: Tm = A / 60', g.tm, 1000);
+      g = computeSingleCG({ mode: 'taxable_to_common', invDate: '2025-10-10', switchDate: '2026-10-10', gst: 60000 }, ref);
+      check('Rule 43(1)(d) proviso: no Tie at switch', g.upfrontRev, 0); check('Rule 43(1)(d) proviso: Tm = A / 60', g.tm, 1000);
+      g = computeSingleCG({ mode: 'common', invDate: '2021-04-10', gst: 60000 }, ref);
+      check('Rule 43: past 60 months, no Tm', g.tm, 0);
+      // 9. computeR37Row, Rule 37: ITC 18,000 on a bill of 1,18,000, unpaid, 200 days old
+      const cut = new Date('2026-10-19'), bill = { invDate: '2026-04-02', gross: 118000, itc: 18000, paid180: 0 };
+      let r = computeR37Row(bill, cut, 'from181');
+      check('Rule 37: 200 days', r.ageDays, 200); check('Rule 37: full ITC back when unpaid', r.propRev, 18000);
+      check('Rule 37: interest from day 181 (20 days at 18%)', r.interest, 18000 * 0.18 * 20 / 365);
+      r = computeR37Row(bill, cut, 'fromAvail'); check('Rule 37: interest from availment (200 days)', r.interest, 18000 * 0.18 * 200 / 365);
+      r = computeR37Row(Object.assign({}, bill, { paid180: 59000 }), cut, 'from181'); check('Rule 37: half paid, half the ITC back', r.propRev, 9000);
+      r = computeR37Row(bill, new Date('2026-09-20'), 'from181'); check('Rule 37: within 180 days, nothing', r.propRev, 0);
+      r = computeR37Row(bill, cut, 'no'); check('Rule 37: credit not used, no interest', r.interest, 0);
+    } catch (e) { out.push({ test: 'Error: ' + e.message, expected: '', got: '', pass: false }); }
+    finally {
+      importedRows = snap.rows; cgAssets = snap.cg; r37Bills = snap.r37;
+      Object.keys(snap.vals).forEach(id => setv(id, snap.vals[id]));
+      try { renderImporterTable(); renderCG(); calcAll(); } catch (e) {}
+    }
+    const failed = out.filter(x => !x.pass).length;
+    console.table(out);
+    console[failed ? 'error' : 'log'](`ITC Desk tests: ${out.length - failed} of ${out.length} passed${failed ? ', ' + failed + ' FAILED' : ''}.`);
+    this.cases = out;
+    return { passed: out.length - failed, failed, total: out.length };
+  }
+};
+window.ITCDeskTests = ITCDeskTests;
 
 function calcAll() {
   setTimeout(() => { try { flowRender(); } catch (e) {} }, 0);
@@ -7175,7 +7493,7 @@ async function autoVoucherTypes(c) {
   all.forEach(v => { let n = v.n, k = 0; while (by[n] && by[n] !== n && k++ < 10) n = by[n]; base[v.n.toLowerCase()] = n; });
   return base;
 }
-const VCH_FETCH = 'Date, VoucherTypeName, VoucherNumber, PartyLedgerName, IsReverseChargeApplicable, TaxAdjustment, IsCancelled, IsOptional, AllLedgerEntries.LedgerName, AllLedgerEntries.Amount, LedgerEntries.LedgerName, LedgerEntries.Amount, AllInventoryEntries.AccountingAllocations.LedgerName, AllInventoryEntries.AccountingAllocations.Amount';
+const VCH_FETCH = 'Date, VoucherTypeName, VoucherNumber, Reference, ReferenceDate, PartyLedgerName, IsReverseChargeApplicable, TaxAdjustment, IsCancelled, IsOptional, AllLedgerEntries.LedgerName, AllLedgerEntries.Amount, LedgerEntries.LedgerName, LedgerEntries.Amount, AllInventoryEntries.AccountingAllocations.LedgerName, AllInventoryEntries.AccountingAllocations.Amount';
 // Tally answers one request at a time and its screen waits while it does. A whole month of vouchers in one request
 // (tens of MB for a busy company) froze Tally for many seconds, so the month is read a few days at a time, with a pause.
 const pause = ms => new Promise(r => setTimeout(r, ms));
@@ -7224,7 +7542,7 @@ function autoParseVch(v) {
     else { kids(v, 'LEDGERENTRIES.LIST').forEach(addE); kids(v, 'ALLINVENTORYENTRIES.LIST').concat(kids(v, 'INVENTORYENTRIES.LIST')).forEach(ie => kids(ie, 'ACCOUNTINGALLOCATIONS.LIST').forEach(addE)); }
     const optional = /yes/i.test(kid(v, 'ISOPTIONAL')), cancelledOnly = /yes/i.test(kid(v, 'ISCANCELLED'));
     const rcmAny = /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')) || Array.from(v.getElementsByTagName('GSTOVRDNISREVCHARGEAPPL')).some(e => /^\s*(yes|applicable)\s*$/i.test(e.textContent));
-    return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), party: kid(v, 'PARTYLEDGERNAME'),
+    return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), inv: kid(v, 'REFERENCE').trim(), party: kid(v, 'PARTYLEDGERNAME'),
       rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), pgstin: kid(v, 'PARTYGSTIN').trim().toUpperCase(), regtype: kid(v, 'GSTREGISTRATIONTYPE').trim(), pstate: kid(v, 'STATENAME').trim(), pos: kid(v, 'PLACEOFSUPPLY').trim(), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines,
       bills: Array.from(v.getElementsByTagName('BILLALLOCATIONS.LIST')).map(b => ({ name: kid(b, 'NAME'), type: kid(b, 'BILLTYPE'), amt: parseFloat(kid(b, 'AMOUNT')) || 0 })) };
   }
@@ -7299,7 +7617,7 @@ function autoPurchaseRows(V, L, base) {
       // A purchase bill with no GST (exempt or nil-rated goods, or an unregistered supplier): no credit, nothing to reverse.
       // Kept as a zero-credit line so the ledger appears and the purchases agree with Tally's Purchase Register.
       if ((isPur || isDN) && !v.rcm) v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && !l.rcm && (isDN ? l.amt > 0 : l.amt < 0) && !/round(ing)?\s*-?\s*off|rounding/i.test(l.led); })
-        .forEach(l => rows.push({ noTax: true, vno: v.no || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: sign * Math.abs(l.amt), igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'T4', how: 'auto', src: 'tally' }));
+        .forEach(l => rows.push({ noTax: true, vno: v.no || undefined, inv: v.inv || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: sign * Math.abs(l.amt), igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'T4', how: 'auto', src: 'tally' }));
       return;
     }
     if (isJ && !/input tax credit/i.test(v.adj)) { skippedJ++; return; }
@@ -7324,7 +7642,7 @@ function autoPurchaseRows(V, L, base) {
     exp.forEach((l, k) => {
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ taxLed, inelig: l.inelig || undefined, dn: isDN || undefined, vno: v.no || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, inelig: l.inelig || undefined, dn: isDN || undefined, vno: v.no || undefined, inv: v.inv || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
   rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); if (r.noTax) r.check = false; if (r.inelig) { r.bucket = 'T3'; r.check = false; r.how = 'tally'; r.why = INELIG_WHY; } });
@@ -7375,7 +7693,7 @@ function autoRcmRows(V, L, base, myGstin) {
       const inter = rcmInterstate(v, l, myGstin);
       const ig = inter.v ? r2(t * rate / 100) : 0, cg = inter.v ? 0 : r2(t * rate / 200), sg = cg;
       if (noDetail) held.push({ date: v.date, no: v.no, ledger: l.led, value: t, tax: r2(t * rate / 100) });
-      rows.push({ nodetail: noDetail || undefined, vno: v.no || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
+      rows.push({ nodetail: noDetail || undefined, vno: v.no || undefined, inv: v.inv || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
     });
   });
   return { rows, skipped, held };
