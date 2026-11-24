@@ -7542,7 +7542,7 @@ function autoParseVch(v) {
     else { kids(v, 'LEDGERENTRIES.LIST').forEach(addE); kids(v, 'ALLINVENTORYENTRIES.LIST').concat(kids(v, 'INVENTORYENTRIES.LIST')).forEach(ie => kids(ie, 'ACCOUNTINGALLOCATIONS.LIST').forEach(addE)); }
     const optional = /yes/i.test(kid(v, 'ISOPTIONAL')), cancelledOnly = /yes/i.test(kid(v, 'ISCANCELLED'));
     const rcmAny = /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')) || Array.from(v.getElementsByTagName('GSTOVRDNISREVCHARGEAPPL')).some(e => /^\s*(yes|applicable)\s*$/i.test(e.textContent));
-    return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), inv: kid(v, 'REFERENCE').trim(), party: kid(v, 'PARTYLEDGERNAME'),
+    return { tot, optional, cancelledOnly, inv, rcmAny, date: d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : d, type: kid(v, 'VOUCHERTYPENAME') || v.getAttribute('VCHTYPE') || '', no: kid(v, 'VOUCHERNUMBER'), ref: kid(v, 'REFERENCE').trim(), party: kid(v, 'PARTYLEDGERNAME'),
       rcm: /yes/i.test(kid(v, 'ISREVERSECHARGEAPPLICABLE')), adj: kid(v, 'TAXADJUSTMENT'), pgstin: kid(v, 'PARTYGSTIN').trim().toUpperCase(), regtype: kid(v, 'GSTREGISTRATIONTYPE').trim(), pstate: kid(v, 'STATENAME').trim(), pos: kid(v, 'PLACEOFSUPPLY').trim(), cancelled: /yes/i.test(kid(v, 'ISCANCELLED')) || /yes/i.test(kid(v, 'ISOPTIONAL')), lines,
       bills: Array.from(v.getElementsByTagName('BILLALLOCATIONS.LIST')).map(b => ({ name: kid(b, 'NAME'), type: kid(b, 'BILLTYPE'), amt: parseFloat(kid(b, 'AMOUNT')) || 0 })) };
   }
@@ -7617,7 +7617,7 @@ function autoPurchaseRows(V, L, base) {
       // A purchase bill with no GST (exempt or nil-rated goods, or an unregistered supplier): no credit, nothing to reverse.
       // Kept as a zero-credit line so the ledger appears and the purchases agree with Tally's Purchase Register.
       if ((isPur || isDN) && !v.rcm) v.lines.filter(l => { const f = info(l.led); return !f.head && !f.party && l.led !== v.party && !l.rcm && (isDN ? l.amt > 0 : l.amt < 0) && !/round(ing)?\s*-?\s*off|rounding/i.test(l.led); })
-        .forEach(l => rows.push({ noTax: true, vno: v.no || undefined, inv: v.inv || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: sign * Math.abs(l.amt), igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'T4', how: 'auto', src: 'tally' }));
+        .forEach(l => rows.push({ noTax: true, vno: v.no || undefined, inv: v.ref || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: sign * Math.abs(l.amt), igst: 0, cgst: 0, sgst: 0, in2B: true, bucket: 'T4', how: 'auto', src: 'tally' }));
       return;
     }
     if (isJ && !/input tax credit/i.test(v.adj)) { skippedJ++; return; }
@@ -7642,7 +7642,7 @@ function autoPurchaseRows(V, L, base) {
     exp.forEach((l, k) => {
       const f = info(l.led);
       const its = (v.inv || []).filter(x => x.item && (!x.led || x.led.toLowerCase() === l.led.toLowerCase())).map(x => x.item);
-      rows.push({ taxLed, inelig: l.inelig || undefined, dn: isDN || undefined, vno: v.no || undefined, inv: v.inv || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
+      rows.push({ taxLed, inelig: l.inelig || undefined, dn: isDN || undefined, vno: v.no || undefined, inv: v.ref || undefined, itemNames: its.length ? [...new Set(its)] : undefined, date: v.date, party: v.party || '', ledger: l.led + (f.asset && !/capital|machine|asset|plant/i.test(l.led) ? ' (capital goods)' : ''), taxable: sign * Math.abs(l.amt), igst: sign * share.i[k], cgst: sign * share.c[k], sgst: sign * share.s[k], in2B: true, bucket: 'C2', how: 'auto', rcm: v.rcm || (isJ && /liability/i.test(v.adj)), src: 'tally' });
     });
   });
   rows.forEach(r => { r.bucket = autoClassifyLedger(r.ledger); if (r.noTax) r.check = false; if (r.inelig) { r.bucket = 'T3'; r.check = false; r.how = 'tally'; r.why = INELIG_WHY; } });
@@ -7693,7 +7693,7 @@ function autoRcmRows(V, L, base, myGstin) {
       const inter = rcmInterstate(v, l, myGstin);
       const ig = inter.v ? r2(t * rate / 100) : 0, cg = inter.v ? 0 : r2(t * rate / 200), sg = cg;
       if (noDetail) held.push({ date: v.date, no: v.no, ledger: l.led, value: t, tax: r2(t * rate / 100) });
-      rows.push({ nodetail: noDetail || undefined, vno: v.no || undefined, inv: v.inv || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
+      rows.push({ nodetail: noDetail || undefined, vno: v.no || undefined, inv: v.ref || undefined, date: v.date, party: v.party || '', ledger: l.led, taxable: t, igst: ig, cgst: cg, sgst: sg, in2B: true, bucket: l.inelig ? 'T3' : 'C2', how: l.inelig ? 'tally' : 'auto', why: l.inelig ? INELIG_WHY : undefined, inelig: l.inelig || undefined, rcm: true, src: 'tally', rcmCalc: true, check: inter.guess || undefined, headWhy: inter.how });
     });
   });
   return { rows, skipped, held };
