@@ -1865,7 +1865,8 @@ function renderLedgerSummary() {
         const o = g[k], bs = Object.keys(o.buckets), cur = bs.length === 1 ? bs[0] : '';
         // Bills on which no GST was charged: shown for completeness, with nothing to decide
 const heldWhy = o => `<b>Not counted: ${o.heldN} reverse charge payment${o.heldN > 1 ? 's' : ''}, tax ₹ ${fmt(o.heldTax)}</b> (${[...new Set(o.heldDates)].slice(0, 4).join(', ')}${o.heldDates.length > 4 ? '…' : ''}). Tally's GSTR-3B leaves ${o.heldN > 1 ? 'them' : 'it'} out, so no credit. In Tally: if it is reverse charge, fill the party details on the payment; if not, remove the reverse charge mark.`;
-        if (/\u0001inelig$/.test(k) && looksTrading(o.name)) return `<tr class="setupbad"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">as Tally has it</span></td><td class="why"><div class="setupwarn"><b>Tally setup warning: ₹ ${fmt(o.tax)} of credit may be lost.</b> This looks like a purchase ledger for goods you trade, but its bills are marked "Ineligible ITC", so Tally reverses the whole credit in GSTR-3B 4(B)(1). If these goods are sold with GST, the credit is eligible. Fix in Tally:<br>1. Alter this ledger (and its stock items, if GST is set there). In the GST rate details, set <b>Eligible for Input Tax Credit</b> to Yes, in every "Applicable From" row.<br>2. Bills already entered keep their own setting. Open GSTR-3B, drill into the ineligible ITC vouchers and set each bill's GST details to eligible (use your Release's bulk update if it has one).<br>Then read the month again. If the goods really are for exempt sales or personal use, leave it as it is.</div></td>${aiHas ? '<td></td>' : ''}</tr>`;
+        if (/\u0001inelig$/.test(k) && importedRows.some(r => r.inelig && r.eligFix && String(r.ledger || '').trim().toLowerCase() + '\u0001inelig' === k)) return `<tr><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill ${Object.keys(o.buckets)[0]}">${Object.keys(o.buckets)[0]}</span> <span class="hint">counted as eligible</span></td><td class="why"><b>Counted as eligible: you confirmed Tally's "Ineligible ITC" mark is a mistake.</b> The reversal here is worked out as if Tally were correct. Until the ledger and these bills are fixed in Tally, Tally's own GSTR-3B still shows ₹ ${fmt(o.tax)} in 4(B)(1): fix Tally and read the month again, or file 4(B)(1) with ITC Desk's figure. <button class="sm" style="margin-left:4px" onclick="eligFixSet(${JSON.stringify(String(o.name)).replace(/"/g, '&quot;')}, false)">Undo</button></td>${aiHas ? '<td></td>' : ''}</tr>`;
+        if (/\u0001inelig$/.test(k) && looksTrading(o.name)) return `<tr class="setupbad"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">as Tally has it</span></td><td class="why"><div class="setupwarn"><b>Tally setup warning: ₹ ${fmt(o.tax)} of credit may be lost.</b> This looks like a purchase ledger for goods you trade, but its bills are marked "Ineligible ITC", so Tally reverses the whole credit in GSTR-3B 4(B)(1). If these goods are sold with GST, the credit is eligible. Fix in Tally:<br>1. Alter this ledger (and its stock items, if GST is set there). In the GST rate details, set <b>Eligible for Input Tax Credit</b> to Yes, in every "Applicable From" row.<br>2. Bills already entered keep their own setting. Open GSTR-3B, drill into the ineligible ITC vouchers and set each bill's GST details to eligible (use your Release's bulk update if it has one).<br>Then read the month again. If the goods really are for exempt sales or personal use, leave it as it is.<div style="margin-top:8px"><button class="sm p" onclick="eligFixSet(${JSON.stringify(String(o.name)).replace(/"/g, '&quot;')}, true)">Tally's mark is wrong: count as eligible</button> <span class="hint">Remembered for this client; Undo any time.</span></div></div></td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (/\u0001inelig$/.test(k)) return `<tr class="notax"><td>${esc(o.name)} <span class="hint">(marked Ineligible ITC in Tally)</span></td><td>${o.n}</td><td>${fmt(o.tax)}</td><td><span class="pill T3">T3</span> <span class="hint">fixed</span></td><td class="why">Marked "Ineligible ITC" on the bill in Tally. Tally reverses it itself in GSTR-3B 4(B)(1), so it stays T3 and is left out of ITC Desk's journal. Nothing to do.</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax && o.heldN === o.n) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="pill T3">Check</span> <span class="hint">Not counted</span></td><td class="why">${heldWhy(o)}</td>${aiHas ? '<td></td>' : ''}</tr>`;
         if (o.allNoTax) return `<tr class="notax"><td>${esc(o.name)}</td><td>${o.n}</td><td>0.00</td><td><span class="hint">No GST on these bills</span></td><td class="why"><b>No input tax credit, so nothing to reverse.</b> These purchases (₹ ${fmt(o.val)}) carry no GST: exempt or nil-rated goods, or goods bought from a supplier who does not charge GST. They are listed only so the purchases agree with Tally's Purchase Register. Rule 42 is worked out on credit taken, so they do not change the reversal. If GST was in fact charged on any of these bills, the tax ledger is missing from the voucher in Tally: correct the voucher there.</td>${aiHas ? '<td></td>' : ''}</tr>`;
@@ -1924,6 +1925,32 @@ function susNote(list) {
   const tot = list.reduce((a, x) => a + x.t, 0);
   return `<div class="dnwhy"><span class="pill T3" style="margin-right:6px">Check</span><b>${list.length} bill${list.length > 1 ? 's' : ''} in T4 look${list.length > 1 ? '' : 's'} like services or supplies, not trading goods (ITC ₹ ${fmt(tot)}):</b> ${list.slice(0, 6).map(x => `${e(x.party)} (${e(x.kind)}${x.no ? ', ' + e(x.no) : ''}, ₹ ${fmt(x.t)})`).join('; ')}${list.length > 6 ? `; and ${list.length - 6} more` : ''}. These are usually common credit (C2). Correct the ledger on these bills in Tally, or move them here with the bucket on the Bills table.</div>`;
 }
+
+// Tally marking error: bills of a trading ledger marked "Ineligible ITC" by mistake. The user says the mark is wrong;
+// the bills then count as eligible in their ledger's normal bucket (r.eligFix). r.inelig stays, because Tally's own
+// GSTR-3B still reverses them until the ledger is corrected there, and tallyAlready() must keep seeing that.
+function eligFixKey(ledger) { return memKeyOf(String(ledger || '').trim().toLowerCase() + '\u0001eligfix'); }
+function eligFixBucket(ledger) {
+  const key = String(ledger || '').trim().toLowerCase();
+  const same = importedRows.filter(r => !r.inelig && String(r.ledger || '').trim().toLowerCase() === key && r.in2B !== false).map(r => r.bucket);
+  const b = same.length ? same.sort((a, b2) => same.filter(x => x === b2).length - same.filter(x => x === a).length)[0] : autoClassifyLedger(ledger);
+  return b === 'T3' || !b ? 'T4' : b;
+}
+function eligFixApply() {
+  importedRows.forEach(r => {
+    if (!r.inelig) return;
+    const on = !!customLedgerMemory[eligFixKey(r.ledger)];
+    if (on && !r.eligFix) { r.eligFix = true; r.bucket = eligFixBucket(r.ledger); r.how = 'user'; r.why = 'Marked "Ineligible ITC" in Tally by mistake (you confirmed): counted as eligible here. Tally\'s own GSTR-3B still reverses it until the ledger and bills are corrected in Tally.'; }
+    if (!on && r.eligFix) { r.eligFix = false; r.bucket = 'T3'; r.how = 'tally'; r.why = INELIG_WHY; }
+  });
+}
+function eligFixSet(ledger, on) {
+  if (on) customLedgerMemory[eligFixKey(ledger)] = 1; else delete customLedgerMemory[eligFixKey(ledger)];
+  try { localStorage.setItem('r42_ledger_memory', JSON.stringify(customLedgerMemory)); } catch (e) {}
+  eligFixApply(); renderImporterTable(); pushImportToCalculator(false);
+  notify(on ? 'Counted as eligible. Remembered for this client.' : 'Back to Tally\'s marking: ineligible (T3).');
+}
+function eligFixSum() { return importedRows.filter(r => r.eligFix && r.in2B !== false).reduce((a, r) => a + (r.igst || 0) + (r.cgst || 0) + (r.sgst || 0), 0); }
 
 // A ledger that buys goods for resale: purchase, trading, goods, or a GST rate in its name
 function looksTrading(name) { return /\b(purchases?|trading|goods)\b|\b(5|12|18|28|40)\s*%/i.test(String(name || '')) && !/\b(capital|fixed asset|assets?|machinery|vehicle|car)\b/i.test(String(name || '')); }
@@ -2233,6 +2260,7 @@ function pushImportToCalculator(switchTab) {
   const pStart = parsePeriodDate();
   const pIso = `${pStart.getFullYear()}-${String(pStart.getMonth() + 1).padStart(2, '0')}-01`;
 
+  eligFixApply();
   importedRows.forEach((r, idx) => {
     if (r.in2B === false) return; // Sec 16(2)(aa): excluded until reflected in GSTR-2B
     const i = parseFloat(r.igst) || 0;
@@ -4910,6 +4938,8 @@ function calc1() {
   if (C1 < 0) msgs += `<div class="alert bad"><b>ITC Pool Error:</b> T1 + T2 + T3 (₹ ${fmt(T1 + T2 + T3)}) exceeds Total ITC T (₹ ${fmt(T)}).</div>`;
   if (C2 < 0) msgs += `<div class="alert bad"><b>Common Credit Error:</b> Exclusive Taxable ITC T4 (₹ ${fmt(T4)}) exceeds Net Credit C1 (₹ ${fmt(C1)}).</div>`;
   if (tv.sec17_3_add > 0) msgs += `<div class="alert warn"><b>Section 17(3) Active:</b> ₹ ${fmt(tv.sec17_3_add)} added to both E and F (Outward RCM: ₹ ${fmt(tv.rcm)}, 1% of Securities: ₹ ${fmt(tv.sec1pct)}, Land/Building SDV: ₹ ${fmt(tv.land)}, Duty-Free Arrival: ₹ ${fmt(tv.dfs)}).</div>`;
+  const efx = typeof eligFixSum === 'function' ? eligFixSum() : 0;
+  if (efx > 0.005) msgs += `<div class="alert warn"><b>₹ ${fmt(efx)} marked "Ineligible ITC" in Tally is counted as eligible</b> (you confirmed the mark is a mistake). The reversal below is the correct one. Tally's own GSTR-3B still reverses this ₹ ${fmt(efx)} in 4(B)(1) until the ledger and bills are corrected in Tally: correct Tally first, or file 4(B)(1) with the figure below, not Tally's.</div>`;
   if (isBank) msgs += `<div class="alert ok"><b>Section 17(4) / Rule 38 Banking Mode Active:</b> 50% of this month's eligible credit is reversed (after removing T1, T3 and Tsp, credit from your own same-PAN registrations). Include this month's capital goods ITC in T. The E ÷ F lines (D1, D2), T2/T4 and the Rule 43 register are not used in this mode.</div>`;
   if ($('headMode').checked && window._headAssumed) msgs += `<div class="alert warn"><b>Tax-wise split assumed:</b> only totals were entered, so each one is split half CGST and half SGST (all purchases within the State). If any ITC is IGST, type the actual IGST, CGST and SGST from GSTR-3B Table 4(A) or the books.</div>`;
   const headSumT = HEADS.reduce((a, h) => a + num('T_' + h), 0);
